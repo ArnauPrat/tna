@@ -11,7 +11,7 @@ public:
   Log(const char* log_filename);
   ~Log();
 
-  void print( const char* message, ... );
+  void log( const char* message, ... );
   void error( const char* message, ... );
   void warning( const char* message, ... );
 

@@ -29,12 +29,21 @@ find_package(glfw3 3.2 REQUIRED)
 ### Setting up GLM
 find_package(glm REQUIRED)
 
+### Setting up Vulkan
+#find_package(Vulkan REQUIRED)
+set(Vulkan_SDK_ROOT "/usr/local/vulkan-sdk/x86_64")
+set(Vulkan_INCLUDE_DIR "${Vulkan_SDK_ROOT}/include")
+set(Vulkan_LIBRARIES_DIR "${Vulkan_SDK_ROOT}/lib")
+set(Vulkan_LIBRARIES "libvulkan.so")
+
 include_directories(${CMAKE_SOURCE_DIR}/src)
 include_directories(${FURIOUS_INCLUDE_DIR})
 include_directories(${BULLET_INCLUDE_DIR})
+include_directories(${Vulkan_INCLUDE_DIR})
 
 link_directories(${FURIOUS_LIB_DIR})
 link_directories(${BULLET_LIBRARY_DIR})
+link_directories(${Vulkan_LIBRARIES_DIR})
 
 message(STATUS ${FURIOUS_ROOT})
 message(STATUS ${FURIOUS_INCLUDE_DIR})
@@ -64,5 +73,6 @@ target_link_libraries(tna
   ${FURIOUS_LIBS} 
   ${BULLET_LIBRARIES} 
   glfw
+  ${Vulkan_LIBRARIES}
   )
 

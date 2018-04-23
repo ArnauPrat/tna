@@ -43,8 +43,18 @@ public:
   ////////////////////////////////////////////////
   
 
+  /**
+   * @brief Creates an entity in the this game app
+   *
+   * @return The newly created entity
+   */
   Entity create_entity();
 
+  /**
+   * @brief Removes an entity in this current game app
+   *
+   * @param entity The entity to obe removed
+   */
   void remove_entity(Entity* entity);
 
 protected:
@@ -56,9 +66,8 @@ protected:
   btCollisionWorld*         p_bt_world;
 
   // FURIOUS
-  
-  furious::Database*      p_database;
-  furious::Workload*      p_workload;
+  furious::Database*        p_database;
+  furious::Workload*        p_workload;
 };
 
 }

@@ -22,17 +22,17 @@ namespace tna {
 
 Log::Log(const char* filename) : 
   m_log_file(filename) {
-      print("Started execution");
+      log("Started execution");
 }
 
 Log::~Log() {
-      print("Finished execution");
+      log("Finished execution");
     if(m_log_file) {
       m_log_file.close();
     }
 }
 
-void Log::print(const char* message, ...) {
+void Log::log(const char* message, ...) {
     char buffer[VARIADIC_BUFFER_SIZE]; 
     EXTRACT_VARIADIC(buffer, message)
         Message("LOG", buffer);

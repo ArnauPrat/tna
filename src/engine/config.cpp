@@ -31,7 +31,13 @@ Config load_config(const std::string& configFileName) {
         std::stringstream ss(value);
         ss >> config.m_fullscreen;
       }
-      log->print("Parsed option %s with value %s", option.c_str(), value.c_str());
+
+      if (option == "VkValidationLayer") {
+        inFile >> value;
+        std::stringstream ss(value);
+        config.m_vk_validation_layers.push_back(ss.str());
+      }
+      log->log("Parsed option %s with value %s", option.c_str(), value.c_str());
     }
     inFile.close();
   } else {
