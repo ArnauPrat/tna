@@ -1,7 +1,7 @@
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -Wno-ignored-attributes")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}  -O0 -g -pg ")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -DNDEBUG ")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 ")
 
 ### Setting up furious
 set(FURIOUS_ROOT "/home/aprat/projects/personal/furious/build/dist")
@@ -59,6 +59,8 @@ set(TNA_SOURCE_FILES
   engine/types.h
   engine/game_app.h
   engine/game_app.cpp
+  engine/rendering/rendering.h
+  engine/rendering/rendering.cpp
   game.cpp
   game.h
   main.cpp

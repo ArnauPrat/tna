@@ -14,8 +14,8 @@ namespace tna {
  */
 struct Config {
 
-  int32_t   m_viewport_width  = 1440;
-  int32_t   m_viewport_height = 900;
+  uint32_t   m_viewport_width  = 1440;
+  uint32_t   m_viewport_height = 900;
   bool      m_fullscreen    = false;
 
   std::vector<std::string> m_vk_validation_layers;

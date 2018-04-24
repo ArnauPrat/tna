@@ -51,7 +51,7 @@ void Log::warning(const char* message, ...) {
 
 void Log::Message(const char* type, const char* message) {
     char buffer[VARIADIC_BUFFER_SIZE];
-    sprintf(buffer, ":%s:%s",type, message);
+    sprintf(buffer, ": %s: %s",type, message);
     TIMED_MESSAGE(buffer);
 }
 
