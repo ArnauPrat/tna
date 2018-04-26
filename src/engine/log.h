@@ -3,7 +3,6 @@
 #define _TNA_TLOG_H_
 
 #include <fstream>
-#include <sstream>
 
 namespace tna {
 class Log {
@@ -18,8 +17,8 @@ public:
 private:
   void Message(const char* type, const char* message );
 
-
   std::ofstream   m_log_file;
+  int32_t         m_errors;
 };
 
 }

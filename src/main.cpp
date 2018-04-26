@@ -7,14 +7,15 @@
 
 int main(int argc, char** argv) {
 
-  tna::initialize();
-
   try {
+  tna::initialize();
   tna::Game game(180,120);
   tna::run(&game);
-  } catch(std::runtime_error& error) {
+  } catch(const std::runtime_error& error) {
     tna::log->error(error.what());
-  } 
+  } catch(...) {
+    tna::log->error("Uncatched Exception!");
+  }
   tna::terminate();
   return 0;
 }

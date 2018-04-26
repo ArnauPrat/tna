@@ -1,7 +1,7 @@
 #include "log.h"
-#include <ctime>
-#include <cstdarg>
-#include <cstdio>
+#include <time.h>
+#include <stdarg.h>
+#include <stdio.h>
 
 #define VARIADIC_BUFFER_SIZE 1024
 #define EXTRACT_VARIADIC( buffer, message ) \
@@ -21,15 +21,20 @@ namespace tna {
 
 
 Log::Log(const char* filename) : 
-  m_log_file(filename) {
+  m_log_file{filename},
+  m_errors{0}
+{
       log("Started execution");
 }
 
 Log::~Log() {
-      log("Finished execution");
-    if(m_log_file) {
-      m_log_file.close();
-    }
+  log("Finished execution");
+  if(m_log_file) {
+    m_log_file.close();
+  }
+  if(m_errors > 0) {
+    printf("Execution finished with errors. Check the log file\n");
+  }
 }
 
 void Log::log(const char* message, ...) {

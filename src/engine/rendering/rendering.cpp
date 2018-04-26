@@ -10,7 +10,9 @@
 namespace tna {
 
 struct QueueFamilyIndices {
+
 	int32_t m_graphics_queue = -1;
+
   int32_t m_present_queue = -1;
 
   void reset(){
@@ -31,12 +33,15 @@ struct SwapChainSupportDetails {
   std::vector<VkPresentModeKHR>   m_present_modes;
 };
 
-std::vector<const char*>  layers;
+std::vector<const char*> validation_layers;
+
 const std::vector<const char*> device_extensions = {
-  VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+  VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
 
+uint32_t                  viewport_width;
+uint32_t                  viewport_height;
 VkInstance                vulkan_instance;
 VkSurfaceKHR              window_surface;
 VkDebugReportCallbackEXT  report_callback;
@@ -54,7 +59,18 @@ const bool enable_validation_layers = false;
 const bool enable_validation_layers = true;
 #endif
 
-SwapChainSupportDetails   query_sc_support_details(VkPhysicalDevice device, VkSurfaceKHR surface) {
+/**
+ * @brief Queries the physical device for the actual swap chain support
+ *
+ * @param device The physical device to query the support from
+ * @param surface The rendering surface
+ *
+ * @return Returns a SwapChainSupportDetails structure with the given available
+ * support
+ */
+static SwapChainSupportDetails query_sc_support_details(VkPhysicalDevice device, 
+                                                        VkSurfaceKHR surface) {
+
   SwapChainSupportDetails sc_support_details;
 
   vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, 
@@ -69,25 +85,41 @@ SwapChainSupportDetails   query_sc_support_details(VkPhysicalDevice device, VkSu
     sc_support_details.m_formats.resize(format_count);
     vkGetPhysicalDeviceSurfaceFormatsKHR(device, 
                                          surface, 
-                                         &format_count, sc_support_details.m_formats.data());
+                                         &format_count, 
+                                         sc_support_details.m_formats.data());
   }
 
   uint32_t present_mode_count;
-  vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &present_mode_count, nullptr);
+  vkGetPhysicalDeviceSurfacePresentModesKHR(device, 
+                                            surface, 
+                                            &present_mode_count, 
+                                            nullptr);
   if (present_mode_count != 0) {
     sc_support_details.m_present_modes.resize(present_mode_count);
-    vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &present_mode_count, sc_support_details.m_present_modes.data());
+    vkGetPhysicalDeviceSurfacePresentModesKHR(device, 
+                                              surface, 
+                                              &present_mode_count, 
+                                              sc_support_details.m_present_modes.data());
   }
   return sc_support_details;
 }
 
-VkSurfaceFormatKHR choose_swap_surface_format(const std::vector<VkSurfaceFormatKHR>& available_formats) {
+/**
+ * @brief Given the different available surface formats for the swap chain,
+ * choses the best one
+ *
+ * @param available_formats A vector with the available surface formats
+ *
+ * @return Returns the chosen surface format
+ */
+static VkSurfaceFormatKHR choose_sc_surface_format(const std::vector<VkSurfaceFormatKHR>& available_formats) {
   if (available_formats.size() == 1 && available_formats[0].format == VK_FORMAT_UNDEFINED) {
     return {VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR};
   }
 
   for (const auto& available_format : available_formats) {
-    if (available_format.format == VK_FORMAT_B8G8R8A8_UNORM && available_format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+    if (available_format.format == VK_FORMAT_B8G8R8A8_UNORM && 
+        available_format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
       return available_format;
     }
   }
@@ -95,7 +127,14 @@ VkSurfaceFormatKHR choose_swap_surface_format(const std::vector<VkSurfaceFormatK
   return available_formats[0];
 }
 
-VkPresentModeKHR choose_swap_present_format(const std::vector<VkPresentModeKHR> available_present_modes) {
+/**
+ * @brief Given the different available present modes, choses the best one
+ *
+ * @param available_present_modes A vector with the available present modes
+ *
+ * @return The choosen present mode
+ */
+static VkPresentModeKHR choose_sc_present_mode(const std::vector<VkPresentModeKHR> available_present_modes) {
     VkPresentModeKHR best_mode = VK_PRESENT_MODE_FIFO_KHR;
 
     for (const auto& available_present_mode : available_present_modes) {
@@ -109,21 +148,54 @@ VkPresentModeKHR choose_swap_present_format(const std::vector<VkPresentModeKHR> 
     return best_mode;
 }
 
-VkExtent2D choose_swap_extent(const VkSurfaceCapabilitiesKHR& capabilities, const Config& config) {
+/**
+ * @brief Chooses the extent of the swap chain
+ *
+ * @param capabilities The capabilities of the surface
+ * @param width The width of the viewport 
+ * @param height The height of the viewport 
+ *
+ * @return Returns the choosen extent
+ */
+static VkExtent2D choose_sc_extent(const VkSurfaceCapabilitiesKHR& capabilities, 
+                                   uint32_t width,
+                                   uint32_t height) {
+
     if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
         return capabilities.currentExtent;
     } else {
-        VkExtent2D actual_extent = {config.m_viewport_width, config.m_viewport_height};
+        VkExtent2D actual_extent = {width, height};
 
-        actual_extent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, actual_extent.width));
-        actual_extent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, actual_extent.height));
+        actual_extent.width = std::max(capabilities.minImageExtent.width, 
+                                       std::min(capabilities.maxImageExtent.width, 
+                                                actual_extent.width)
+                                       );
+
+        actual_extent.height = std::max(capabilities.minImageExtent.height, 
+                                        std::min(capabilities.maxImageExtent.height, 
+                                                 actual_extent.height)
+                                        );
 
         return actual_extent;
     }
+
 }
 
 
-
+/**
+ * @brief Callback used to capture debug information
+ *
+ * @param flags
+ * @param objType
+ * @param obj
+ * @param location
+ * @param code
+ * @param layerPrefix
+ * @param msg
+ * @param userData
+ *
+ * @return 
+ */
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
                                         VkDebugReportFlagsEXT flags,
                                         VkDebugReportObjectTypeEXT objType,
@@ -138,14 +210,25 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
 }
 
 
-bool check_device_extension_support(VkPhysicalDevice device) {
+/**
+ * @brief Checks the support of the physical device for the desired extensions
+ *
+ * @param device The physical device to check the extensions support of
+ * @param desired_extensions The extensions wanted to check
+ *
+ * @return Returns true if all the desired extensions are supported
+ */
+bool check_device_extension_support(VkPhysicalDevice device,
+                                    const std::vector<const char*>& desired_extensions) {
+
     uint32_t extension_count;
     vkEnumerateDeviceExtensionProperties(device, nullptr, &extension_count, nullptr);
 
     std::vector<VkExtensionProperties> available_extensions(extension_count);
     vkEnumerateDeviceExtensionProperties(device, nullptr, &extension_count, available_extensions.data());
 
-    std::set<std::string> required_extensions(device_extensions.begin(), device_extensions.end());
+    std::set<std::string> required_extensions(desired_extensions.begin(), 
+                                              desired_extensions.end());
 
     for (const auto& extension : available_extensions) {
       log->log("Found Vulkan device extension %s", extension.extensionName);
@@ -155,8 +238,17 @@ bool check_device_extension_support(VkPhysicalDevice device) {
     return required_extensions.empty();
 }
 
-bool is_device_suitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
-  bool extensions_supported = check_device_extension_support(device);
+/**
+ * @brief Checks if the given physical device is suitable for our application
+ *
+ * @param device The physical device to check for
+ * @param surface The rendering surface 
+ *
+ * @return Returns true if the device is suitable
+ */
+static bool is_device_suitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
+
+  bool extensions_supported = check_device_extension_support(device, device_extensions);
 
   bool swap_chain_adequate = false;
   if(extensions_supported) {
@@ -165,29 +257,29 @@ bool is_device_suitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
   }
 
   return queue_indices.is_complete() && extensions_supported && swap_chain_adequate;
-  }
+}
 
-void init_rendering(const Config& config, GLFWwindow* window) {
-
+static void create_vulkan_instance() {
 
   // Getting Available Validation Layers
   uint32_t layer_count;
   vkEnumerateInstanceLayerProperties(&layer_count, nullptr);
+
   std::vector<VkLayerProperties> available_layers(layer_count);
   vkEnumerateInstanceLayerProperties(&layer_count, available_layers.data()); 
 
-  for (const std::string& layer : config.m_vk_validation_layers) {
+  for (const char* layer : validation_layers) {
     bool layer_found = false;
     for (const auto& layerProperties : available_layers) {
-      if (strcmp(layer.c_str(), layerProperties.layerName) == 0) {
-        log->log("Found validation layer %s", layer.c_str());
+      if (strcmp(layer, layerProperties.layerName) == 0) {
+        log->log("Found validation layer %s", layer);
         layer_found = true;
         break;
       }
     }
 
     if (!layer_found) {
-      throw std::runtime_error("Validation layer "+layer+" not found");
+      throw std::runtime_error("Validation layer "+std::string(layer)+" not found");
     }
   }
 
@@ -205,11 +297,8 @@ void init_rendering(const Config& config, GLFWwindow* window) {
   create_info.pApplicationInfo = &app_info;
 
   if(enable_validation_layers) {
-    create_info.enabledLayerCount = static_cast<uint32_t>(config.m_vk_validation_layers.size());
-    for(const std::string& str : config.m_vk_validation_layers) {
-      layers.push_back(str.c_str());
-    }
-    create_info.ppEnabledLayerNames = layers.data();
+    create_info.enabledLayerCount = static_cast<uint32_t>(validation_layers.size());
+    create_info.ppEnabledLayerNames = validation_layers.data();
   }
 
   // Adding GLFW and other required extensions
@@ -227,7 +316,6 @@ void init_rendering(const Config& config, GLFWwindow* window) {
 
   create_info.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
   create_info.ppEnabledExtensionNames = extensions.data();
-  create_info.enabledLayerCount = 0;
 
 
   if(vkCreateInstance(&create_info, 
@@ -235,6 +323,9 @@ void init_rendering(const Config& config, GLFWwindow* window) {
                       &vulkan_instance) != VK_SUCCESS) {
     throw std::runtime_error("failed to create instance!");
   }
+}
+
+static void create_surface(GLFWwindow* window) {
 
   if (glfwCreateWindowSurface(vulkan_instance, 
                               window, 
@@ -243,6 +334,9 @@ void init_rendering(const Config& config, GLFWwindow* window) {
     throw std::runtime_error("failed to create window surface!");
   }
 
+}
+
+static void add_debug_handler() {
   // Adding debug callback
   if(enable_validation_layers) {
     VkDebugReportCallbackCreateInfoEXT debug_callback_info = {};
@@ -251,8 +345,13 @@ void init_rendering(const Config& config, GLFWwindow* window) {
     debug_callback_info.pfnCallback = debug_callback;
 
     auto func = (PFN_vkCreateDebugReportCallbackEXT) vkGetInstanceProcAddr(vulkan_instance, "vkCreateDebugReportCallbackEXT");
-    func(vulkan_instance, &debug_callback_info, nullptr, &report_callback);
+    if(func(vulkan_instance, &debug_callback_info, nullptr, &report_callback) != VK_SUCCESS) {
+      throw std::runtime_error("Failed to create debug callback!");
+    }
   }
+}
+
+static void create_physical_device() {
 
 	// Creating Physical Device
   uint32_t device_count = 0;
@@ -272,6 +371,7 @@ void init_rendering(const Config& config, GLFWwindow* window) {
 		vkGetPhysicalDeviceQueueFamilyProperties(device, 
                                              &queue_familty_count, 
                                              nullptr);
+
 		std::vector<VkQueueFamilyProperties> queue_families(queue_familty_count);
 		vkGetPhysicalDeviceQueueFamilyProperties(device, 
                                              &queue_familty_count, 
@@ -302,7 +402,9 @@ void init_rendering(const Config& config, GLFWwindow* window) {
   if (physical_device == VK_NULL_HANDLE) {
     throw std::runtime_error("failed to find a suitable GPU!");
   }
+}
 
+static void create_logical_device() {
 
   // Creating logical devie
   std::vector<VkDeviceQueueCreateInfo> queue_create_infos;
@@ -329,8 +431,8 @@ void init_rendering(const Config& config, GLFWwindow* window) {
   createInfo.ppEnabledExtensionNames = device_extensions.data();
 
   if (enable_validation_layers) {
-    createInfo.enabledLayerCount = static_cast<uint32_t>(layers.size());
-    createInfo.ppEnabledLayerNames = layers.data();
+    createInfo.enabledLayerCount = static_cast<uint32_t>(validation_layers.size());
+    createInfo.ppEnabledLayerNames = validation_layers.data();
   } else {
     createInfo.enabledLayerCount = 0;
   }
@@ -341,19 +443,31 @@ void init_rendering(const Config& config, GLFWwindow* window) {
                      &logical_device) != VK_SUCCESS) {
     throw std::runtime_error("failed to create logical device!");
   }
+}
 
+static void create_command_queues() {
   // Retrieving queues
   vkGetDeviceQueue(logical_device, queue_indices.m_graphics_queue, 0, &graphics_queue);
   vkGetDeviceQueue(logical_device, queue_indices.m_present_queue, 0, &present_queue);
+}
+
+static void create_swap_chain() {
 
   // Creating Swap chain
-  SwapChainSupportDetails swap_chain_support = query_sc_support_details(physical_device, window_surface);
-  VkSurfaceFormatKHR surface_format = choose_swap_surface_format(swap_chain_support.m_formats);
-  VkPresentModeKHR present_mode = choose_swap_present_format(swap_chain_support.m_present_modes);
-  VkExtent2D extent = choose_swap_extent(swap_chain_support.m_capabilities, config);
+  SwapChainSupportDetails swap_chain_support = query_sc_support_details(physical_device, 
+                                                                        window_surface);
+
+  VkSurfaceFormatKHR surface_format = choose_sc_surface_format(swap_chain_support.m_formats);
+
+  VkPresentModeKHR present_mode = choose_sc_present_mode(swap_chain_support.m_present_modes);
+
+  VkExtent2D extent = choose_sc_extent(swap_chain_support.m_capabilities, 
+                                       viewport_width, 
+                                       viewport_height);
 
   uint32_t image_count = swap_chain_support.m_capabilities.minImageCount + 1;
-  if (swap_chain_support.m_capabilities.maxImageCount > 0 && image_count > swap_chain_support.m_capabilities.maxImageCount) {
+  if (swap_chain_support.m_capabilities.maxImageCount > 0 && 
+      image_count > swap_chain_support.m_capabilities.maxImageCount) {
     image_count = swap_chain_support.m_capabilities.maxImageCount;
   }
 
@@ -395,8 +509,32 @@ void init_rendering(const Config& config, GLFWwindow* window) {
   }
 }
 
-void terminate_rendering() {
+void init_rendering(const Config& config, 
+                    GLFWwindow* window) {
 
+  for(auto& layer : config.m_vk_validation_layers) {
+    char* str = new char[strlen(layer.c_str())+1];
+    std::strcpy(str, layer.c_str());
+    validation_layers.push_back(str);
+  }
+  viewport_width = config.m_viewport_width;
+  viewport_height = config.m_viewport_height;
+
+  if(enable_validation_layers) {
+    log->warning("Vulkan validation layers loaded");
+  }
+
+  create_vulkan_instance();
+  create_surface(window);
+  add_debug_handler();
+  create_physical_device();
+  create_logical_device();
+  create_command_queues();
+  create_swap_chain();
+
+}
+
+void terminate_rendering() {
 
   vkDestroySwapchainKHR(logical_device, swap_chain, nullptr);
   vkDestroyDevice(logical_device, nullptr);
@@ -407,8 +545,9 @@ void terminate_rendering() {
     func(vulkan_instance, report_callback, nullptr);
   }
   vkDestroyInstance(vulkan_instance, nullptr);
+  for(const char * str : validation_layers) {
+    delete [] str;
+  }
 }
-
-
 
 }
