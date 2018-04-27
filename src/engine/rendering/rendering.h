@@ -28,6 +28,13 @@ void init_rendering(const Config& config, GLFWwindow* window);
  */
 void terminate_rendering();
 
+
+/**
+ * @brief Draws a frame
+ */
+void draw_frame();
+
 }
+
 
 #endif /* ifndef _TNA_RENDERING_H_ */

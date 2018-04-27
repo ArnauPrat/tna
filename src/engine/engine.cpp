@@ -92,7 +92,8 @@ void run(GameApp* game_app) {
     // Keep running
     glfwPollEvents();
     current_app->on_frame_update();
-    glfwSwapBuffers(window);
+    draw_frame();
+    //glfwSwapBuffers(window);
   }
 
   current_app->on_app_finish();

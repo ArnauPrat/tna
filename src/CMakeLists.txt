@@ -61,6 +61,10 @@ set(TNA_SOURCE_FILES
   engine/game_app.cpp
   engine/rendering/rendering.h
   engine/rendering/rendering.cpp
+  engine/rendering/shaders.h
+  engine/rendering/shaders.cpp
+  engine/tools/files.h
+  engine/tools/files.cpp
   game.cpp
   game.h
   main.cpp
