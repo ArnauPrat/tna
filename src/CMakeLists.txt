@@ -36,6 +36,13 @@ set(Vulkan_INCLUDE_DIR "${Vulkan_SDK_ROOT}/include")
 set(Vulkan_LIBRARIES_DIR "${Vulkan_SDK_ROOT}/lib")
 set(Vulkan_LIBRARIES "libvulkan.so")
 
+### Setting up boost
+set(Boost_USE_STATIC_LIBS OFF) 
+set(Boost_USE_MULTITHREADED ON)  
+set(Boost_USE_STATIC_RUNTIME OFF) 
+find_package(Boost 1.66 COMPONENTS program_options date_time thread system locale context REQUIRED)
+
+
 include_directories(${CMAKE_SOURCE_DIR}/src)
 include_directories(${FURIOUS_INCLUDE_DIR})
 include_directories(${BULLET_INCLUDE_DIR})
@@ -54,17 +61,25 @@ set(TNA_SOURCE_FILES
   engine/config.h
   engine/engine.cpp
   engine/engine.h
+  engine/game_app.cpp
+  engine/game_app.h
   engine/log.cpp
   engine/log.h
-  engine/types.h
-  engine/game_app.h
-  engine/game_app.cpp
-  engine/rendering/rendering.h
-  engine/rendering/rendering.cpp
-  engine/rendering/shaders.h
-  engine/rendering/shaders.cpp
-  engine/tools/files.h
+  engine/rendering/mesh.h
+  engine/rendering/renderer.cpp
+  engine/rendering/renderer.h
+  engine/rendering/shader.cpp
+  engine/rendering/shader.h
+  engine/rendering/shader_tools.cpp
+  engine/rendering/shader_tools.h
+  engine/rendering/vertex.h
+  engine/resources/directory_registry.cpp
+  engine/resources/directory_registry.h
+  engine/resources/resource_registry.h
+  engine/resources/resource_registry.inl
   engine/tools/files.cpp
+  engine/tools/files.h
+  engine/types.h
   game.cpp
   game.h
   main.cpp
@@ -80,5 +95,6 @@ target_link_libraries(tna
   ${BULLET_LIBRARIES} 
   glfw
   ${Vulkan_LIBRARIES}
+  ${Boost_LIBRARIES}
   )
 

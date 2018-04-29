@@ -4,7 +4,8 @@
 #include "common.h"
 #include "config.h"
 #include "game_app.h"
-#include "rendering/rendering.h"
+#include "rendering/renderer.h"
+#include "resources/directory_registry.h"
 #include <fstream>
 #include <furious/furious.h>
 #include <glm/glm.hpp>
@@ -42,6 +43,8 @@ void initialize() {
     config = load_config("./config.ini");
   } 
 
+  register_directory("./");
+
   // Initializing Furious
   furious::init();
 
@@ -49,7 +52,6 @@ void initialize() {
   glfwInit();
 
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-  glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
   window = glfwCreateWindow(config.m_viewport_width, 
                             config.m_viewport_height, 
                             "TNA", 
@@ -61,7 +63,7 @@ void initialize() {
   glfwMakeContextCurrent(window);
   glfwSetKeyCallback(window, key_callback);
 
-  init_rendering(config, window);
+  rendering::init_renderer(config, window);
 
 }
 
@@ -71,7 +73,7 @@ void terminate() {
     current_app->on_app_finish();
   }
 
-  terminate_rendering();
+  rendering::terminate_renderer();
 
   if(window != nullptr) {
     glfwDestroyWindow(window);
@@ -92,8 +94,7 @@ void run(GameApp* game_app) {
     // Keep running
     glfwPollEvents();
     current_app->on_frame_update();
-    draw_frame();
-    //glfwSwapBuffers(window);
+    rendering::draw_frame();
   }
 
   current_app->on_app_finish();

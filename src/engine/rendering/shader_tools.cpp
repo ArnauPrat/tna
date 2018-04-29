@@ -4,6 +4,7 @@
 #include "../common.h"
 
 namespace tna {
+namespace rendering {
 
 
 VkShaderModule create_shader_module(VkDevice device, 
@@ -51,5 +52,6 @@ VkPipelineShaderStageCreateInfo build_fragment_shader_stage(VkShaderModule shade
 	fragment_shader_stage_info.pName = "main";
   return fragment_shader_stage_info;
 }
-  
+
+}
 } /* tna */ 
