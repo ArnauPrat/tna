@@ -1,6 +1,7 @@
 
 
 
+#include <iostream>
 
 namespace tna {
 
@@ -26,7 +27,7 @@ template<typename T>
   void  ResourceRegistry<T>::unload(const std::string& resource_name) {
     auto it = m_resources.find(resource_name);
     if(it != m_resources.end()) {
-      T::unload(it.second);
+      T::unload(it->second);
     }
   }
 

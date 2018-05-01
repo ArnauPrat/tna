@@ -15,8 +15,6 @@ struct Shader {
 
   static void unload(Shader* shader);
 
-  VkShaderModule  m_shader_module;
-
 };
 
 }

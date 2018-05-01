@@ -1,30 +1,22 @@
 
 
-#include "shader.h"
-#include "../config.h"
-#include "../common.h"
-#include "../tools/files.h"
-#include "../resources/resource_registry.h"
-#include "shader_tools.h"
-#include "vertex.h"
-#include <cstring>
-#include <set>
-#include <limits>
-#include <array>
 
+#include "../../common.h"
+#include "../../config.h"
+#include "../../resources/resource_registry.h"
+#include "../../tools/files.h"
+#include "../vertex.h"
+#include "vkshader.h"
+#include "vkshader_tools.h"
+#include "vkvertex_tools.h"
+#include <array>
+#include <cstring>
 #include <glm/glm.hpp>
+#include <limits>
+#include <set>
 
 namespace tna {
 namespace rendering {
-
-VkBuffer m_vertex_buffer;
-VkDeviceMemory m_vertex_memory;
-
-const std::vector<Vertex> vertices = {
-    {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-    {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-    {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
-};
 
 /**
  * @brief Structure used to store the indices to the different families of
@@ -212,7 +204,7 @@ const bool enable_validation_layers = true;
 /**
  * @brief Resource registry for the shaders
  */
-ResourceRegistry<Shader>*  shader_registry;
+ResourceRegistry<Shader>*       m_shader_registry;
 
 /**
  * @brief Queries the physical device for the actual swap chain support
@@ -701,22 +693,28 @@ static void create_image_views() {
 }
 
 static void create_graphics_pipeline() {
-  std::vector<char> vertex_shader_code = read_file("vert.spv");
-  std::vector<char> fragment_shader_code = read_file("frag.spv");
 
-  VkShaderModule vertex_shader = create_shader_module(m_logical_device, 
-                                                      vertex_shader_code);
+  optional<Shader*> vertex_shader = m_shader_registry->load("shaders/vert.spv");
+  optional<Shader*> fragment_shader = m_shader_registry->load("shaders/frag.spv");
+  
+  if(!vertex_shader) {
+    throw std::runtime_error("Vertex shader not found");
+  }
 
-  VkShaderModule fragment_shader = create_shader_module(m_logical_device, 
-                                                        fragment_shader_code);
+  if(!fragment_shader) {
+    throw std::runtime_error("Fragment shader not found");
+  }
 
-  VkPipelineShaderStageCreateInfo vertex_shader_stage = build_vertex_shader_stage(vertex_shader);
-  VkPipelineShaderStageCreateInfo fragment_shader_stage = build_fragment_shader_stage(fragment_shader);
+  VkShader* vkvertex_shader = static_cast<VkShader*>(vertex_shader.get());
+  VkShader* vkfragment_shader = static_cast<VkShader*>(fragment_shader.get());
+
+  VkPipelineShaderStageCreateInfo vertex_shader_stage = build_vertex_shader_stage(vkvertex_shader->m_shader_module);
+  VkPipelineShaderStageCreateInfo fragment_shader_stage = build_fragment_shader_stage(vkfragment_shader->m_shader_module);
 
   VkPipelineShaderStageCreateInfo shader_stages[] = {vertex_shader_stage, fragment_shader_stage};
 
-  VkVertexInputBindingDescription binding_description = Vertex::get_binding_description();
-  std::array<VkVertexInputAttributeDescription,2> attribute_descriptions = Vertex::get_attribute_descriptions();
+  VkVertexInputBindingDescription binding_description = get_binding_description();
+  std::array<VkVertexInputAttributeDescription,3> attribute_descriptions = get_attribute_descriptions();
 
   VkPipelineVertexInputStateCreateInfo vertex_infput_info = {};
   vertex_infput_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -900,11 +898,9 @@ static void create_graphics_pipeline() {
     }
   }
 
-  destroy_shader_module(m_logical_device,
-                        vertex_shader);
+  m_shader_registry->unload("shaders/vert.spv");
+  m_shader_registry->unload("shaders/frag.spv");
 
-  destroy_shader_module(m_logical_device,
-                        fragment_shader);
 }
 
 static void create_command_pool() {
@@ -965,11 +961,12 @@ static void create_command_buffers() {
 
     vkCmdBindPipeline(m_command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
 
-    VkBuffer vertexBuffers[] = {m_vertex_buffer};
+    /*VkBuffer vertexBuffers[] = {m_vertex_buffer};
     VkDeviceSize offsets[] = {0};
     vkCmdBindVertexBuffers(m_command_buffers[i], 0, 1, vertexBuffers, offsets);
 
     vkCmdDraw(m_command_buffers[i], static_cast<uint32_t>(vertices.size()), 1, 0, 0);
+    */
 
     vkCmdEndRenderPass(m_command_buffers[i]);
 
@@ -1028,20 +1025,6 @@ static void recreate_swap_chain() {
   create_command_buffers();
 }
 
-static uint32_t find_memory_type(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
-  VkPhysicalDeviceMemoryProperties memProperties;
-  vkGetPhysicalDeviceMemoryProperties(m_physical_device, &memProperties);
-
-  for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
-    if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-      return i;
-    }
-  }
-
-
-  throw std::runtime_error("failed to find suitable memory type!");
-
-}
 
 ////////////////////////////////////////////////
 ////////////// PUBLIC METHODS //////////////////
@@ -1069,7 +1052,7 @@ void init_renderer(const Config& config,
   create_logical_device();
 
 
-  shader_registry = new ResourceRegistry<Shader>{};
+  m_shader_registry = new ResourceRegistry<Shader>{};
 
 
   create_command_queues();
@@ -1079,40 +1062,6 @@ void init_renderer(const Config& config,
   create_image_views();
   create_graphics_pipeline();
 
-
-  VkBufferCreateInfo buffer_info = {};
-  buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-  buffer_info.size = sizeof(vertices[0]) * vertices.size();
-
-  buffer_info.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-  buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-  if (vkCreateBuffer(m_logical_device, &buffer_info, nullptr, &m_vertex_buffer) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create vertex buffer!");
-  }
-
-	VkMemoryRequirements memRequirements;
-	vkGetBufferMemoryRequirements(m_logical_device, m_vertex_buffer, &memRequirements);
-
-
-  VkPhysicalDeviceMemoryProperties memProperties;
-  vkGetPhysicalDeviceMemoryProperties(m_physical_device, &memProperties);
-
-  VkMemoryAllocateInfo allocInfo = {};
-  allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-  allocInfo.allocationSize = memRequirements.size;
-  allocInfo.memoryTypeIndex = find_memory_type(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-  if (vkAllocateMemory(m_logical_device, &allocInfo, nullptr, &m_vertex_memory) != VK_SUCCESS) {
-    throw std::runtime_error("failed to allocate vertex buffer memory!");
-  }
-
-  vkBindBufferMemory(m_logical_device, m_vertex_buffer, m_vertex_memory, 0);
-
-
-  void* data;
-  vkMapMemory(m_logical_device, m_vertex_memory, 0, buffer_info.size, 0, &data);
-  memcpy(data, vertices.data(), (size_t) buffer_info.size);
-  vkUnmapMemory(m_logical_device, m_vertex_memory);
 
   create_command_buffers();
   create_semaphores();
@@ -1128,13 +1077,9 @@ void terminate_renderer() {
 
   clean_up_swap_chain();
 
-	vkDestroyBuffer(m_logical_device, m_vertex_buffer, nullptr);
-  vkFreeMemory(m_logical_device, m_vertex_memory, nullptr);
-
   vkDestroyCommandPool(m_logical_device, m_command_pool, nullptr);
 
-
-  delete shader_registry;
+  delete m_shader_registry;
 
   vkDestroyDevice(m_logical_device, 
                   nullptr);
@@ -1215,19 +1160,6 @@ void draw_frame() {
   }
 
   vkQueueWaitIdle(m_present_queue);
-}
-
-
-VkDevice         logical_device() {
-  return m_logical_device;
-} 
-
-VkPhysicalDevice physical_device() {
-  return m_physical_device;
-}
-
-VkInstance       vulkan_instance() {
-  return m_vulkan_instance;
 }
 
 }

@@ -36,11 +36,6 @@ void terminate_renderer();
  */
 void draw_frame();
 
-VkDevice         logical_device();
-
-VkPhysicalDevice physical_device();
-
-VkInstance       vulkan_instance();
 
 }
 

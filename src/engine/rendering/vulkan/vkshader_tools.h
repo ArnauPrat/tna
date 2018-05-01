@@ -3,7 +3,7 @@
 #ifndef _TNA_SHADER_TOOLS_H_
 #define _TNA_SHADER_TOOLS_H_ value
 
-#include <vulkan/vulkan.h>
+#include "vkrenderer.h"
 #include <string>
 #include <vector>
 
