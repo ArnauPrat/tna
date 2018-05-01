@@ -6,6 +6,10 @@
 #include "../../resources/resource_registry.h"
 #include "../../tools/files.h"
 #include "../vertex.h"
+
+#define VMA_IMPLEMENTATION
+#include "vkmem_alloc.h"
+
 #include "vkshader.h"
 #include "vkshader_tools.h"
 #include "vkvertex_tools.h"
@@ -205,6 +209,9 @@ const bool enable_validation_layers = true;
  * @brief Resource registry for the shaders
  */
 ResourceRegistry<Shader>*       m_shader_registry;
+
+
+VmaAllocator                    m_vkallocator;
 
 /**
  * @brief Queries the physical device for the actual swap chain support
@@ -1051,6 +1058,12 @@ void init_renderer(const Config& config,
   create_physical_device();
   create_logical_device();
 
+  VmaAllocatorCreateInfo allocator_info = {};
+  allocator_info.physicalDevice = m_physical_device;
+  allocator_info.device = m_logical_device;
+  VmaAllocator allocator;
+  vmaCreateAllocator(&allocator_info, &allocator);
+
 
   m_shader_registry = new ResourceRegistry<Shader>{};
 
@@ -1061,7 +1074,6 @@ void init_renderer(const Config& config,
   create_swap_chain();
   create_image_views();
   create_graphics_pipeline();
-
 
   create_command_buffers();
   create_semaphores();
@@ -1080,6 +1092,8 @@ void terminate_renderer() {
   vkDestroyCommandPool(m_logical_device, m_command_pool, nullptr);
 
   delete m_shader_registry;
+
+  vmaDestroyAllocator(m_vkallocator);
 
   vkDestroyDevice(m_logical_device, 
                   nullptr);

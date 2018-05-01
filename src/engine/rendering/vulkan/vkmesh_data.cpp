@@ -6,6 +6,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "vkmem_alloc.h"
+
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "../tiny_obj_loader.h"
@@ -25,16 +27,6 @@ namespace std {
 
 namespace tna {
 namespace rendering {
-
-VkMeshData::~VkMeshData() {
-
-  vkDestroyBuffer(m_logical_device, m_vertex_buffer, nullptr);
-  vkFreeMemory(m_logical_device, m_vertex_buffer_memory, nullptr);
-
-  vkDestroyBuffer(m_logical_device, m_index_buffer, nullptr);
-  vkFreeMemory(m_logical_device, m_index_buffer_memory, nullptr);
-
-}
 
 
 MeshData* MeshData::load(const std::string& path ) {
@@ -85,11 +77,11 @@ MeshData* MeshData::load(const std::string& path ) {
 
   create_vertex_buffer(vertices, 
                        mesh_data->m_vertex_buffer,
-                       mesh_data->m_vertex_buffer_memory);
+                       mesh_data->m_vertex_buffer_allocation);
 
   create_index_buffer(indices, 
-                       mesh_data->m_index_buffer,
-                       mesh_data->m_index_buffer_memory);
+                      mesh_data->m_index_buffer,
+                      mesh_data->m_index_buffer_allocation);
 
 
   return mesh_data;
@@ -97,6 +89,14 @@ MeshData* MeshData::load(const std::string& path ) {
 
 void MeshData::unload(MeshData* mesh_data) {
   VkMeshData* vkmesh_data = static_cast<VkMeshData*>(mesh_data);
+
+  vmaDestroyBuffer(m_vkallocator,
+                   vkmesh_data->m_vertex_buffer,
+                   vkmesh_data->m_vertex_buffer_allocation);
+
+  vmaDestroyBuffer(m_vkallocator,
+                   vkmesh_data->m_index_buffer,
+                   vkmesh_data->m_index_buffer_allocation);
   delete vkmesh_data;
 }
   

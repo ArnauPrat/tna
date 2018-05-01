@@ -5,6 +5,7 @@
 #define _TNA_VKRENDERER_H_ value
 
 #include <vulkan/vulkan.h>
+#include "vkmem_alloc.h"
 
 namespace tna {
 namespace rendering {
@@ -20,6 +21,8 @@ extern VkCommandPool    m_command_pool;
 extern VkQueue          m_graphics_queue;
 
 extern VkQueue          m_present_queue;
+
+extern VmaAllocator     m_vkallocator;
 
 }
 } /* tna */ 

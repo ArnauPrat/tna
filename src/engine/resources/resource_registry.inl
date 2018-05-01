@@ -18,6 +18,7 @@ template<typename T>
     auto path = get_path(resource_name);
     if(path) {
       T* resource = T::load(*path);
+      m_resources.insert(std::make_pair(resource_name, resource));
       return optional<T*>{resource};
     }
     return optional<T*>{};
@@ -28,6 +29,7 @@ template<typename T>
     auto it = m_resources.find(resource_name);
     if(it != m_resources.end()) {
       T::unload(it->second);
+      m_resources.erase(it);
     }
   }
 

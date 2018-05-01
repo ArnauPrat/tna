@@ -7,7 +7,7 @@
 namespace tna {
 namespace rendering {
 
-static uint32_t find_memory_type(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
+/*static uint32_t find_memory_type(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
   VkPhysicalDeviceMemoryProperties memProperties;
   vkGetPhysicalDeviceMemoryProperties(m_physical_device, &memProperties);
 
@@ -19,43 +19,29 @@ static uint32_t find_memory_type(uint32_t typeFilter, VkMemoryPropertyFlags prop
 
   throw std::runtime_error("failed to find suitable memory type!");
 
-}
+}*/
 
 void create_buffer(VkDeviceSize size, 
-                  VkBufferUsageFlags usage, 
-                  VkMemoryPropertyFlags properties, 
-                  VkBuffer& buffer, 
-                  VkDeviceMemory& buffer_memory) {
+                   VkBufferUsageFlags buffer_usage, 
+                   VmaMemoryUsage memory_usage,
+                   VkBuffer& buffer, 
+                   VmaAllocation& buffer_allocation) {
 
-  VkBufferCreateInfo buffer_info = {};
-  buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-  buffer_info.size = size;
-  buffer_info.usage = usage;
-  buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+  VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+  bufferInfo.size = size;
+  bufferInfo.usage = buffer_usage;
 
-  if (vkCreateBuffer(m_logical_device, 
-                     &buffer_info, 
-                     nullptr, 
-                     &buffer) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create buffer!");
+  VmaAllocationCreateInfo alloc_info = {};
+  alloc_info.usage = memory_usage;
+
+  if(vmaCreateBuffer(m_vkallocator, 
+                     &bufferInfo, 
+                     &alloc_info, 
+                     &buffer, 
+                     &buffer_allocation, 
+                     nullptr) != VK_SUCCESS)  {
+    throw std::runtime_error("failed to allocate memory buffer!");
   }
-
-  VkMemoryRequirements memRequirements;
-  vkGetBufferMemoryRequirements(m_logical_device, buffer, &memRequirements);
-
-  VkMemoryAllocateInfo alloc_info = {};
-  alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-  alloc_info.allocationSize = memRequirements.size;
-  alloc_info.memoryTypeIndex = find_memory_type(memRequirements.memoryTypeBits, properties);
-
-  if (vkAllocateMemory(m_logical_device, 
-                       &alloc_info, 
-                       nullptr, 
-                       &buffer_memory) != VK_SUCCESS) {
-    throw std::runtime_error("failed to allocate buffer memory!");
-  }
-
-  vkBindBufferMemory(m_logical_device, buffer, buffer_memory, 0);
 
 }
 
@@ -98,73 +84,75 @@ void copy_buffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
 
 void create_vertex_buffer(const std::vector<Vertex>& vertices, 
                           VkBuffer& buffer, 
-                          VkDeviceMemory& buffer_memory) {
+                          VmaAllocation& buffer_memory) {
 
   VkDeviceSize buffer_size = sizeof(vertices[0]) * vertices.size();
 
   VkBuffer staging_buffer;
-  VkDeviceMemory staging_buffer_memory;
+  VmaAllocation staging_buffer_allocation;
 
   create_buffer(buffer_size, 
                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
-                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+                VMA_MEMORY_USAGE_CPU_ONLY, 
                 staging_buffer, 
-                staging_buffer_memory);
+                staging_buffer_allocation);
 
   void* data;
-  vkMapMemory(m_logical_device, 
-              staging_buffer_memory, 
-              0, 
-              buffer_size, 
-              0, 
-              &data);
-
+  vmaMapMemory(m_vkallocator, staging_buffer_allocation, &data);
   memcpy(data, vertices.data(), (size_t) buffer_size);
-
-  vkUnmapMemory(m_logical_device, staging_buffer_memory);
+  vmaUnmapMemory(m_vkallocator, staging_buffer_allocation);
 
   create_buffer(buffer_size, 
                VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 
-               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
+               VMA_MEMORY_USAGE_GPU_ONLY,
                buffer, 
                buffer_memory);
 
   copy_buffer(staging_buffer, buffer, buffer_size);
 
-  vkDestroyBuffer(m_logical_device, staging_buffer, nullptr);
-  vkFreeMemory(m_logical_device, staging_buffer_memory, nullptr);
+  destroy_buffer(staging_buffer,
+                 staging_buffer_allocation);
 
 }
 
 void create_index_buffer(const std::vector<uint32_t>& indices, 
                           VkBuffer& buffer, 
-                          VkDeviceMemory& buffer_memory) {
+                          VmaAllocation& buffer_memory) {
 
   VkDeviceSize buffer_size = sizeof(indices[0]) * indices.size();
 
   VkBuffer staging_buffer;
-  VkDeviceMemory staging_buffer_memory;
+  VmaAllocation staging_buffer_allocation;
+
   create_buffer(buffer_size, 
-               VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
-               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
-               staging_buffer, 
-               staging_buffer_memory);
+                VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+                VMA_MEMORY_USAGE_CPU_ONLY, 
+                staging_buffer, 
+                staging_buffer_allocation);
 
   void* data;
-  vkMapMemory(m_logical_device, staging_buffer_memory, 0, buffer_size, 0, &data);
+  vmaMapMemory(m_vkallocator, staging_buffer_allocation, &data);
   memcpy(data, indices.data(), (size_t) buffer_size);
-  vkUnmapMemory(m_logical_device, staging_buffer_memory);
+  vmaUnmapMemory(m_vkallocator, staging_buffer_allocation);
 
   create_buffer(buffer_size, 
-               VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 
-               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
+               VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 
+               VMA_MEMORY_USAGE_GPU_ONLY,
                buffer, 
                buffer_memory);
 
   copy_buffer(staging_buffer, buffer, buffer_size);
 
-  vkDestroyBuffer(m_logical_device, staging_buffer, nullptr);
-  vkFreeMemory(m_logical_device, staging_buffer_memory, nullptr);
+  destroy_buffer(staging_buffer,
+                 staging_buffer_allocation);
+}
+
+void destroy_buffer(VkBuffer buffer,
+                    VmaAllocation buffer_allocation) {
+
+  vmaDestroyBuffer(m_vkallocator,
+                   buffer,
+                   buffer_allocation);
 }
 
 } /* rendering */ 

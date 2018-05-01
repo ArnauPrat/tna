@@ -67,6 +67,7 @@ set(VK_RENDERER_SOURCE_FILES
   engine/rendering/vulkan/vkshader_tools.h
   engine/rendering/vulkan/vkvertex_tools.cpp
   engine/rendering/vulkan/vkvertex_tools.h
+  engine/rendering/vulkan/vkmem_alloc.h
   )
 
 set(TNA_SOURCE_FILES 

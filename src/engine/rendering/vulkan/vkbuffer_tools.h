@@ -8,6 +8,7 @@
 #include "../../common.h"
 #include "vkrenderer.h"
 #include <vector>
+#include "vkbuffer_tools.h"
 
 namespace tna {
 namespace rendering {
@@ -21,11 +22,14 @@ namespace rendering {
  * @param buffer The created buffer 
  * @param buffer_memory The created memory
  */
-void create_buffer( VkDeviceSize size, 
-                    VkBufferUsageFlags usage, 
-                    VkMemoryPropertyFlags properties, 
-                    VkBuffer& buffer, 
-                    VkDeviceMemory& buffer_memory);
+void create_buffer(VkDeviceSize size, 
+                   VkBufferUsageFlags usage, 
+                   VmaAllocationCreateInfo alloc_info,
+                   VkBuffer& buffer, 
+                   VmaAllocation& buffer_allocation);
+
+void destroy_buffer(VkBuffer buffer,
+                    VmaAllocation buffer_allocation);
 
 /**
  * @brief Copies the content of one buffer to another
@@ -47,7 +51,7 @@ void copy_buffer( VkBuffer src_buffer,
  */
 void create_vertex_buffer(const std::vector<Vertex>& vertices, 
                           VkBuffer& buffer, 
-                          VkDeviceMemory& buffer_memory);
+                          VmaAllocation& alloc_info);
 
 /**
  * @brief Creates an index buffer
@@ -58,7 +62,7 @@ void create_vertex_buffer(const std::vector<Vertex>& vertices,
  */
 void create_index_buffer(const std::vector<uint32_t>& vertices, 
                           VkBuffer& buffer, 
-                          VkDeviceMemory& buffer_memory);
+                          VmaAllocation& alloc_info);
 
   
 } /* rendering */ 
