@@ -24,7 +24,7 @@ namespace rendering {
  */
 void create_buffer(VkDeviceSize size, 
                    VkBufferUsageFlags usage, 
-                   VmaAllocationCreateInfo alloc_info,
+                   VmaMemoryUsage alloc_info,
                    VkBuffer& buffer, 
                    VmaAllocation& buffer_allocation);
 

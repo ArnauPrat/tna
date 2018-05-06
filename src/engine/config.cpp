@@ -41,7 +41,7 @@ Config load_config(const std::string& configFileName) {
 
       if (option == "ResourceDirectory") {
         inFile >> value;
-        register_directory(value); 
+        resources::register_directory(value); 
       }
 
       log->log("Parsed option %s with value %s", option.c_str(), value.c_str());

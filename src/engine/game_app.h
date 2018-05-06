@@ -6,17 +6,14 @@
 
 #include "entity.h"
 
+#include <furious/furious.h>
+
 struct GLFWwindow;
 
 class btCollisionConfiguration;
 class btCollisionDispatcher;
 class btBroadphaseInterface;
 class btCollisionWorld;
-
-namespace furious {
-class Database;
-class Workload;
-}
 
 namespace tna {
 

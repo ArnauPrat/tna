@@ -136,7 +136,7 @@ void create_index_buffer(const std::vector<uint32_t>& indices,
   vmaUnmapMemory(m_vkallocator, staging_buffer_allocation);
 
   create_buffer(buffer_size, 
-               VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 
+               VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 
                VMA_MEMORY_USAGE_GPU_ONLY,
                buffer, 
                buffer_memory);

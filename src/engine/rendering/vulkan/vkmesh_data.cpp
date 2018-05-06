@@ -56,10 +56,17 @@ MeshData* MeshData::load(const std::string& path ) {
       };
 
 
-      vertex.m_tex_coord = {
-        attrib.texcoords[2 * index.texcoord_index + 0],
-        1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
-      };
+      if(attrib.texcoords.size() != 0) {
+        vertex.m_tex_coord = {
+          attrib.texcoords[2 * index.texcoord_index + 0],
+          1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
+        };
+      } else {
+
+        vertex.m_tex_coord = {
+          0.0,
+          0.0};
+      }
 
       vertex.m_color = {1.0f, 1.0f, 1.0f};
 
@@ -69,7 +76,7 @@ MeshData* MeshData::load(const std::string& path ) {
         vertices.push_back(vertex);
       }
 
-      indices.push_back(indices.size());
+      indices.push_back(unique_vertices[vertex]);
     }
   }
 
@@ -82,6 +89,9 @@ MeshData* MeshData::load(const std::string& path ) {
   create_index_buffer(indices, 
                       mesh_data->m_index_buffer,
                       mesh_data->m_index_buffer_allocation);
+
+  mesh_data->m_num_vertices = vertices.size();
+  mesh_data->m_num_indices = indices.size();
 
 
   return mesh_data;

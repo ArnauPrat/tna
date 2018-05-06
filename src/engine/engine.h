@@ -6,12 +6,20 @@
 
 #include "game_app.h"
 #include "common.h"
+#include "rendering/rendering.h"
+#include "resources/resources.h"
+
+#define GLM_FORCE_RADIANS
 #include "glm/glm.hpp"
+#include <glm/gtc/matrix_transform.hpp>
+
+#include <furious/furious.h>
 
 namespace tna {
 
 class Config;
 class GameApp;
+
 
 /**
  * @brief Initializes the resources of the game engine

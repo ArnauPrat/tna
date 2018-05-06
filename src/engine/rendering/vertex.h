@@ -17,7 +17,6 @@ struct Vertex {
   glm::vec3 m_color;
   glm::vec2 m_tex_coord;
 
-
   bool operator==(const Vertex& other) const {
     return m_position == other.m_position && m_color == other.m_color && m_tex_coord == other.m_tex_coord;
   }

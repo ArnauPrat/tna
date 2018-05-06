@@ -6,7 +6,8 @@
 #include "../optional.h"
 
 namespace tna {
-
+namespace resources {
+  
 /**
  * @brief Registers a directory to be searched for resources
  *
@@ -23,7 +24,7 @@ void register_directory(const std::string& directory);
  */
 optional<std::string> get_path(const std::string& resource_name);
 
-  
 } /* tna */ 
+} /* resources */ 
 #endif /* ifndef _TNA_DIRECTORY_REGISTRY_H_ */
 

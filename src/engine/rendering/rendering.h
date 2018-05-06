@@ -6,7 +6,7 @@
 
 #include "renderer.h"
 #include "shader.h"
-#include "mesh.h"
+#include "mesh_data.h"
 
   
 #endif /* ifndef _TNA_RENDERING_H_ */

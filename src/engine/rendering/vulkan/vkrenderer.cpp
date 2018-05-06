@@ -3,24 +3,35 @@
 
 #include "../../common.h"
 #include "../../config.h"
-#include "../../resources/resource_registry.h"
+#include "../../resources/resources.h"
 #include "../../tools/files.h"
 #include "../vertex.h"
+
 
 #define VMA_IMPLEMENTATION
 #include "vkmem_alloc.h"
 
+#include "vkbuffer_tools.h"
+#include "vkmesh_data.h"
+#include "vkscene.h"
 #include "vkshader.h"
 #include "vkshader_tools.h"
 #include "vkvertex_tools.h"
 #include <array>
 #include <cstring>
+
+#define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 #include <limits>
 #include <set>
+#include <chrono>
 
 namespace tna {
 namespace rendering {
+
+#define MAX_PRIMITIVE_COUNT 65536
 
 /**
  * @brief Structure used to store the indices to the different families of
@@ -53,7 +64,6 @@ struct SwapChainSupportDetails {
 };
 
 
-
 /**
  * @brief Width of the viewport
  */
@@ -84,6 +94,9 @@ VkDebugReportCallbackEXT  m_report_callback = VK_NULL_HANDLE;
  * @brief Physical device
  */
 VkPhysicalDevice          m_physical_device = VK_NULL_HANDLE;
+
+
+VkPhysicalDeviceProperties m_mem_properties;
 
 
 /**
@@ -143,10 +156,19 @@ VkPipeline                m_pipeline;
 VkCommandPool             m_command_pool;
 
 /**
+ * @brief The descriptor pool
+ */
+VkDescriptorPool          m_descriptor_pool;
+
+/**
+ * @brief The descriptor set of the pipeline
+ */
+VkDescriptorSet           m_descriptor_set;
+
+/**
  * @brief Semaphore for synchronizing next frame image retrieval
  */
 VkSemaphore               m_image_available_semaphore;
-
 
 /**
  * @brief Sempahore to synchronize render pass finished
@@ -205,13 +227,31 @@ const bool enable_validation_layers = false;
 const bool enable_validation_layers = true;
 #endif
 
+
 /**
- * @brief Resource registry for the shaders
+ * @brief The memory allocator used to create Vulkan buffers
  */
-ResourceRegistry<Shader>*       m_shader_registry;
-
-
 VmaAllocator                    m_vkallocator;
+
+
+/**
+ * @brief The Vulkan Scene object to store the scene to render information
+ */
+VkScene                         m_scene;
+
+glm::mat4                       m_projection_matrix;
+
+glm::mat4                       m_view_matrix;
+
+struct UniformBufferObject {
+    glm::mat4 projmodelview;
+};
+
+
+VkDescriptorSetLayout m_descriptor_set_layout;
+VkBuffer              m_uniform_buffer;
+VmaAllocation         m_uniform_allocation;
+void*                 m_udata = nullptr;
 
 /**
  * @brief Queries the physical device for the actual swap chain support
@@ -556,6 +596,8 @@ static void create_physical_device() {
   if (m_physical_device == VK_NULL_HANDLE) {
     throw std::runtime_error("failed to find a suitable GPU!");
   }
+
+  vkGetPhysicalDeviceProperties(m_physical_device, &m_mem_properties);
 }
 
 static void create_logical_device() {
@@ -701,8 +743,10 @@ static void create_image_views() {
 
 static void create_graphics_pipeline() {
 
-  optional<Shader*> vertex_shader = m_shader_registry->load("shaders/vert.spv");
-  optional<Shader*> fragment_shader = m_shader_registry->load("shaders/frag.spv");
+
+
+  optional<Shader*> vertex_shader = resources::shader_registry->load("shaders/vert.spv");
+  optional<Shader*> fragment_shader = resources::shader_registry->load("shaders/frag.spv");
   
   if(!vertex_shader) {
     throw std::runtime_error("Vertex shader not found");
@@ -762,7 +806,7 @@ static void create_graphics_pipeline() {
   rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
   rasterizer.lineWidth = 1.0f;
   rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-  rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+  rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
   rasterizer.depthBiasEnable = VK_FALSE;
   rasterizer.depthBiasConstantFactor = 0.0f; // Optional
   rasterizer.depthBiasClamp = 0.0f; // Optional
@@ -800,10 +844,11 @@ static void create_graphics_pipeline() {
 
   VkPipelineLayoutCreateInfo pipeline_layout_info = {};
   pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-  pipeline_layout_info.setLayoutCount = 0; // Optional
-  pipeline_layout_info.pSetLayouts = nullptr; // Optional
+  pipeline_layout_info.setLayoutCount = 1; // Optional
+  pipeline_layout_info.pSetLayouts = &m_descriptor_set_layout; // Optional
   pipeline_layout_info.pushConstantRangeCount = 0; // Optional
   pipeline_layout_info.pPushConstantRanges = nullptr; // Optional
+
 
   if (vkCreatePipelineLayout(m_logical_device, &pipeline_layout_info, nullptr, &m_pipeline_layout) != VK_SUCCESS) {
     throw std::runtime_error("failed to create pipeline layout!");
@@ -905,8 +950,8 @@ static void create_graphics_pipeline() {
     }
   }
 
-  m_shader_registry->unload("shaders/vert.spv");
-  m_shader_registry->unload("shaders/frag.spv");
+  resources::shader_registry->unload("shaders/vert.spv");
+  resources::shader_registry->unload("shaders/frag.spv");
 
 }
 
@@ -916,7 +961,7 @@ static void create_command_pool() {
   VkCommandPoolCreateInfo pool_info = {};
   pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
   pool_info.queueFamilyIndex = m_queue_indices.m_graphics_queue;
-  pool_info.flags = 0; // Optional
+  pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT; // Optional
 
   if (vkCreateCommandPool(m_logical_device, 
                           &pool_info, 
@@ -925,6 +970,74 @@ static void create_command_pool() {
     throw std::runtime_error("failed to create command pool!");
   }
 
+}
+
+static void create_descriptor_pool() {
+
+  VkDescriptorPoolSize pool_size = {};
+  pool_size.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+  pool_size.descriptorCount = 1;
+
+  VkDescriptorPoolCreateInfo pool_info = {};
+  pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+  pool_info.poolSizeCount = 1;
+  pool_info.pPoolSizes = &pool_size;
+
+  pool_info.maxSets = 1;
+
+  if (vkCreateDescriptorPool(m_logical_device, &pool_info, nullptr, &m_descriptor_pool) != VK_SUCCESS) {
+    throw std::runtime_error("failed to create descriptor pool!");
+  }
+}
+
+static void create_descriptor_set() {
+
+  VkDescriptorSetLayoutBinding ubo_layout_info = {};
+  ubo_layout_info.binding = 0;
+  ubo_layout_info.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+  ubo_layout_info.descriptorCount = 1;
+  ubo_layout_info.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+  ubo_layout_info.pImmutableSamplers = nullptr; // Optional
+
+  VkDescriptorSetLayoutCreateInfo layout_info = {};
+  layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+  layout_info.bindingCount = 1;
+  layout_info.pBindings = &ubo_layout_info;
+
+
+  if (vkCreateDescriptorSetLayout(m_logical_device, &layout_info, nullptr, &m_descriptor_set_layout) != VK_SUCCESS) {
+    throw std::runtime_error("failed to create descriptor set layout!");
+  }
+
+  VkDescriptorSetLayout layouts[] = {m_descriptor_set_layout};
+  VkDescriptorSetAllocateInfo allocInfo = {};
+  allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+  allocInfo.descriptorPool = m_descriptor_pool;
+  allocInfo.descriptorSetCount = 1;
+  allocInfo.pSetLayouts = layouts;
+
+  if (vkAllocateDescriptorSets(m_logical_device, &allocInfo, &m_descriptor_set) != VK_SUCCESS) {
+    throw std::runtime_error("failed to allocate descriptor set!");
+  }
+
+}
+
+static void create_uniform_buffers() {
+
+  size_t device_alignment = m_mem_properties.limits.minUniformBufferOffsetAlignment;
+  size_t uniform_buffer_size = sizeof(UniformBufferObject);
+  size_t dynamic_alignment = (uniform_buffer_size / device_alignment) * device_alignment + ((uniform_buffer_size % device_alignment) > 0 ? device_alignment : 0);
+
+  size_t bufferSize = dynamic_alignment * MAX_PRIMITIVE_COUNT;
+
+  create_buffer(bufferSize, 
+                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+                VMA_MEMORY_USAGE_CPU_TO_GPU,
+                m_uniform_buffer, 
+                m_uniform_allocation);
+
+
+  vmaMapMemory(m_vkallocator, m_uniform_allocation, &m_udata);
 }
 
 static void create_command_buffers() {
@@ -943,44 +1056,6 @@ static void create_command_buffers() {
     throw std::runtime_error("failed to allocate command buffers!");
   }
 
-  for (size_t i = 0; i < m_command_buffers.size(); i++) {
-    VkCommandBufferBeginInfo begin_info = {};
-    begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    begin_info.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-    begin_info.pInheritanceInfo = nullptr; // Optional
-
-    if (vkBeginCommandBuffer(m_command_buffers[i], &begin_info) != VK_SUCCESS) {
-        throw std::runtime_error("failed to begin recording command buffer!");
-    }
-
-    VkRenderPassBeginInfo renderPassInfo = {};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = m_render_pass;
-    renderPassInfo.framebuffer = m_frame_buffers[i];
-    renderPassInfo.renderArea.offset = {0, 0};
-    renderPassInfo.renderArea.extent = m_extent;
-
-    VkClearValue clear_color = {0.0f, 0.0f, 0.0f, 1.0f};
-    renderPassInfo.clearValueCount = 1;
-    renderPassInfo.pClearValues = &clear_color;
-
-    vkCmdBeginRenderPass(m_command_buffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-    vkCmdBindPipeline(m_command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
-
-    /*VkBuffer vertexBuffers[] = {m_vertex_buffer};
-    VkDeviceSize offsets[] = {0};
-    vkCmdBindVertexBuffers(m_command_buffers[i], 0, 1, vertexBuffers, offsets);
-
-    vkCmdDraw(m_command_buffers[i], static_cast<uint32_t>(vertices.size()), 1, 0, 0);
-    */
-
-    vkCmdEndRenderPass(m_command_buffers[i]);
-
-    if (vkEndCommandBuffer(m_command_buffers[i]) != VK_SUCCESS) {
-      throw std::runtime_error("failed to record command buffer!");
-    }
-  }
 
 }
 
@@ -1032,6 +1107,94 @@ static void recreate_swap_chain() {
   create_command_buffers();
 }
 
+static void build_command_buffer(uint32_t index) {
+
+  m_view_matrix = m_scene.get_camera();
+  m_projection_matrix = glm::perspective(glm::radians(45.0f), m_extent.width / (float) m_extent.height, 0.1f, 10.0f);
+  m_projection_matrix[1][1] *= -1;
+
+  size_t device_alignment = m_mem_properties.limits.minUniformBufferOffsetAlignment;
+  size_t uniform_buffer_size = sizeof(UniformBufferObject);
+  size_t dynamic_alignment = (uniform_buffer_size / device_alignment) * device_alignment + ((uniform_buffer_size % device_alignment) > 0 ? device_alignment : 0);
+  
+  char* uniform_data = static_cast<char*>(m_udata);
+  auto meshes = m_scene.get_meshes();
+  for(size_t i = 0; i < meshes.size() && i < MAX_PRIMITIVE_COUNT; ++i) {
+    auto info = meshes[i];
+    UniformBufferObject ubo;
+    ubo.projmodelview = m_projection_matrix * m_scene.get_camera() * info.m_model_mat;
+    memcpy(&uniform_data[i*dynamic_alignment], &ubo, sizeof(ubo)); 
+  }
+
+  /// Update descriptor set
+  VkDescriptorBufferInfo buffer_info = {};
+  buffer_info.buffer = m_uniform_buffer;
+  buffer_info.offset = 0;
+  buffer_info.range = dynamic_alignment*meshes.size();
+
+  VkWriteDescriptorSet descriptor_write = {};
+  descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+  descriptor_write.dstSet = m_descriptor_set;
+  descriptor_write.dstBinding = 0;
+  descriptor_write.dstArrayElement = 0;
+
+  descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+  descriptor_write.descriptorCount = 1;
+
+  descriptor_write.pBufferInfo = &buffer_info;
+  descriptor_write.pImageInfo = nullptr; // Optional
+  descriptor_write.pTexelBufferView = nullptr; // Optional
+
+  vkUpdateDescriptorSets(m_logical_device, 1, &descriptor_write, 0, nullptr);
+
+  /// Setting up command buffer
+  VkCommandBufferBeginInfo begin_info = {};
+  begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+  begin_info.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+  begin_info.pInheritanceInfo = nullptr; // Optional
+
+  if (vkBeginCommandBuffer(m_command_buffers[index], &begin_info) != VK_SUCCESS) {
+    throw std::runtime_error("failed to begin recording command buffer!");
+  }
+
+  vkCmdBindPipeline(m_command_buffers[index], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
+
+  VkRenderPassBeginInfo renderpass_info = {};
+  renderpass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+  renderpass_info.renderPass = m_render_pass;
+  renderpass_info.framebuffer = m_frame_buffers[index];
+  renderpass_info.renderArea.offset = {0, 0};
+  renderpass_info.renderArea.extent = m_extent;
+
+  VkClearValue clear_color = {0.0f, 0.0f, 0.0f, 1.0f};
+  renderpass_info.clearValueCount = 1;
+  renderpass_info.pClearValues = &clear_color;
+
+  vkCmdBeginRenderPass(m_command_buffers[index], &renderpass_info, VK_SUBPASS_CONTENTS_INLINE);
+
+
+  for(size_t i = 0; i < meshes.size() && i < MAX_PRIMITIVE_COUNT; ++i) {
+    auto info = meshes[i];
+    VkBuffer vertex_buffers[] = {info.m_mesh_data->m_vertex_buffer};
+    VkDeviceSize offsets[] = {0};
+
+    vkCmdBindVertexBuffers(m_command_buffers[index], 0, 1, vertex_buffers, offsets);
+    vkCmdBindIndexBuffer(m_command_buffers[index], info.m_mesh_data->m_index_buffer, 0, VK_INDEX_TYPE_UINT32);
+    uint32_t offset = dynamic_alignment*i;
+    vkCmdBindDescriptorSets(m_command_buffers[index], 
+                            VK_PIPELINE_BIND_POINT_GRAPHICS, 
+                            m_pipeline_layout, 0, 1, &m_descriptor_set, 1, &offset);
+
+    vkCmdDrawIndexed(m_command_buffers[index], info.m_mesh_data->m_num_indices, 1, 0, 0, 0);
+  }
+
+  vkCmdEndRenderPass(m_command_buffers[index]);
+
+  if (vkEndCommandBuffer(m_command_buffers[index]) != VK_SUCCESS) {
+    throw std::runtime_error("failed to record command buffer!");
+  }
+}
+
 
 ////////////////////////////////////////////////
 ////////////// PUBLIC METHODS //////////////////
@@ -1061,19 +1224,17 @@ void init_renderer(const Config& config,
   VmaAllocatorCreateInfo allocator_info = {};
   allocator_info.physicalDevice = m_physical_device;
   allocator_info.device = m_logical_device;
-  VmaAllocator allocator;
-  vmaCreateAllocator(&allocator_info, &allocator);
-
-
-  m_shader_registry = new ResourceRegistry<Shader>{};
-
+  vmaCreateAllocator(&allocator_info, &m_vkallocator);
 
   create_command_queues();
   create_command_pool();
 
   create_swap_chain();
   create_image_views();
+  create_descriptor_pool();
+  create_descriptor_set();
   create_graphics_pipeline();
+  create_uniform_buffers();
 
   create_command_buffers();
   create_semaphores();
@@ -1084,14 +1245,20 @@ void terminate_renderer() {
 
   vkDeviceWaitIdle(m_logical_device);
 
+
+  resources::shader_registry->clear();
+  resources::mesh_registry->clear();
+
 	vkDestroySemaphore(m_logical_device, m_render_finished_semaphore, nullptr);
 	vkDestroySemaphore(m_logical_device, m_image_available_semaphore, nullptr);
 
   clean_up_swap_chain();
 
+  vkDestroyDescriptorPool(m_logical_device, m_descriptor_pool, nullptr);
+  vkDestroyDescriptorSetLayout(m_logical_device, m_descriptor_set_layout, nullptr);
+  vmaUnmapMemory(m_vkallocator, m_uniform_allocation);
+  destroy_buffer(m_uniform_buffer, m_uniform_allocation);
   vkDestroyCommandPool(m_logical_device, m_command_pool, nullptr);
-
-  delete m_shader_registry;
 
   vmaDestroyAllocator(m_vkallocator);
 
@@ -1112,7 +1279,12 @@ void terminate_renderer() {
   }
 }
 
-void draw_frame() {
+
+void begin_frame() {
+  m_scene.clear();
+}
+
+void end_frame() {
 
 	uint32_t image_index;
 	VkResult result = vkAcquireNextImageKHR(m_logical_device, 
@@ -1128,6 +1300,8 @@ void draw_frame() {
   } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
     throw std::runtime_error("failed to acquire swap chain image!");
   }
+
+  build_command_buffer(image_index);
 
 	VkSubmitInfo submit_info = {};
 	submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -1174,6 +1348,18 @@ void draw_frame() {
   }
 
   vkQueueWaitIdle(m_present_queue);
+}
+
+void render_mesh(MeshData* mesh_data, 
+                 const glm::mat4& model_mat ) {
+
+  m_scene.add_mesh(static_cast<VkMeshData*>(mesh_data),
+                   model_mat);
+
+}
+
+void set_camera(const glm::mat4& camera_mat) {
+  m_scene.set_camera(camera_mat);
 }
 
 }

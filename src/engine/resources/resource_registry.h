@@ -10,6 +10,8 @@
 #include <map>
 
 namespace tna {
+namespace resources {
+  
 
 template<typename T>
   class ResourceRegistry {
@@ -42,12 +44,18 @@ template<typename T>
      */
     void  unload(const std::string& resource_name);
 
+
+    /**
+     * @brief Clears all resources
+     */
+    void clear();
   private:
 
     std::map<std::string, T*> m_resources; 
 
   };
 
+}
 } /* tna */ 
 
 #include "resource_registry.inl"

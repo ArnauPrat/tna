@@ -4,12 +4,15 @@
 #include <iostream>
 
 namespace tna {
+namespace resources {
+  
 
 template<typename T>
   ResourceRegistry<T>::~ResourceRegistry<T>() {
     for(auto pair : m_resources) {
       T::unload(pair.second);
     }
+    m_resources.clear();
   }
 
 
@@ -33,4 +36,13 @@ template<typename T>
     }
   }
 
+template<typename T>
+  void  ResourceRegistry<T>::clear() {
+    for(auto pair : m_resources) {
+      T::unload(pair.second);
+    }
+    m_resources.clear();
+  }
+
+} /* resources */ 
 } /* tna */ 

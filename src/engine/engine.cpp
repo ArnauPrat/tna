@@ -4,8 +4,8 @@
 #include "common.h"
 #include "config.h"
 #include "game_app.h"
-#include "rendering/renderer.h"
-#include "resources/directory_registry.h"
+#include "rendering/rendering.h"
+#include "resources/resources.h"
 #include <fstream>
 #include <furious/furious.h>
 #include <glm/glm.hpp>
@@ -43,7 +43,8 @@ void initialize() {
     config = load_config("./config.ini");
   } 
 
-  register_directory("./");
+  resources::init_resources();
+  resources::register_directory("./");
 
   // Initializing Furious
   furious::init();
@@ -80,6 +81,7 @@ void terminate() {
   }
   glfwTerminate();
   furious::release();
+  resources::terminate_resources();
   delete log;
 
 }
@@ -93,8 +95,9 @@ void run(GameApp* game_app) {
   {
     // Keep running
     glfwPollEvents();
+    rendering::begin_frame();
     current_app->on_frame_update();
-    rendering::draw_frame();
+    rendering::end_frame();
   }
 
   current_app->on_app_finish();

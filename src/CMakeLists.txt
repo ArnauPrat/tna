@@ -68,6 +68,8 @@ set(VK_RENDERER_SOURCE_FILES
   engine/rendering/vulkan/vkvertex_tools.cpp
   engine/rendering/vulkan/vkvertex_tools.h
   engine/rendering/vulkan/vkmem_alloc.h
+  engine/rendering/vulkan/vkscene.h
+  engine/rendering/vulkan/vkscene.cpp
   )
 
 set(TNA_SOURCE_FILES 
@@ -88,6 +90,8 @@ set(TNA_SOURCE_FILES
   engine/resources/directory_registry.h
   engine/resources/resource_registry.h
   engine/resources/resource_registry.inl
+  engine/resources/resources.h
+  engine/resources/resources.cpp
   engine/tools/files.cpp
   engine/tools/files.h
   engine/types.h

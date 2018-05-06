@@ -5,7 +5,8 @@
 #include <iostream>
 
 namespace tna {
-
+namespace resources {
+  
 
 static std::vector<std::string> directories;
 
@@ -27,4 +28,5 @@ optional<std::string> get_path(const std::string& resource_name) {
 
 }
   
+}
 } /* tna */ 

@@ -3,9 +3,7 @@
 #ifndef _TNA_SYSTEMS_H_
 #define _TNA_SYSTEMS_H_
 
-#include <furious/furious.h>
 #include "engine/engine.h"
-
 
 namespace tna {
 
@@ -33,6 +31,8 @@ private:
   int32_t m_game_width;
   int32_t m_game_height;
 
+
+  rendering::MeshData* mesh_data;
 
 };
 

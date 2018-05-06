@@ -19,6 +19,9 @@ struct VkMeshData : public MeshData {
   VmaAllocation   m_vertex_buffer_allocation;
   VmaAllocation   m_index_buffer_allocation;
 
+  uint32_t        m_num_vertices;
+  uint32_t        m_num_indices;
+
 };
 
 } /* rendering */ 
