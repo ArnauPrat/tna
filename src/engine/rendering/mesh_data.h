@@ -1,7 +1,7 @@
 
 
-#ifndef _TNA_MESH_H_
-#define _TNA_MESH_H_ value
+#ifndef _TNA_MESHDATA_H_
+#define _TNA_MESHDATA_H_ value
 
 #include "vertex.h"
 #include "../types.h"

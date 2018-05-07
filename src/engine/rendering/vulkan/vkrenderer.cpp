@@ -1350,10 +1350,10 @@ void end_frame() {
   vkQueueWaitIdle(m_present_queue);
 }
 
-void render_mesh(MeshData* mesh_data, 
+void render_mesh(const MeshData* mesh_data, 
                  const glm::mat4& model_mat ) {
 
-  m_scene.add_mesh(static_cast<VkMeshData*>(mesh_data),
+  m_scene.add_mesh(static_cast<const VkMeshData*>(mesh_data),
                    model_mat);
 
 }

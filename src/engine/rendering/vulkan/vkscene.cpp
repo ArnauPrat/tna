@@ -12,7 +12,7 @@ m_model_mat{model_mat} {
 
 }
 
-void VkScene::add_mesh(VkMeshData* mesh,
+void VkScene::add_mesh(const VkMeshData* mesh,
                               const glm::mat4& model_mat) {
   m_meshes.emplace_back(mesh, model_mat);
 }

@@ -74,6 +74,9 @@ set(VK_RENDERER_SOURCE_FILES
 
 set(TNA_SOURCE_FILES 
   ${VK_RENDERER_SOURCE_FILES}
+  engine/components/mesh.h
+  engine/components/transform.h
+  engine/systems/render_mesh.h
   engine/config.cpp
   engine/config.h
   engine/engine.cpp
@@ -90,8 +93,8 @@ set(TNA_SOURCE_FILES
   engine/resources/directory_registry.h
   engine/resources/resource_registry.h
   engine/resources/resource_registry.inl
-  engine/resources/resources.h
   engine/resources/resources.cpp
+  engine/resources/resources.h
   engine/tools/files.cpp
   engine/tools/files.h
   engine/types.h

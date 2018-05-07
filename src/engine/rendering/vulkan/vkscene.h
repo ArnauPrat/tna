@@ -24,7 +24,7 @@ public:
   VkScene() = default;
   virtual ~VkScene() = default;
 
-  void add_mesh(VkMeshData* mesh,
+  void add_mesh(const VkMeshData* mesh,
                 const glm::mat4& model_mat);
 
   void set_camera(const glm::mat4& camera_mat);

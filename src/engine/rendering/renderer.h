@@ -45,7 +45,7 @@ void end_frame();
  * @param mesh_data The mesh to render
  * @param model_mat The model matrix
  */
-void render_mesh(MeshData* mesh_data, 
+void render_mesh(const MeshData* mesh_data, 
                  const glm::mat4& model_mat );
 
 
