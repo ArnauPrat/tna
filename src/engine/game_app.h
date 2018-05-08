@@ -27,13 +27,22 @@ public:
 
   virtual void on_app_finish() = 0;
 
-  virtual void on_frame_update() = 0;
+  virtual void on_frame_update(float delta) = 0;
 
   virtual void on_key_event(GLFWwindow* window, 
                             int key, 
                             int scancode, 
                             int action, 
                             int mods) = 0;
+
+  virtual void on_cursor_position(GLFWwindow* window,
+                                  double xpos,
+                                  double ypos) = 0;
+
+  virtual void on_mouse_button(GLFWwindow* window, 
+                               int button, 
+                               int action, 
+                               int mods) = 0;
 
   ////////////////////////////////////////////////
   ////////////////////////////////////////////////

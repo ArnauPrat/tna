@@ -18,7 +18,7 @@ public:
 
   virtual void on_app_finish();
 
-  virtual void on_frame_update();
+  virtual void on_frame_update(float delta);
 
   virtual void on_key_event(GLFWwindow* window, 
                             int key, 
@@ -26,14 +26,21 @@ public:
                             int action, 
                             int mods);
 
+  virtual void on_cursor_position(GLFWwindow* window,
+                                  double xpos,
+                                  double ypos);
+
+  virtual void on_mouse_button(GLFWwindow* window, 
+                               int button, 
+                               int action, 
+                               int mods);
+
 private:
 
   int32_t m_game_width;
   int32_t m_game_height;
 
-
-  rendering::MeshData* mesh_data;
-
+  Entity  m_entity;
 };
 
 }

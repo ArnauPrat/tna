@@ -23,7 +23,6 @@ public:
     glm::mat4 rotateZ = glm::rotate(rotateY, transform->m_rotation.z, glm::vec3{0.0, 0.0, 1.0});
     glm::mat4 model = glm::scale(rotateZ, transform->m_scale);
 
-    //glm::mat4 model = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
     rendering::render_mesh(mesh->m_mesh_data, model);
 
   }
