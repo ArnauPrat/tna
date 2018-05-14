@@ -24,11 +24,7 @@ GameApp::GameApp() {
   p_database = furious::create_database();
   p_workload = furious::create_workload();
 
-  p_database->add_table<Mesh>();
-  p_database->add_table<Transform>();
-
   p_workload->add_system<RenderMesh>();
-
 
 }
 
