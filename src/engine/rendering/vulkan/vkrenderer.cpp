@@ -1245,7 +1245,6 @@ void terminate_renderer() {
 
   vkDeviceWaitIdle(m_logical_device);
 
-
   resources::shader_registry->clear();
   resources::mesh_registry->clear();
 

@@ -9,6 +9,7 @@
 #include "engine/components/transform.h"
 #include "engine/components/mesh.h"
 
+#include "components/rotation.h"
 
 namespace tna {
 
@@ -21,14 +22,20 @@ Game::Game(int32_t width,
 
 void Game::on_app_start() {
 
-  glm::mat4 view = glm::lookAt(glm::vec3(3.0f, 3.0f, 3.0f), 
+  p_workload->add_system<Rotation>();
+
+  glm::mat4 view = glm::lookAt(glm::vec3(5.0f, 5.0f, 5.0f), 
                                glm::vec3(0.0f, 0.0f, 0.0f), 
-                               glm::vec3(0.0f, 0.0f, 1.0f));
+                               glm::vec3(0.0f, 1.0f, 0.0f));
 
   rendering::set_camera(view);
 
-  m_entity.add_component<Transform>(glm::vec3{0.0, 0.0, 0.0});
+  m_entity.add_component<Transform>(glm::vec3{3.0, 0.0, 0.0});
   m_entity.add_component<Mesh>("models/cube.obj");
+
+  Entity entity2 = furious::create_entity(p_database);
+  //entity2.add_component<Transform>(glm::vec3{-3.0, 0.0, 0.0});
+  entity2.add_component<Mesh>("models/cube.obj");
 }
 
 void Game::on_app_finish() {
@@ -37,7 +44,6 @@ void Game::on_app_finish() {
 }
 
 void Game::on_frame_update(float delta) {
-  m_entity.get_component<Transform>()->m_rotation.z = delta*glm::radians(90.0f);
   p_workload->run(delta, p_database);
 }
 

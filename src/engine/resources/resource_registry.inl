@@ -18,13 +18,18 @@ template<typename T>
 
 template<typename T>
   optional<T*> ResourceRegistry<T>::load(const std::string& resource_name) {
-    auto path = get_path(resource_name);
-    if(path) {
-      T* resource = T::load(*path);
-      m_resources.insert(std::make_pair(resource_name, resource));
-      return optional<T*>{resource};
+    auto it = m_resources.find(resource_name);
+    if(it == m_resources.end()) {
+      auto path = get_path(resource_name);
+      if(path) {
+        T* resource = T::load(*path);
+        m_resources.insert(std::make_pair(resource_name, resource));
+        return optional<T*>{resource};
+      }
+      return optional<T*>{};
+    } else {
+      return optional<T*>{it->second};
     }
-    return optional<T*>{};
   }
 
 template<typename T>

@@ -98,6 +98,7 @@ set(TNA_SOURCE_FILES
   engine/tools/files.cpp
   engine/tools/files.h
   engine/types.h
+  components/rotation.h
   game.cpp
   game.h
   main.cpp
