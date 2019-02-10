@@ -4,58 +4,58 @@
 #ifndef _TNA_RESOURCE_REGISTRY_H_
 #define _TNA_RESOURCE_REGISTRY_H_ value
 
-#include "directory_registry.h"
-#include "../optional.h"
-
+#include <string>
 #include <map>
 
-namespace tna {
-namespace resources {
-  
+namespace tna 
+{
 
 template<typename T>
-  class ResourceRegistry {
-  public:
-    ResourceRegistry() = default;
-    ResourceRegistry(ResourceRegistry&) = delete;
+class ResourceRegistry 
+{
+public:
+  ResourceRegistry() = default;
+  ResourceRegistry(ResourceRegistry&) = delete;
 
-    virtual ~ResourceRegistry();
+  virtual ~ResourceRegistry();
 
-    void operator=(ResourceRegistry&) = delete;
+  void operator=(ResourceRegistry&) = delete;
 
-    ////////////////////////////////////////////////
-    ////////////////////////////////////////////////
-    ////////////////////////////////////////////////
-    
-    /**
-     * @brief Loads a resource 
-     *
-     * @param resource_name The name of the resource to load
-     *
-     * @return Returns an optional containing the ponter to the resource if it
-     * was successfully loaded.
-     */
-    optional<T*> load(const std::string& resource_name);
+  ////////////////////////////////////////////////
+  ////////////////////////////////////////////////
+  ////////////////////////////////////////////////
 
-    /**
-     * @brief Unloads a resource
-     *
-     * @param resource_name The name of the resource to unload
-     */
-    void  unload(const std::string& resource_name);
+  /**
+   * \brief Loads a resource 
+   *
+   * \param resource_name The name of the resource to load
+   *
+   * \return Returns an optional containing the ponter to the resource if it
+   * was successfully loaded.
+   */
+  T* 
+  load(const std::string& resource_name);
+
+  /**
+   * \brief Unloads a resource
+   *
+   * \param resource_name The name of the resource to unload
+   */
+  void  
+  unload(const std::string& resource_name);
 
 
-    /**
-     * @brief Clears all resources
-     */
-    void clear();
-  private:
+  /**
+   * \brief Clears all resources
+   */
+  void 
+  clear();
+private:
 
-    std::map<std::string, T*> m_resources; 
+  std::map<std::string, T*> m_resources; 
 
-  };
+};
 
-}
 } /* tna */ 
 
 #include "resource_registry.inl"

@@ -2,36 +2,50 @@
 #ifndef _TNA_CONFIG_H_
 #define _TNA_CONFIG_H_ value
 
-#include "types.h"
+#include "common.h"
 #include <string>
-#include <vector>
 
-
-namespace tna {
+namespace tna 
+{
 
 /**
  * @brief Structure used to store the engine's configuration
  */
-struct Config {
+struct Config
+{
 
-  uint32_t   m_viewport_width  = 1440;
-  uint32_t   m_viewport_height = 900;
-  bool      m_fullscreen    = false;
+  Config();
+  ~Config();
 
-  std::vector<std::string> m_vk_validation_layers;
+  /**
+   * \brief Inserts a vulkan validation layer to the configuration
+   *
+   * \param layer_name The name of the layer
+   */
+  void
+  insert_vk_layer(const std::string& layer_name); 
+
+  uint32_t        m_viewport_width  = 1440;
+  uint32_t        m_viewport_height = 900;
+  bool            m_fullscreen    = false;
+
+  uint32_t        m_max_vk_vlayers;
+  uint32_t        m_num_vk_vlayers;
+  std::string**   m_vk_vlayers;
 
 };
 
 
 /**
- * @brief Loads the configuration stored in the given configuration file
+ * \brief Loads the configuration stored in the given configuration file
  *
- * @param configFileName The file containing the configuration
+ * \param configFileName The file containing the configuration
+ * \param config A pointer to the config object to store the configuration to
  *
- * @return Returns a Config object with the configuration specified in the input
- * file
+ * \return E_NO_ERROR if successful.  
  */
-Config load_config(const std::string& configFileName);
+void 
+load_config(const std::string& configFileName, Config* config);
 
 }
 

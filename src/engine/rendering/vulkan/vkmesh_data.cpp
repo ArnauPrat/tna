@@ -3,7 +3,7 @@
 #include "vkbuffer_tools.h"
 #include "vkmesh_data.h"
 #include "vkrenderer.h"
-#include <unordered_map>
+#include <map>
 #include <vector>
 
 #include "vkmem_alloc.h"
@@ -12,26 +12,26 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "../tiny_obj_loader.h"
 
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtx/hash.hpp>
+//#define GLM_ENABLE_EXPERIMENTAL
+//#include <glm/gtx/hash.hpp>
+//
+//namespace std {
+//    template<> struct hash<tna::Vertex> {
+//        size_t operator()(tna::Vertex const& vertex) const {
+//            return ((hash<glm::vec3>()(vertex.m_position) ^
+//                   (hash<glm::vec3>()(vertex.m_color) << 1)) >> 1) ^
+//                   (hash<glm::vec2>()(vertex.m_tex_coord) << 1);
+//        }
+//    };
+//}
 
-namespace std {
-    template<> struct hash<tna::rendering::Vertex> {
-        size_t operator()(tna::rendering::Vertex const& vertex) const {
-            return ((hash<glm::vec3>()(vertex.m_position) ^
-                   (hash<glm::vec3>()(vertex.m_color) << 1)) >> 1) ^
-                   (hash<glm::vec2>()(vertex.m_tex_coord) << 1);
-        }
-    };
-}
+namespace tna 
+{
 
-namespace tna {
-namespace rendering {
-
-
-MeshData* MeshData::load(const std::string& path ) {
-
-
+MeshData*
+MeshData::load(const std::string& path)
+{
+  VkMeshData* vkmesh_data = new VkMeshData();
   std::vector<Vertex> vertices;
   std::vector<uint32_t> indices;
 
@@ -40,29 +40,35 @@ MeshData* MeshData::load(const std::string& path ) {
   std::vector<tinyobj::material_t> materials;
   std::string err;
 
-  if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err, path.c_str())) {
-    throw std::runtime_error(err);
+  if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err, path.c_str())) 
+  {
+    log->error("Unable to load mesh %s: %s", path.c_str(), err.c_str());
+    report_error(TNA_ERROR::E_RENDERER_RESOURCE_ALLOCATION_ERROR);
   }
 
-  std::unordered_map<Vertex, uint32_t> unique_vertices = {};
-  for (const auto& shape : shapes) {
-    for (const auto& index : shape.mesh.indices) {
-      Vertex vertex = {};
+  std::map<uint32_t,uint32_t> unique_vertices;
+  for (const tinyobj::shape_t& shape : shapes) 
+  {
+    for (const tinyobj::index_t& index : shape.mesh.indices) 
+    {
+      Vertex vertex;
 
       vertex.m_position = {
-        attrib.vertices[3 * index.vertex_index + 0],
-        attrib.vertices[3 * index.vertex_index + 1],
-        attrib.vertices[3 * index.vertex_index + 2]
-      };
+                            attrib.vertices[3 * index.vertex_index + 0],
+                            attrib.vertices[3 * index.vertex_index + 1],
+                            attrib.vertices[3 * index.vertex_index + 2]
+                          };
 
 
-      if(attrib.texcoords.size() != 0) {
+      if(attrib.texcoords.size() != 0) 
+      {
         vertex.m_tex_coord = {
           attrib.texcoords[2 * index.texcoord_index + 0],
           1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
         };
-      } else {
-
+      } 
+      else 
+      {
         vertex.m_tex_coord = {
           0.0,
           0.0};
@@ -70,34 +76,35 @@ MeshData* MeshData::load(const std::string& path ) {
 
       vertex.m_color = {1.0f, 1.0f, 1.0f};
 
-
-      if (unique_vertices.count(vertex) == 0) {
-        unique_vertices[vertex] = static_cast<uint32_t>(vertices.size());
+      if (unique_vertices.count(index.vertex_index) == 0) 
+      {
+        unique_vertices[index.vertex_index] = static_cast<uint32_t>(vertices.size());
         vertices.push_back(vertex);
       }
 
-      indices.push_back(unique_vertices[vertex]);
+      indices.push_back(unique_vertices[index.vertex_index]);
     }
   }
 
-  VkMeshData* mesh_data = new VkMeshData{};
+  create_vertex_buffer(vertices.data(), 
+                       vertices.size(),
+                       &vkmesh_data->m_vertex_buffer,
+                       &vkmesh_data->m_vertex_buffer_allocation);
 
-  create_vertex_buffer(vertices, 
-                       mesh_data->m_vertex_buffer,
-                       mesh_data->m_vertex_buffer_allocation);
+  create_index_buffer(indices.data(), 
+                      indices.size(),
+                      &vkmesh_data->m_index_buffer,
+                      &vkmesh_data->m_index_buffer_allocation);
 
-  create_index_buffer(indices, 
-                      mesh_data->m_index_buffer,
-                      mesh_data->m_index_buffer_allocation);
+  vkmesh_data->m_num_vertices = vertices.size();
+  vkmesh_data->m_num_indices = indices.size();
 
-  mesh_data->m_num_vertices = vertices.size();
-  mesh_data->m_num_indices = indices.size();
-
-
-  return mesh_data;
+  return vkmesh_data;
 }
 
-void MeshData::unload(MeshData* mesh_data) {
+void
+MeshData::unload(MeshData* mesh_data) 
+{
   VkMeshData* vkmesh_data = static_cast<VkMeshData*>(mesh_data);
 
   vmaDestroyBuffer(m_vkallocator,
@@ -108,7 +115,7 @@ void MeshData::unload(MeshData* mesh_data) {
                    vkmesh_data->m_index_buffer,
                    vkmesh_data->m_index_buffer_allocation);
   delete vkmesh_data;
+  return;
 }
-  
-}
+
 } /* tna */ 

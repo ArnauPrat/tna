@@ -3,44 +3,54 @@
 #ifndef _TNA_SYSTEMS_H_
 #define _TNA_SYSTEMS_H_
 
-#include "engine/engine.h"
+#include "engine/game_app.h"
 
-namespace tna {
+class GLFWWindow;
 
-class Game : public GameApp {
+namespace tna 
+{
+
+class Game : public GameApp 
+{
 public:
   Game(int32_t width, 
        int32_t height);
 
   ~Game() = default;
 
-  virtual void on_app_start();
+  virtual void 
+  on_app_start();
 
-  virtual void on_app_finish();
+  virtual void 
+  on_app_finish();
 
-  virtual void on_frame_update(float delta);
+  virtual void 
+  on_frame_update(float delta);
 
-  virtual void on_key_event(GLFWwindow* window, 
-                            int key, 
-                            int scancode, 
-                            int action, 
-                            int mods);
+  virtual void 
+  on_key_event(GLFWwindow* window, 
+               int key, 
+               int scancode, 
+               int action, 
+               int mods);
 
-  virtual void on_cursor_position(GLFWwindow* window,
-                                  double xpos,
-                                  double ypos);
+  virtual void 
+  on_cursor_position(GLFWwindow* window,
+                     double xpos,
+                     double ypos);
 
-  virtual void on_mouse_button(GLFWwindow* window, 
-                               int button, 
-                               int action, 
-                               int mods);
+  virtual void 
+  on_mouse_button(GLFWwindow* window, 
+                  int button, 
+                  int action, 
+                  int mods);
 
 private:
 
   int32_t m_game_width;
   int32_t m_game_height;
 
-  Entity  m_entity;
+  //Entity  m_entity;
 };
 
 }

@@ -1,52 +1,50 @@
 
 
 #ifndef _TNA_TRANSFORM_H_
-#define _TNA_TRANSFORM_H_ value
+#define _TNA_TRANSFORM_H_
 
-#include "../engine.h"
+#include "../math/vector.h"
+#include <furious/components.h>
 
-namespace tna {
+namespace tna 
+{
 
-struct Transform {
+struct Transform 
+{
+  FURIOUS_COMPONENT(Transform);
+
+  Vector3 m_position;
+  Vector3 m_rotation;
+  Vector3 m_scale;
 
   Transform() : 
-    m_position{0.0f, 0.0f, 0.0f},
-    m_rotation{0.0f, 0.0f, 0.0f},
-    m_scale{1.0f, 1.0f, 1.0f}
+  m_position(0.0f, 0.0f, 0.0f),
+  m_rotation(0.0f, 0.0f, 0.0f),
+  m_scale(1.0f, 1.0f, 1.0f)
   {
 
   }
 
-  Transform(const glm::vec3& position) :
-    m_position{position},
-    m_rotation{0.0f, 0.0f, 0.0f},
-    m_scale{1.0f, 1.0f, 1.0f}
+  Transform(const Vector3& position) :
+  m_position(position),
+  m_rotation(0.0f, 0.0f, 0.0f),
+  m_scale(1.0f, 1.0f, 1.0f)
   {
   }
 
-  Transform(const glm::vec3& position, const glm::vec3& rotation) : 
-    m_position{position},
-    m_rotation{rotation},
-    m_scale{1.0f, 1.0f, 1.0f}
+  Transform(const Vector3& position, const Vector3& rotation) : 
+  m_position(position),
+  m_rotation(rotation),
+  m_scale(1.0f, 1.0f, 1.0f)
   {
   }
 
-  Transform(const glm::vec3& position, const glm::vec3& rotation, const glm::vec3& scale) :
-    m_position{position},
-    m_rotation{rotation},
-    m_scale{scale}
+  Transform(const Vector3& position, const Vector3& rotation, const Vector3& scale) :
+  m_position(position),
+  m_rotation(rotation),
+  m_scale(scale)
   {
   }
-
-  static std::string name() {
-    return "Transform";
-  }
-
-  glm::vec3 m_position;
-  glm::vec3 m_rotation;
-  glm::vec3 m_scale;
-
-
 };
   
 } /* tna */ 

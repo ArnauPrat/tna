@@ -1,48 +1,50 @@
 
 
 
-#ifndef _GAME_APP_H_
-#define _GAME_APP_H_ value
+#ifndef _TNA_GAME_APP_H_
+#define _TNA_GAME_APP_H_ 
 
+#include "common.h"
 #include "entity.h"
-
-#include <furious/furious.h>
 
 struct GLFWwindow;
 
-class btCollisionConfiguration;
-class btCollisionDispatcher;
-class btBroadphaseInterface;
-class btCollisionWorld;
+namespace tna 
+{
 
-namespace tna {
-
-class GameApp {
+class GameApp 
+{
 public:
 
   GameApp();
   virtual ~GameApp();
 
-  virtual void on_app_start() = 0;
+  virtual void 
+  on_app_start() = 0;
 
-  virtual void on_app_finish() = 0;
+  virtual void 
+  on_app_finish() = 0;
 
-  virtual void on_frame_update(float delta) = 0;
+  virtual void 
+  on_frame_update(float delta) = 0;
 
-  virtual void on_key_event(GLFWwindow* window, 
-                            int key, 
-                            int scancode, 
-                            int action, 
-                            int mods) = 0;
+  virtual void 
+  on_key_event(GLFWwindow* window, 
+               int32_t key, 
+               int32_t scancode, 
+               int32_t action, 
+               int32_t mods) = 0;
 
-  virtual void on_cursor_position(GLFWwindow* window,
-                                  double xpos,
-                                  double ypos) = 0;
+  virtual void 
+  on_cursor_position(GLFWwindow* window,
+                     double xpos,
+                     double ypos) = 0;
 
-  virtual void on_mouse_button(GLFWwindow* window, 
-                               int button, 
-                               int action, 
-                               int mods) = 0;
+  virtual void 
+  on_mouse_button(GLFWwindow* window, 
+                  int32_t button, 
+                  int32_t action, 
+                  int32_t mods) = 0;
 
   ////////////////////////////////////////////////
   ////////////////////////////////////////////////
@@ -50,30 +52,24 @@ public:
   
 
   /**
-   * @brief Creates an entity in the this game app
+   * \brief Creates an entity in the this game app
    *
-   * @return The newly created entity
+   * \return The newly created entity
    */
-  Entity create_entity();
+  Entity 
+  create_entity();
 
   /**
-   * @brief Removes an entity in this current game app
+   * \brief Removes an entity in this current game app
    *
-   * @param entity The entity to obe removed
+   * \param entity The entity to be removed
    */
-  void remove_entity(Entity* entity);
+  void 
+  remove_entity(Entity entity);
 
 protected:
 
   // BULLET PHYSICS
-  btCollisionConfiguration* p_bt_configuration;
-  btCollisionDispatcher*    p_bt_dispatcher;
-  btBroadphaseInterface*    p_bt_broadphase;
-  btCollisionWorld*         p_bt_world;
-
-  // FURIOUS
-  furious::Database*        p_database;
-  furious::Workload*        p_workload;
 };
 
 }

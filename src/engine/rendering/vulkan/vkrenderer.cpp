@@ -6,6 +6,8 @@
 #include "../../resources/resources.h"
 #include "../../tools/files.h"
 #include "../vertex.h"
+#include "../../math/matrix.h"
+#include "../../math/math_tools.h"
 
 
 #define VMA_IMPLEMENTATION
@@ -20,16 +22,11 @@
 #include <array>
 #include <cstring>
 
-#define GLM_FORCE_RADIANS
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-
 #include <limits>
 #include <set>
 #include <chrono>
 
 namespace tna {
-namespace rendering {
 
 #define MAX_PRIMITIVE_COUNT 65536
 
@@ -57,7 +54,8 @@ struct QueueFamilyIndices {
 /**
  * @brief Struct used to store the Swap Chain capabilities and support details
  */
-struct SwapChainSupportDetails {
+struct SwapChainSupportDetails 
+{
   VkSurfaceCapabilitiesKHR        m_capabilities;
   std::vector<VkSurfaceFormatKHR> m_formats;
   std::vector<VkPresentModeKHR>   m_present_modes;
@@ -239,12 +237,13 @@ VmaAllocator                    m_vkallocator;
  */
 VkScene                         m_scene;
 
-glm::mat4                       m_projection_matrix;
+Matrix4                         m_projection_matrix;
 
-glm::mat4                       m_view_matrix;
+Matrix4                         m_view_matrix;
 
-struct UniformBufferObject {
-    glm::mat4 projmodelview;
+struct UniformBufferObject 
+{
+    Matrix4 projmodelview;
 };
 
 
@@ -263,8 +262,8 @@ void*                 m_udata = nullptr;
  * support
  */
 static SwapChainSupportDetails query_sc_support_details(VkPhysicalDevice device, 
-                                                        VkSurfaceKHR surface) {
-
+                                                        VkSurfaceKHR surface) 
+{
   SwapChainSupportDetails sc_support_details;
 
   vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, 
@@ -306,7 +305,8 @@ static SwapChainSupportDetails query_sc_support_details(VkPhysicalDevice device,
  *
  * @return Returns the chosen surface format
  */
-static VkSurfaceFormatKHR choose_sc_surface_format(const std::vector<VkSurfaceFormatKHR>& available_formats) {
+static VkSurfaceFormatKHR choose_sc_surface_format(const std::vector<VkSurfaceFormatKHR>& available_formats) 
+{
   if (available_formats.size() == 1 && available_formats[0].format == VK_FORMAT_UNDEFINED) {
     return {VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR};
   }
@@ -328,7 +328,8 @@ static VkSurfaceFormatKHR choose_sc_surface_format(const std::vector<VkSurfaceFo
  *
  * @return The choosen present mode
  */
-static VkPresentModeKHR choose_sc_present_mode(const std::vector<VkPresentModeKHR> available_present_modes) {
+static VkPresentModeKHR choose_sc_present_mode(const std::vector<VkPresentModeKHR> available_present_modes) 
+{
     VkPresentModeKHR best_mode = VK_PRESENT_MODE_FIFO_KHR;
 
     for (const auto& available_present_mode : available_present_modes) {
@@ -353,9 +354,10 @@ static VkPresentModeKHR choose_sc_present_mode(const std::vector<VkPresentModeKH
  */
 static VkExtent2D choose_sc_extent(const VkSurfaceCapabilitiesKHR& capabilities, 
                                    uint32_t width,
-                                   uint32_t height) {
-
-    if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+                                   uint32_t height) 
+{
+    if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) 
+    {
         return capabilities.currentExtent;
     } else {
         VkExtent2D actual_extent = {width, height};
@@ -372,7 +374,6 @@ static VkExtent2D choose_sc_extent(const VkSurfaceCapabilitiesKHR& capabilities,
 
         return actual_extent;
     }
-
 }
 
 
@@ -398,8 +399,10 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
                                         int32_t code,
                                         const char* layerPrefix,
                                         const char* msg,
-                                        void* userData) {
+                                        void* userData) 
+{
   log->error("validation layer: %s", msg);
+  report_error(TNA_ERROR::E_RENDERER_VULKAN_ERROR);
   return VK_FALSE;
 }
 
@@ -453,8 +456,9 @@ static bool is_device_suitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
   return m_queue_indices.is_complete() && extensions_supported && swap_chain_adequate;
 }
 
-static void create_vulkan_instance() {
-
+static void 
+create_vulkan_instance() 
+{
   // Getting Available Validation Layers
   uint32_t layer_count;
   vkEnumerateInstanceLayerProperties(&layer_count, nullptr);
@@ -462,7 +466,8 @@ static void create_vulkan_instance() {
   std::vector<VkLayerProperties> available_layers(layer_count);
   vkEnumerateInstanceLayerProperties(&layer_count, available_layers.data()); 
 
-  for (const char* layer : m_validation_layers) {
+  for (const char* layer : m_validation_layers) 
+  {
     bool layer_found = false;
     for (const auto& layerProperties : available_layers) {
       if (strcmp(layer, layerProperties.layerName) == 0) {
@@ -472,8 +477,10 @@ static void create_vulkan_instance() {
       }
     }
 
-    if (!layer_found) {
-      throw std::runtime_error("Validation layer "+std::string(layer)+" not found");
+    if (!layer_found) 
+    {
+      log->error("Validation layer %s not found", layer);
+      report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
     }
   }
 
@@ -490,7 +497,8 @@ static void create_vulkan_instance() {
   create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
   create_info.pApplicationInfo = &app_info;
 
-  if(enable_validation_layers) {
+  if(enable_validation_layers) 
+  {
     create_info.enabledLayerCount = static_cast<uint32_t>(m_validation_layers.size());
     create_info.ppEnabledLayerNames = m_validation_layers.data();
   }
@@ -504,7 +512,8 @@ static void create_vulkan_instance() {
     extensions.push_back(glfw_extensions[i]);
   }
 
-  if(enable_validation_layers) {
+  if(enable_validation_layers) 
+  {
     extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
   }
 
@@ -514,23 +523,31 @@ static void create_vulkan_instance() {
 
   if(vkCreateInstance(&create_info, 
                       nullptr, 
-                      &m_vulkan_instance) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create instance!");
+                      &m_vulkan_instance) != VK_SUCCESS) 
+  {
+    log->error("failed to create instance!");
+    report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
+  return;
 }
 
-static void create_surface(GLFWwindow* window) {
+static void
+create_surface(GLFWwindow* window) {
 
   if (glfwCreateWindowSurface(m_vulkan_instance, 
                               window, 
                               nullptr, 
-                              &m_window_surface) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create window surface!");
+                              &m_window_surface) != VK_SUCCESS) 
+  {
+    log->error("failed to create window surface!");
+    report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
-
+  return;
 }
 
-static void add_debug_handler() {
+static void
+add_debug_handler() 
+{
   // Adding debug callback
   if(enable_validation_layers) {
     VkDebugReportCallbackCreateInfoEXT debug_callback_info = {};
@@ -539,14 +556,18 @@ static void add_debug_handler() {
     debug_callback_info.pfnCallback = debug_callback;
 
     auto func = (PFN_vkCreateDebugReportCallbackEXT) vkGetInstanceProcAddr(m_vulkan_instance, "vkCreateDebugReportCallbackEXT");
-    if(func(m_vulkan_instance, &debug_callback_info, nullptr, &m_report_callback) != VK_SUCCESS) {
-      throw std::runtime_error("Failed to create debug callback!");
+    if(func(m_vulkan_instance, &debug_callback_info, nullptr, &m_report_callback) != VK_SUCCESS) 
+    {
+      log->error("Failed to create debug callback!");
+      report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
     }
   }
+  return;
 }
 
-static void create_physical_device() {
-
+static void
+create_physical_device() 
+{
 	// Creating Physical Device
   uint32_t device_count = 0;
   vkEnumeratePhysicalDevices(m_vulkan_instance, 
@@ -558,7 +579,8 @@ static void create_physical_device() {
                              &device_count, 
                              devices.data());
 
-  for (const auto& device : devices) {
+  for (const auto& device : devices) 
+  {
     m_queue_indices.reset();
 
 		uint32_t queue_familty_count = 0;
@@ -572,8 +594,10 @@ static void create_physical_device() {
                                              queue_families.data());
 
 		int i = 0;
-		for (const auto& queue_family : queue_families) {
-			if (queue_family.queueCount > 0 && queue_family.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+		for (const auto& queue_family : queue_families) 
+    {
+			if (queue_family.queueCount > 0 && queue_family.queueFlags & VK_QUEUE_GRAPHICS_BIT) 
+      {
 				m_queue_indices.m_graphics_queue = i;
 			}
 
@@ -586,21 +610,27 @@ static void create_physical_device() {
 			i++;
 		}
 
-    if (is_device_suitable(device, m_window_surface)) {
+    if (is_device_suitable(device, m_window_surface)) 
+    {
       m_physical_device = device;
       break;
     }
   }
 
 
-  if (m_physical_device == VK_NULL_HANDLE) {
-    throw std::runtime_error("failed to find a suitable GPU!");
+  if (m_physical_device == VK_NULL_HANDLE) 
+  {
+    log->error("failed to find a suitable GPU!");
+    report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
 
   vkGetPhysicalDeviceProperties(m_physical_device, &m_mem_properties);
+  return;
 }
 
-static void create_logical_device() {
+static void
+create_logical_device() 
+{
 
   // Creating logical devie
   std::vector<VkDeviceQueueCreateInfo> queue_create_infos;
@@ -608,7 +638,8 @@ static void create_logical_device() {
                                          m_queue_indices.m_present_queue};
   float queue_priority = 1.0f;
 
-  for(int queue_family : unique_queue_families) {
+  for(int queue_family : unique_queue_families) 
+  {
     VkDeviceQueueCreateInfo queue_create_info = {};
     queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
     queue_create_info.queueFamilyIndex = queue_family;
@@ -627,28 +658,38 @@ static void create_logical_device() {
   createInfo.enabledExtensionCount = static_cast<uint32_t>(m_device_extensions.size());
   createInfo.ppEnabledExtensionNames = m_device_extensions.data();
 
-  if (enable_validation_layers) {
+  if (enable_validation_layers) 
+  {
     createInfo.enabledLayerCount = static_cast<uint32_t>(m_validation_layers.size());
     createInfo.ppEnabledLayerNames = m_validation_layers.data();
-  } else {
+  } 
+  else 
+  {
     createInfo.enabledLayerCount = 0;
   }
 
   if (vkCreateDevice(m_physical_device, 
                      &createInfo, 
                      nullptr, 
-                     &m_logical_device) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create logical device!");
+                     &m_logical_device) != VK_SUCCESS) 
+  {
+    log->error("failed to create logical device!");
+    report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
+  return;
 }
 
-static void create_command_queues() {
+static void
+create_command_queues() 
+{
   // Retrieving queues
   vkGetDeviceQueue(m_logical_device, m_queue_indices.m_graphics_queue, 0, &m_graphics_queue);
   vkGetDeviceQueue(m_logical_device, m_queue_indices.m_present_queue, 0, &m_present_queue);
+  return;
 }
 
-static void create_swap_chain() {
+static void
+create_swap_chain() {
 
   // Creating Swap chain
   SwapChainSupportDetails swap_chain_support = query_sc_support_details(m_physical_device, 
@@ -664,7 +705,8 @@ static void create_swap_chain() {
 
   uint32_t image_count = swap_chain_support.m_capabilities.minImageCount + 1;
   if (swap_chain_support.m_capabilities.maxImageCount > 0 && 
-      image_count > swap_chain_support.m_capabilities.maxImageCount) {
+      image_count > swap_chain_support.m_capabilities.maxImageCount) 
+  {
     image_count = swap_chain_support.m_capabilities.maxImageCount;
   }
 
@@ -685,7 +727,9 @@ static void create_swap_chain() {
     swap_chain_create_info.imageSharingMode       = VK_SHARING_MODE_CONCURRENT;
     swap_chain_create_info.queueFamilyIndexCount  = 2;
     swap_chain_create_info.pQueueFamilyIndices    = queue_family_indices;
-  } else {
+  } 
+  else 
+  {
     swap_chain_create_info.imageSharingMode       = VK_SHARING_MODE_EXCLUSIVE;
     swap_chain_create_info.queueFamilyIndexCount  = 0; // Optional
     swap_chain_create_info.pQueueFamilyIndices    = nullptr; // Optional
@@ -701,17 +745,21 @@ static void create_swap_chain() {
   if (vkCreateSwapchainKHR(m_logical_device, 
                            &swap_chain_create_info, 
                            nullptr, 
-                           &m_swap_chain) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create swap chain!");
+                           &m_swap_chain) != VK_SUCCESS) 
+  {
+    log->error("failed to create swap chain!");
+    report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
 
   vkGetSwapchainImagesKHR(m_logical_device, m_swap_chain, &image_count, nullptr);
   m_swap_chain_images.resize(image_count);
   vkGetSwapchainImagesKHR(m_logical_device, m_swap_chain, &image_count, m_swap_chain_images.data());
-
+  return;
 }
 
-static void create_image_views() {
+static void
+create_image_views() 
+{
   m_swap_chain_image_views.resize(m_swap_chain_images.size());
   for(size_t i = 0; i < m_swap_chain_image_views.size(); ++i) {
 
@@ -733,46 +781,52 @@ static void create_image_views() {
     if (vkCreateImageView(m_logical_device, 
                           &create_info, 
                           nullptr, 
-                          &m_swap_chain_image_views[i]) != VK_SUCCESS) {
-
-      throw std::runtime_error("failed to create image views!");
+                          &m_swap_chain_image_views[i]) != VK_SUCCESS) 
+    {
+      log->error("failed to create image views!");
+      report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
     }
-
   }
+  return;
 }
 
-static void create_graphics_pipeline() {
-
-
-
-  optional<Shader*> vertex_shader = resources::shader_registry->load("shaders/vert.spv");
-  optional<Shader*> fragment_shader = resources::shader_registry->load("shaders/frag.spv");
+static void
+create_graphics_pipeline() 
+{
+  Shader* vertex_shader = shader_registry->load("shaders/vert.spv");
+  Shader* fragment_shader = shader_registry->load("shaders/frag.spv");
   
-  if(!vertex_shader) {
-    throw std::runtime_error("Vertex shader not found");
+  if(!vertex_shader) 
+  {
+    log->error("Vertex shader not found");
+    report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
 
-  if(!fragment_shader) {
-    throw std::runtime_error("Fragment shader not found");
+  if(!fragment_shader) 
+  {
+    log->error("Fragment shader not found");
+    report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
 
-  VkShader* vkvertex_shader = static_cast<VkShader*>(vertex_shader.get());
-  VkShader* vkfragment_shader = static_cast<VkShader*>(fragment_shader.get());
+  VkShader* vkvertex_shader = static_cast<VkShader*>(vertex_shader);
+  VkShader* vkfragment_shader = static_cast<VkShader*>(fragment_shader);
 
   VkPipelineShaderStageCreateInfo vertex_shader_stage = build_vertex_shader_stage(vkvertex_shader->m_shader_module);
+
   VkPipelineShaderStageCreateInfo fragment_shader_stage = build_fragment_shader_stage(vkfragment_shader->m_shader_module);
 
   VkPipelineShaderStageCreateInfo shader_stages[] = {vertex_shader_stage, fragment_shader_stage};
 
   VkVertexInputBindingDescription binding_description = get_binding_description();
-  std::array<VkVertexInputAttributeDescription,3> attribute_descriptions = get_attribute_descriptions();
+  VkVertexInputAttributeDescription input_attr_desc[3];
+  get_attribute_descriptions(input_attr_desc);
 
   VkPipelineVertexInputStateCreateInfo vertex_infput_info = {};
   vertex_infput_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
   vertex_infput_info.vertexBindingDescriptionCount = 1;
   vertex_infput_info.pVertexBindingDescriptions = &binding_description; // Optional
-  vertex_infput_info.vertexAttributeDescriptionCount = attribute_descriptions.size();
-  vertex_infput_info.pVertexAttributeDescriptions = attribute_descriptions.data(); // Optional
+  vertex_infput_info.vertexAttributeDescriptionCount = 3;
+  vertex_infput_info.pVertexAttributeDescriptions = input_attr_desc; // Optional
 
   VkPipelineInputAssemblyStateCreateInfo input_assembly = {};
   input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -850,8 +904,10 @@ static void create_graphics_pipeline() {
   pipeline_layout_info.pPushConstantRanges = nullptr; // Optional
 
 
-  if (vkCreatePipelineLayout(m_logical_device, &pipeline_layout_info, nullptr, &m_pipeline_layout) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create pipeline layout!");
+  if (vkCreatePipelineLayout(m_logical_device, &pipeline_layout_info, nullptr, &m_pipeline_layout) != VK_SUCCESS) 
+  {
+    log->error("failed to create pipeline layout!");
+    report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
 
   VkAttachmentDescription color_attachment = {};
@@ -880,7 +936,6 @@ static void create_graphics_pipeline() {
   render_pass_info.subpassCount = 1;
   render_pass_info.pSubpasses = &subpass;
 
-
 	VkSubpassDependency dependency = {};
 	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
 	dependency.dstSubpass = 0;
@@ -894,8 +949,10 @@ static void create_graphics_pipeline() {
 	render_pass_info.dependencyCount = 1;
 	render_pass_info.pDependencies = &dependency;
 
-  if (vkCreateRenderPass(m_logical_device, &render_pass_info, nullptr, &m_render_pass) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create render pass!");
+  if (vkCreateRenderPass(m_logical_device, &render_pass_info, nullptr, &m_render_pass) != VK_SUCCESS) 
+  {
+    log->error("failed to create render pass!");
+    report_error(TNA_ERROR::E_SUCCESS);
   }
 
   VkGraphicsPipelineCreateInfo pipeline_info = {};
@@ -915,20 +972,24 @@ static void create_graphics_pipeline() {
   pipeline_info.subpass = 0;
   pipeline_info.basePipelineHandle = VK_NULL_HANDLE; // Optional
   pipeline_info.basePipelineIndex = -1; // Optional
+  pipeline_info.pNext = nullptr;
 
   if (vkCreateGraphicsPipelines(m_logical_device, 
                                 VK_NULL_HANDLE, 
                                 1, 
                                 &pipeline_info, 
                                 nullptr, 
-                                &m_pipeline) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create graphics pipeline!");
+                                &m_pipeline) != VK_SUCCESS) 
+  {
+    log->error("failed to create graphics pipeline!");
+    report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
 
 
   m_frame_buffers.resize(m_swap_chain_image_views.size());
 
-  for (size_t i = 0; i < m_swap_chain_image_views.size(); i++) {
+  for (size_t i = 0; i < m_swap_chain_image_views.size(); i++) 
+  {
     VkImageView attachments[] = {
       m_swap_chain_image_views[i]
     };
@@ -945,18 +1006,21 @@ static void create_graphics_pipeline() {
     if (vkCreateFramebuffer(m_logical_device, 
                             &frame_buffer_info, 
                             nullptr, 
-                            &m_frame_buffers[i]) != VK_SUCCESS) {
-      throw std::runtime_error("failed to create framebuffer!");
+                            &m_frame_buffers[i]) != VK_SUCCESS) 
+    {
+      log->error("failed to create framebuffer!");
+      report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
     }
   }
 
-  resources::shader_registry->unload("shaders/vert.spv");
-  resources::shader_registry->unload("shaders/frag.spv");
-
+  shader_registry->unload("shaders/vert.spv");
+  shader_registry->unload("shaders/frag.spv");
+  return;
 }
 
-static void create_command_pool() {
-
+static void
+create_command_pool() 
+{
 
   VkCommandPoolCreateInfo pool_info = {};
   pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -966,14 +1030,17 @@ static void create_command_pool() {
   if (vkCreateCommandPool(m_logical_device, 
                           &pool_info, 
                           nullptr, 
-                          &m_command_pool) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create command pool!");
+                          &m_command_pool) != VK_SUCCESS) 
+  {
+    log->error("failed to create command pool!");
+    report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
-
+  return;
 }
 
-static void create_descriptor_pool() {
-
+static void 
+create_descriptor_pool() 
+{
   VkDescriptorPoolSize pool_size = {};
   pool_size.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
   pool_size.descriptorCount = 1;
@@ -985,12 +1052,16 @@ static void create_descriptor_pool() {
 
   pool_info.maxSets = 1;
 
-  if (vkCreateDescriptorPool(m_logical_device, &pool_info, nullptr, &m_descriptor_pool) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create descriptor pool!");
+  if (vkCreateDescriptorPool(m_logical_device, &pool_info, nullptr, &m_descriptor_pool) != VK_SUCCESS) 
+  {
+    log->error("failed to create descriptor pool!");
+    report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
+  return;
 }
 
-static void create_descriptor_set() {
+static void
+create_descriptor_set() {
 
   VkDescriptorSetLayoutBinding ubo_layout_info = {};
   ubo_layout_info.binding = 0;
@@ -1005,8 +1076,10 @@ static void create_descriptor_set() {
   layout_info.pBindings = &ubo_layout_info;
 
 
-  if (vkCreateDescriptorSetLayout(m_logical_device, &layout_info, nullptr, &m_descriptor_set_layout) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create descriptor set layout!");
+  if (vkCreateDescriptorSetLayout(m_logical_device, &layout_info, nullptr, &m_descriptor_set_layout) != VK_SUCCESS) 
+  {
+    log->error("failed to create descriptor set layout!");
+    report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
 
   VkDescriptorSetLayout layouts[] = {m_descriptor_set_layout};
@@ -1016,14 +1089,18 @@ static void create_descriptor_set() {
   allocInfo.descriptorSetCount = 1;
   allocInfo.pSetLayouts = layouts;
 
-  if (vkAllocateDescriptorSets(m_logical_device, &allocInfo, &m_descriptor_set) != VK_SUCCESS) {
-    throw std::runtime_error("failed to allocate descriptor set!");
+  if (vkAllocateDescriptorSets(m_logical_device, &allocInfo, &m_descriptor_set) != VK_SUCCESS) 
+  {
+    log->error("failed to allocate descriptor set!");
+    report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
 
+  return;
 }
 
-static void create_uniform_buffers() {
-
+static void 
+create_uniform_buffers() 
+{
   size_t device_alignment = m_mem_properties.limits.minUniformBufferOffsetAlignment;
   size_t uniform_buffer_size = sizeof(UniformBufferObject);
   size_t dynamic_alignment = (uniform_buffer_size / device_alignment) * device_alignment + ((uniform_buffer_size % device_alignment) > 0 ? device_alignment : 0);
@@ -1033,15 +1110,16 @@ static void create_uniform_buffers() {
   create_buffer(bufferSize, 
                 VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
                 VMA_MEMORY_USAGE_CPU_TO_GPU,
-                m_uniform_buffer, 
-                m_uniform_allocation);
-
+                &m_uniform_buffer, 
+                &m_uniform_allocation);
 
   vmaMapMemory(m_vkallocator, m_uniform_allocation, &m_udata);
+  return;
 }
 
-static void create_command_buffers() {
-
+static void  
+create_command_buffers() 
+{
   m_command_buffers.resize(m_frame_buffers.size());
 
   VkCommandBufferAllocateInfo allocInfo = {};
@@ -1052,29 +1130,33 @@ static void create_command_buffers() {
 
   if (vkAllocateCommandBuffers(m_logical_device, 
                                &allocInfo, 
-                               m_command_buffers.data()) != VK_SUCCESS) {
-    throw std::runtime_error("failed to allocate command buffers!");
+                               m_command_buffers.data()) != VK_SUCCESS) 
+  {
+    log->error("failed to allocate command buffers!");
+    report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
-
-
+  return;
 }
 
-static void create_semaphores() {
-
+static void 
+create_semaphores() 
+{
   VkSemaphoreCreateInfo semaphore_info = {};
   semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
 	if (vkCreateSemaphore(m_logical_device, &semaphore_info, nullptr, &m_image_available_semaphore) != VK_SUCCESS ||
 			vkCreateSemaphore(m_logical_device, &semaphore_info, nullptr, &m_render_finished_semaphore) != VK_SUCCESS) {
 
-		throw std::runtime_error("failed to create semaphores!");
+		log->error("failed to create semaphores!");
+    report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
 	}
-
-
+  return;
 }
 
 
-static void clean_up_swap_chain() {
+static void 
+clean_up_swap_chain() 
+{
 
   for (auto framebuffer : m_frame_buffers) {
     vkDestroyFramebuffer(m_logical_device, framebuffer, nullptr);
@@ -1093,24 +1175,35 @@ static void clean_up_swap_chain() {
   vkDestroySwapchainKHR(m_logical_device, 
                         m_swap_chain, 
                         nullptr);
+
+  return;
 }
 
-static void recreate_swap_chain() {
+static void 
+recreate_swap_chain() {
 
   vkDeviceWaitIdle(m_logical_device);
 
   clean_up_swap_chain();
-
   create_swap_chain();
+
   create_image_views();
+
   create_graphics_pipeline();
+
   create_command_buffers();
+
+  return;
 }
 
-static void build_command_buffer(uint32_t index) {
+static void 
+build_command_buffer(uint32_t index) {
 
   m_view_matrix = m_scene.get_camera();
-  m_projection_matrix = glm::perspective(glm::radians(45.0f), m_extent.width / (float) m_extent.height, 0.1f, 10.0f);
+  m_projection_matrix = create_projection_matrix(45.0f, 
+                                                 m_viewport_height / (float)(m_viewport_width),
+                                                 0.1f,
+                                                 10.0f);
   m_projection_matrix[1][1] *= -1;
 
   size_t device_alignment = m_mem_properties.limits.minUniformBufferOffsetAlignment;
@@ -1118,34 +1211,40 @@ static void build_command_buffer(uint32_t index) {
   size_t dynamic_alignment = (uniform_buffer_size / device_alignment) * device_alignment + ((uniform_buffer_size % device_alignment) > 0 ? device_alignment : 0);
   
   char* uniform_data = static_cast<char*>(m_udata);
-  auto meshes = m_scene.get_meshes();
-  for(size_t i = 0; i < meshes.size() && i < MAX_PRIMITIVE_COUNT; ++i) {
-    auto info = meshes[i];
-    UniformBufferObject ubo;
-    ubo.projmodelview = m_projection_matrix * m_scene.get_camera() * info.m_model_mat;
-    memcpy(&uniform_data[i*dynamic_alignment], &ubo, sizeof(ubo)); 
+  const VkRenderingInfo* meshes;
+  uint32_t num_meshes;
+  m_scene.get_meshes(&meshes, &num_meshes);
+  if(num_meshes > 0)
+  {
+    for(size_t i = 0; i < num_meshes && i < MAX_PRIMITIVE_COUNT; ++i) 
+    {
+      const VkRenderingInfo* info = &meshes[i];
+      UniformBufferObject ubo;
+      ubo.projmodelview = m_projection_matrix * m_view_matrix * info->m_model_mat;
+      memcpy(&uniform_data[i*dynamic_alignment], &ubo, sizeof(ubo)); 
+    }
+
+    /// Update descriptor set
+    VkDescriptorBufferInfo buffer_info = {};
+    buffer_info.buffer = m_uniform_buffer;
+    buffer_info.offset = 0;
+    buffer_info.range = dynamic_alignment*num_meshes;
+
+    VkWriteDescriptorSet descriptor_write = {};
+    descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptor_write.dstSet = m_descriptor_set;
+    descriptor_write.dstBinding = 0;
+    descriptor_write.dstArrayElement = 0;
+
+    descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+    descriptor_write.descriptorCount = 1;
+
+    descriptor_write.pBufferInfo = &buffer_info;
+    descriptor_write.pImageInfo = nullptr; // Optional
+    descriptor_write.pTexelBufferView = nullptr; // Optional
+
+    vkUpdateDescriptorSets(m_logical_device, 1, &descriptor_write, 0, nullptr);
   }
-
-  /// Update descriptor set
-  VkDescriptorBufferInfo buffer_info = {};
-  buffer_info.buffer = m_uniform_buffer;
-  buffer_info.offset = 0;
-  buffer_info.range = dynamic_alignment*meshes.size();
-
-  VkWriteDescriptorSet descriptor_write = {};
-  descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-  descriptor_write.dstSet = m_descriptor_set;
-  descriptor_write.dstBinding = 0;
-  descriptor_write.dstArrayElement = 0;
-
-  descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-  descriptor_write.descriptorCount = 1;
-
-  descriptor_write.pBufferInfo = &buffer_info;
-  descriptor_write.pImageInfo = nullptr; // Optional
-  descriptor_write.pTexelBufferView = nullptr; // Optional
-
-  vkUpdateDescriptorSets(m_logical_device, 1, &descriptor_write, 0, nullptr);
 
   /// Setting up command buffer
   VkCommandBufferBeginInfo begin_info = {};
@@ -1153,8 +1252,10 @@ static void build_command_buffer(uint32_t index) {
   begin_info.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
   begin_info.pInheritanceInfo = nullptr; // Optional
 
-  if (vkBeginCommandBuffer(m_command_buffers[index], &begin_info) != VK_SUCCESS) {
-    throw std::runtime_error("failed to begin recording command buffer!");
+  if (vkBeginCommandBuffer(m_command_buffers[index], &begin_info) != VK_SUCCESS) 
+  {
+    log->error("failed to begin recording command buffer!");
+    report_error(TNA_ERROR::E_RENDERER_RUNTIME_ERROR);
   }
 
   vkCmdBindPipeline(m_command_buffers[index], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
@@ -1173,26 +1274,30 @@ static void build_command_buffer(uint32_t index) {
   vkCmdBeginRenderPass(m_command_buffers[index], &renderpass_info, VK_SUBPASS_CONTENTS_INLINE);
 
 
-  for(size_t i = 0; i < meshes.size() && i < MAX_PRIMITIVE_COUNT; ++i) {
-    auto info = meshes[i];
-    VkBuffer vertex_buffers[] = {info.m_mesh_data->m_vertex_buffer};
+  for(size_t i = 0; i < num_meshes && i < MAX_PRIMITIVE_COUNT; ++i) 
+  {
+    const VkRenderingInfo* info = &meshes[i];
+    VkBuffer vertex_buffers[] = {info->m_mesh_data->m_vertex_buffer};
     VkDeviceSize offsets[] = {0};
 
     vkCmdBindVertexBuffers(m_command_buffers[index], 0, 1, vertex_buffers, offsets);
-    vkCmdBindIndexBuffer(m_command_buffers[index], info.m_mesh_data->m_index_buffer, 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindIndexBuffer(m_command_buffers[index], info->m_mesh_data->m_index_buffer, 0, VK_INDEX_TYPE_UINT32);
     uint32_t offset = dynamic_alignment*i;
     vkCmdBindDescriptorSets(m_command_buffers[index], 
                             VK_PIPELINE_BIND_POINT_GRAPHICS, 
                             m_pipeline_layout, 0, 1, &m_descriptor_set, 1, &offset);
 
-    vkCmdDrawIndexed(m_command_buffers[index], info.m_mesh_data->m_num_indices, 1, 0, 0, 0);
+    vkCmdDrawIndexed(m_command_buffers[index], info->m_mesh_data->m_num_indices, 1, 0, 0, 0);
   }
 
   vkCmdEndRenderPass(m_command_buffers[index]);
 
-  if (vkEndCommandBuffer(m_command_buffers[index]) != VK_SUCCESS) {
-    throw std::runtime_error("failed to record command buffer!");
+  if (vkEndCommandBuffer(m_command_buffers[index]) != VK_SUCCESS) 
+  {
+    log->error("failed to record command buffer!");
+    report_error(TNA_ERROR::E_RENDERER_RUNTIME_ERROR);
   }
+  return;
 }
 
 
@@ -1200,25 +1305,33 @@ static void build_command_buffer(uint32_t index) {
 ////////////// PUBLIC METHODS //////////////////
 ////////////////////////////////////////////////
 
-void init_renderer(const Config& config, 
-                    GLFWwindow* window) {
-
-  for(auto& layer : config.m_vk_validation_layers) {
-    char* str = new char[strlen(layer.c_str())+1];
-    std::strcpy(str, layer.c_str());
+void 
+init_renderer(const Config* config, 
+              GLFWwindow* window) 
+{
+  for(uint32_t i = 0; i < config->m_num_vk_vlayers; ++i) 
+  {
+    const char* layer = (config->m_vk_vlayers[i])->c_str();
+    char* str = new char[strlen(layer)+1];
+    strcpy(str, layer);
     m_validation_layers.push_back(str);
   }
-  m_viewport_width = config.m_viewport_width;
-  m_viewport_height = config.m_viewport_height;
+  m_viewport_width = config->m_viewport_width;
+  m_viewport_height = config->m_viewport_height;
 
-  if(enable_validation_layers) {
+  if(enable_validation_layers)
+  {
     log->warning("Vulkan validation layers loaded");
   }
 
   create_vulkan_instance();
+
   create_surface(window);
+
   add_debug_handler();
+
   create_physical_device();
+
   create_logical_device();
 
   VmaAllocatorCreateInfo allocator_info = {};
@@ -1227,26 +1340,36 @@ void init_renderer(const Config& config,
   vmaCreateAllocator(&allocator_info, &m_vkallocator);
 
   create_command_queues();
+
   create_command_pool();
 
   create_swap_chain();
+
   create_image_views();
+  
   create_descriptor_pool();
+
   create_descriptor_set();
+
   create_graphics_pipeline();
+
   create_uniform_buffers();
 
   create_command_buffers();
+
   create_semaphores();
+
+  return;
 }
 
 
-void terminate_renderer() {
+void 
+terminate_renderer() {
 
   vkDeviceWaitIdle(m_logical_device);
 
-  resources::shader_registry->clear();
-  resources::mesh_registry->clear();
+  shader_registry->clear();
+  mesh_registry->clear();
 
 	vkDestroySemaphore(m_logical_device, m_render_finished_semaphore, nullptr);
 	vkDestroySemaphore(m_logical_device, m_image_available_semaphore, nullptr);
@@ -1279,12 +1402,15 @@ void terminate_renderer() {
 }
 
 
-void begin_frame() {
+void
+begin_frame() 
+{
   m_scene.clear();
 }
 
-void end_frame() {
-
+void 
+end_frame() 
+{
 	uint32_t image_index;
 	VkResult result = vkAcquireNextImageKHR(m_logical_device, 
                                           m_swap_chain, 
@@ -1293,11 +1419,15 @@ void end_frame() {
                                           VK_NULL_HANDLE, 
                                           &image_index);
 
-  if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+  if (result == VK_ERROR_OUT_OF_DATE_KHR) 
+  {
     recreate_swap_chain();
     return;
-  } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-    throw std::runtime_error("failed to acquire swap chain image!");
+  } 
+  else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) 
+  {
+    log->error("failed to acquire swap chain image!");
+    report_error(TNA_ERROR::E_RENDERER_RUNTIME_ERROR);
   }
 
   build_command_buffer(image_index);
@@ -1321,8 +1451,10 @@ void end_frame() {
   if (vkQueueSubmit(m_graphics_queue, 
                     1, 
                     &submit_info, 
-                    VK_NULL_HANDLE) != VK_SUCCESS) {
-    throw std::runtime_error("failed to submit draw command buffer!");
+                    VK_NULL_HANDLE) != VK_SUCCESS) 
+  {
+    log->error("failed to submit draw command buffer!");
+    report_error(TNA_ERROR::E_RENDERER_RUNTIME_ERROR);
   }
 
 	VkPresentInfoKHR present_info = {};
@@ -1340,26 +1472,34 @@ void end_frame() {
 	result = vkQueuePresentKHR(m_present_queue, 
                              &present_info);
 
-  if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+  if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) 
+  {
     recreate_swap_chain();
-  } else if (result != VK_SUCCESS) {
-    throw std::runtime_error("failed to present swap chain image!");
+  } 
+  else if (result != VK_SUCCESS) 
+  {
+    log->error("failed to present swap chain image!");
+    report_error(TNA_ERROR::E_RENDERER_RUNTIME_ERROR);
   }
 
   vkQueueWaitIdle(m_present_queue);
+  return;
 }
 
-void render_mesh(const MeshData* mesh_data, 
-                 const glm::mat4& model_mat ) {
+void 
+render_mesh(const MeshData* mesh_data, 
+            const Matrix4* model_mat ) 
+{
 
   m_scene.add_mesh(static_cast<const VkMeshData*>(mesh_data),
                    model_mat);
 
 }
 
-void set_camera(const glm::mat4& camera_mat) {
+void 
+set_camera(const Matrix4* camera_mat) 
+{
   m_scene.set_camera(camera_mat);
 }
 
-}
 }

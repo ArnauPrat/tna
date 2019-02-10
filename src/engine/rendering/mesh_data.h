@@ -3,27 +3,22 @@
 #ifndef _TNA_MESHDATA_H_
 #define _TNA_MESHDATA_H_ value
 
-#include "vertex.h"
-#include "../types.h"
-#include "vulkan/vulkan.h"
 
+#include "../common.h"
 #include <string>
 
-
-namespace tna {
-namespace rendering {
+namespace tna 
+{
   
-struct MeshData {
+struct MeshData 
+{
+  static MeshData* 
+  load(const std::string& path);
 
-  MeshData() = default;
-  virtual ~MeshData() = default;
-
-  static MeshData* load(const std::string& path);
-
-  static void unload(MeshData* shader);
+  static void 
+  unload(MeshData* mesh_data);
 };
   
-} /* rendering */ 
 } /* tna */ 
 
 #endif /* ifndef _TNA_MESH_H_ */

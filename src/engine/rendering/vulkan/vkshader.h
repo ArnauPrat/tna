@@ -4,16 +4,17 @@
 #define _TNA_VKSHADER_H_ value
 
 #include "../shader.h"
+#include <vulkan/vulkan.h>
 
-namespace tna {
-namespace rendering {
+namespace tna 
+{
 
-struct VkShader : Shader {
 
-  VkShaderModule  m_shader_module;
-
+struct VkShader : Shader 
+{
+  VkShader();
+  VkShaderModule m_shader_module;
 };
   
-} /* rendering */ 
 } /* tna */ 
 #endif /* ifndef _TNA_VKSHADER_H_ */

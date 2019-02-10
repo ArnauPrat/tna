@@ -5,11 +5,11 @@
 #include "../mesh_data.h"
 #include "vkmem_alloc.h"
 
-namespace tna {
-namespace rendering {
+namespace tna 
+{
 
-struct VkMeshData : public MeshData {
-
+struct VkMeshData : public MeshData 
+{
   VkMeshData() = default;
   virtual ~VkMeshData() = default;
 
@@ -21,11 +21,8 @@ struct VkMeshData : public MeshData {
 
   uint32_t        m_num_vertices;
   uint32_t        m_num_indices;
-
 };
 
-} /* rendering */ 
-  
 } /* tna */ 
 
 #endif /* ifndef _TNA_VKMESH_DATA_H_ */

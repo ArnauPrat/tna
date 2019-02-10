@@ -1,21 +1,24 @@
 
 #include "resources.h"
 
-namespace tna {
-namespace resources {
+namespace tna 
+{
   
-ResourceRegistry<rendering::MeshData>* mesh_registry   = nullptr;
-ResourceRegistry<rendering::Shader>*   shader_registry = nullptr;
+ResourceRegistry<MeshData>* mesh_registry   = nullptr;
+ResourceRegistry<Shader>*   shader_registry = nullptr;
 
-void init_resources() {
-  mesh_registry = new ResourceRegistry<rendering::MeshData>();
-  shader_registry = new ResourceRegistry<rendering::Shader>();
+void 
+init_resources() 
+{
+  mesh_registry = new ResourceRegistry<MeshData>();
+  shader_registry = new ResourceRegistry<Shader>();
 }
 
-void terminate_resources() {
+void 
+terminate_resources() 
+{
   delete shader_registry;
   delete mesh_registry;
 }
 
-} /* tna */ 
 } /* resources */ 

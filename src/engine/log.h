@@ -4,7 +4,11 @@
 
 #include <fstream>
 
-namespace tna {
+namespace tna 
+{
+class Log;
+extern Log* log;
+
 class Log {
 public:
   Log(const char* log_filename);

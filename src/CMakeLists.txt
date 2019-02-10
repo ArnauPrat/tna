@@ -1,13 +1,15 @@
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -Wno-ignored-attributes -fexceptions")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}  -O0 -g -pg ")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wno-ignored-attributes -fno-exceptions -fno-rtti")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -pg")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 ")
 
 ### Setting up furious
 set(FURIOUS_ROOT "/home/aprat/projects/personal/furious/build/dist")
 set(FURIOUS_INCLUDE_DIR "${FURIOUS_ROOT}/include")
-set(FURIOUS_LIB_DIR "${FURIOUS_ROOT}/lib")
-set(FURIOUS_LIBS libfurious.so) ### Setting up bullet
+set(FURIOUS_LIBRARIES_DIR "${FURIOUS_ROOT}/lib")
+#set(FURIOUS_LIBRARIES "libfurious.so")
+set(FURIOUS_LIBRARIES "libfurious.so")
+
 set(BULLET_ROOT "/usr/")
 set(BULLET_INCLUDE_DIR "${BULLET_ROOT}/include/bullet")
 set(BULLET_LIBRARY_DIR "${BULLET_ROOT}/lib")
@@ -35,10 +37,10 @@ set(Vulkan_LIBRARIES_DIR "${Vulkan_SDK_ROOT}/lib")
 set(Vulkan_LIBRARIES "libvulkan.so")
 
 ### Setting up boost
-set(Boost_USE_STATIC_LIBS OFF) 
-set(Boost_USE_MULTITHREADED ON)  
-set(Boost_USE_STATIC_RUNTIME OFF) 
-find_package(Boost 1.66 COMPONENTS program_options date_time thread system locale context REQUIRED)
+#set(Boost_USE_STATIC_LIBS OFF) 
+#set(Boost_USE_MULTITHREADED ON)  
+#set(Boost_USE_STATIC_RUNTIME OFF) 
+#find_package(Boost 1.66 COMPONENTS program_options date_time thread system locale context REQUIRED)
 
 
 include_directories(${CMAKE_SOURCE_DIR}/src)
@@ -46,13 +48,13 @@ include_directories(${FURIOUS_INCLUDE_DIR})
 include_directories(${BULLET_INCLUDE_DIR})
 include_directories(${Vulkan_INCLUDE_DIR})
 
-link_directories(${FURIOUS_LIB_DIR})
 link_directories(${BULLET_LIBRARY_DIR})
 link_directories(${Vulkan_LIBRARIES_DIR})
+link_directories(${FURIOUS_LIBRARIES_DIR})
 
 message(STATUS ${FURIOUS_ROOT})
 message(STATUS ${FURIOUS_INCLUDE_DIR})
-message(STATUS ${FURIOUS_LIB_DIR})
+message(STATUS ${FURIOUS_LIBRARIES_DIR})
 
 set(VK_RENDERER_SOURCE_FILES 
   engine/rendering/vulkan/vkbuffer_tools.cpp
@@ -74,17 +76,23 @@ set(VK_RENDERER_SOURCE_FILES
 
 set(TNA_SOURCE_FILES 
   ${VK_RENDERER_SOURCE_FILES}
+  components/rotation.h
   engine/components/mesh.h
   engine/components/transform.h
-  engine/systems/render_mesh.h
   engine/config.cpp
   engine/config.h
   engine/engine.cpp
   engine/engine.h
+  engine/error.cpp
+  engine/error.h
   engine/game_app.cpp
   engine/game_app.h
   engine/log.cpp
   engine/log.h
+  engine/math/math_tools.cpp
+  engine/math/math_tools.h
+  engine/math/matrix.h
+  engine/math/vector.h
   engine/rendering/mesh_data.h
   engine/rendering/renderer.h
   engine/rendering/shader.h
@@ -98,7 +106,7 @@ set(TNA_SOURCE_FILES
   engine/tools/files.cpp
   engine/tools/files.h
   engine/types.h
-  components/rotation.h
+  engine/furious_runtime.cpp
   game.cpp
   game.h
   main.cpp
@@ -106,14 +114,33 @@ set(TNA_SOURCE_FILES
   tnasdk/definitions.h
 	)
 
+set(TNA_SCRIPTS
+  engine/scripts/render_mesh.cpp
+	scripts/test.cpp
+  )
+
+message(STATUS ${CMAKE_CURRENT_BINARY_DIR})
+set(CLANG_INCLUDES_DIR "/usr/lib/clang/7.0.1/include")
+add_custom_command(
+	OUTPUT engine/furious_runtime.cpp
+	COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/engine/
+	COMMAND ${FURIOUS_ROOT}/bin/fcc -o
+  ${CMAKE_CURRENT_BINARY_DIR}/engine/furious_runtime.cpp ${TNA_SCRIPTS} -- --std=c++17 -I${CLANG_INCLUDES_DIR} -I${CMAKE_CURRENT_SOURCE_DIR} -I${FURIOUS_INCLUDE_DIR}
+	DEPENDS ${FURIOUS_ROOT}/bin/fcc ${TNA_SCRIPTS}
+	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+	)
+
+
+
 add_executable(tna
-	${TNA_SOURCE_FILES})  
+	${TNA_SOURCE_FILES}
+  )  
 
 target_link_libraries(tna 
-  ${FURIOUS_LIBS} 
-  ${BULLET_LIBRARIES} 
+  ${FURIOUS_LIBRARIES} 
   glfw
   ${Vulkan_LIBRARIES}
-  ${Boost_LIBRARIES}
+  #${BULLET_LIBRARIES} 
+  #  ${Boost_LIBRARIES}
   )
 

@@ -9,34 +9,32 @@
 #include "rendering/rendering.h"
 #include "resources/resources.h"
 
-#define GLM_FORCE_RADIANS
-#include "glm/glm.hpp"
-#include <glm/gtc/matrix_transform.hpp>
-
-#include <furious/furious.h>
-
-namespace tna {
+namespace tna 
+{
 
 class Config;
 class GameApp;
 
 
 /**
- * @brief Initializes the resources of the game engine
+ * \brief Initializes the resources of the game engine
  */
-void initialize();
+void 
+initialize();
 
 /**
- * @brief Releases the resources of the game engine
+ * \brief Releases the resources of the game engine
  */
-void terminate();
+void 
+terminate();
 
 /**
- * @brief Runs the given GameApp
+ * \brief Runs the given GameApp
  *
- * @param game_app
+ * \param game_app
  */
-void run(GameApp* game_app);
+void 
+run(GameApp* game_app);
 
 }
 #endif /* ifndef _TNA_ENGINE_H_ */

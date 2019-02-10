@@ -7,8 +7,8 @@
 #include <vulkan/vulkan.h>
 #include "vkmem_alloc.h"
 
-namespace tna {
-namespace rendering {
+namespace tna 
+{
 
 extern VkPhysicalDevice m_physical_device;
 
@@ -24,7 +24,6 @@ extern VkQueue          m_present_queue;
 
 extern VmaAllocator     m_vkallocator;
 
-}
 } /* tna */ 
 
 #endif /* ifndef _TNA_VKRENDERER_H_ */

@@ -6,28 +6,34 @@
 #include "vkrenderer.h"
 
 namespace tna {
-namespace rendering {
+
+VkShader::VkShader() 
+{
+}
 
 
-Shader* Shader::load(const std::string& path) {
+Shader* 
+Shader::load(const std::string& path) 
+{
 
   std::vector<char> shader_code = read_file(path);
 
-  VkShader* shader = new VkShader{};
-  shader->m_shader_module = create_shader_module(m_logical_device, shader_code);
-  return shader;
-
+  VkShader* vkshader = new VkShader();
+  vkshader->m_shader_module = create_shader_module(m_logical_device, 
+                                                   shader_code);
+  return vkshader;
 }
 
-void Shader::unload(Shader* shader) {
+void 
+Shader::unload(Shader* shader) 
+{
 
   VkShader* vkshader = static_cast<VkShader*>(shader);
 
-  destroy_shader_module(m_logical_device, vkshader->m_shader_module);
+  destroy_shader_module(m_logical_device, 
+                        vkshader->m_shader_module);
 
   delete vkshader;
-
 }
   
-}
 } /* tna */ 

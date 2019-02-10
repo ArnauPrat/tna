@@ -4,14 +4,15 @@
 #define _TNA_VKVERTEX_TOOLS_H_ value
 
 #include "vkrenderer.h"
-#include <array>
 
-namespace tna {
-namespace rendering {
+namespace tna 
+{
 
-VkVertexInputBindingDescription get_binding_description(); 
+VkVertexInputBindingDescription 
+get_binding_description(); 
 
-std::array<VkVertexInputAttributeDescription, 3> get_attribute_descriptions();  
-} /* rendering */ 
+void
+get_attribute_descriptions(VkVertexInputAttributeDescription* descriptors);  
+
 } /* tna */ 
 #endif /* ifndef _TNA_VKVERTEX_TOOLS_H_ */

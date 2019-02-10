@@ -3,20 +3,29 @@
 #ifndef _TNA_MESH_H_
 #define _TNA_MESH_H_ value
 
-#include "../engine.h"
+#include "../resources/resources.h"
+#include <furious/components.h>
 
-namespace tna {
+namespace tna 
+{
+struct MeshData;
 
-struct Mesh {
-  Mesh(const std::string& name) {
-    m_mesh_data = resources::mesh_registry->load(name).get();
+struct Mesh 
+{
+  FURIOUS_COMPONENT(Mesh);
+
+  Mesh(const std::string& name) 
+  {
+    m_mesh_data = mesh_registry->load(name);
   }
 
-  static std::string name() {
+  static 
+  std::string name() 
+  {
     return "Mesh";
   }
 
-  const rendering::MeshData* m_mesh_data;
+  const MeshData* m_mesh_data;
 };
   
 } /* tna */ 

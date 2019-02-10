@@ -1,32 +1,33 @@
 
 #include "directory_registry.h"
 #include <vector>
-#include <fstream>
-#include <iostream>
+#include <stdio.h>
 
-namespace tna {
-namespace resources {
-  
+namespace tna 
+{
 
 static std::vector<std::string> directories;
 
-void register_directory(const std::string& directory) {
+void 
+register_directory(const std::string& directory) 
+{
   directories.push_back(directory);
 }
 
-optional<std::string> get_path(const std::string& resource_name) {
-
-  for(auto directory : directories) {
+std::string 
+get_path(const std::string& resource_name) 
+{
+  for(std::string& directory : directories) 
+  {
     std::string path = directory+"/"+resource_name; 
-    std::ifstream ifile( path );
-    if (ifile) { 
-      return optional<std::string>{path}; 
+    FILE* fd = fopen(path.c_str(),"r");
+    if (fd != nullptr) 
+    { 
+      fclose(fd);
+      return path; 
     }
   } 
-
-  return optional<std::string>{};
-
+  return "";
 }
   
-}
 } /* tna */ 

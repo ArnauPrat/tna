@@ -3,20 +3,20 @@
 #ifndef _TNA_SHADER_H_
 #define _TNA_SHADER_H_ value
 
-#include <vulkan/vulkan.h>
 #include <string>
 
-namespace tna {
-namespace rendering {
+namespace tna 
+{
+struct Shader 
+{
 
-struct Shader {
+  static Shader* 
+  load(const std::string& path);
 
-  static Shader* load(const std::string& path);
-
-  static void unload(Shader* shader);
+  static void 
+  unload(Shader* shader);
 
 };
 
-}
 } /* tna */ 
 #endif /* ifndef _TNA_SHADER_H_ */
