@@ -28,8 +28,8 @@ void Game::on_app_start()
 
   set_camera(&view);
 
-  //Entity entity = create_entity();
-  //FURIOUS_ADD_COMPONENT(&entity, Mesh, "models/cube.obj");
+  Entity entity = create_entity();
+  FURIOUS_ADD_COMPONENT(&entity, Mesh, "models/cube.obj");
 }
 
 void Game::on_app_finish() 

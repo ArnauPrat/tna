@@ -11,7 +11,7 @@ namespace tna
 struct VkMeshData : public MeshData 
 {
   VkMeshData() = default;
-  virtual ~VkMeshData() = default;
+  ~VkMeshData() = default;
 
   VkBuffer        m_vertex_buffer;
   VkBuffer        m_index_buffer;

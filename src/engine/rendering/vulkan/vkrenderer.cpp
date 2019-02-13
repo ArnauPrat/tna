@@ -31,10 +31,11 @@ namespace tna {
 #define MAX_PRIMITIVE_COUNT 65536
 
 /**
- * @brief Structure used to store the indices to the different families of
+ * \brief Structure used to store the indices to the different families of
  * available queues
  */
-struct QueueFamilyIndices {
+struct QueueFamilyIndices 
+{
 
 	int32_t m_graphics_queue = -1;
   int32_t m_present_queue = -1;
@@ -52,7 +53,7 @@ struct QueueFamilyIndices {
 };
 
 /**
- * @brief Struct used to store the Swap Chain capabilities and support details
+ * \brief Struct used to store the Swap Chain capabilities and support details
  */
 struct SwapChainSupportDetails 
 {
@@ -63,33 +64,33 @@ struct SwapChainSupportDetails
 
 
 /**
- * @brief Width of the viewport
+ * \brief Width of the viewport
  */
 uint32_t                  m_viewport_width = 0;
 
 /**
- * @brief Height of the viewport
+ * \brief Height of the viewport
  */
 uint32_t                  m_viewport_height = 0;
 
 /**
- * @brief Vulkan instance
+ * \brief Vulkan instance
  */
 VkInstance                m_vulkan_instance = VK_NULL_HANDLE;
 
 /**
- * @brief Rendering surface
+ * \brief Rendering surface
  */
 VkSurfaceKHR              m_window_surface = VK_NULL_HANDLE;
 
 
 /**
- * @brief Debug report callback
+ * \brief Debug report callback
  */
 VkDebugReportCallbackEXT  m_report_callback = VK_NULL_HANDLE;
 
 /**
- * @brief Physical device
+ * \brief Physical device
  */
 VkPhysicalDevice          m_physical_device = VK_NULL_HANDLE;
 
@@ -98,126 +99,126 @@ VkPhysicalDeviceProperties m_mem_properties;
 
 
 /**
- * @brief Logical device
+ * \brief Logical device
  */
 VkDevice                  m_logical_device = VK_NULL_HANDLE;
 
 /**
- * @brief Rendering Surface format
+ * \brief Rendering Surface format
  */
 VkSurfaceFormatKHR        m_surface_format;
 
 
 /**
- * @brief Rendering Surface extent
+ * \brief Rendering Surface extent
  */
 VkExtent2D                m_extent;
 
 /**
- * @brief Swap chain
+ * \brief Swap chain
  */
 VkSwapchainKHR            m_swap_chain = VK_NULL_HANDLE;
 
 
 /**
- * @brief Vector with the different swap chain images
+ * \brief Vector with the different swap chain images
  */
 std::vector<VkImage>      m_swap_chain_images;
 
 /**
- * @brief Vector with the different swap chain image views
+ * \brief Vector with the different swap chain image views
  */
 std::vector<VkImageView>  m_swap_chain_image_views;
 
 
 /**
- * @brief pipeline layout
+ * \brief pipeline layout
  */
 VkPipelineLayout          m_pipeline_layout;
 
 
 /**
- * @brief Render pass object
+ * \brief Render pass object
  */
 VkRenderPass              m_render_pass;
 
 
 /**
- * @brief Rendering pipeline
+ * \brief Rendering pipeline
  */
 VkPipeline                m_pipeline;
 
 
 /**
- * @brief Rendering command pool
+ * \brief Rendering command pool
  */
 VkCommandPool             m_command_pool;
 
 /**
- * @brief The descriptor pool
+ * \brief The descriptor pool
  */
 VkDescriptorPool          m_descriptor_pool;
 
 /**
- * @brief The descriptor set of the pipeline
+ * \brief The descriptor set of the pipeline
  */
 VkDescriptorSet           m_descriptor_set;
 
 /**
- * @brief Semaphore for synchronizing next frame image retrieval
+ * \brief Semaphore for synchronizing next frame image retrieval
  */
 VkSemaphore               m_image_available_semaphore;
 
 /**
- * @brief Sempahore to synchronize render pass finished
+ * \brief Sempahore to synchronize render pass finished
  */
 VkSemaphore               m_render_finished_semaphore;
 
 /**
- * @brief Queue family indices
+ * \brief Queue family indices
  */
 QueueFamilyIndices 			  m_queue_indices;
 
 
 /**
- * @brief Graphics command queue
+ * \brief Graphics command queue
  */
 VkQueue                   m_graphics_queue;
 
 
 /**
- * @brief Present command queue
+ * \brief Present command queue
  */
 VkQueue                   m_present_queue;
 
 /**
- * @brief Vector with the different validation layers to load. Filled up
+ * \brief Vector with the different validation layers to load. Filled up
  * dynamically from the config file
  */
 std::vector<const char*>        m_validation_layers;
 
 
 /**
- * @brief Vector with the required physical device extensions
+ * \brief Vector with the required physical device extensions
  */
 const std::vector<const char*>  m_device_extensions = {
                                                     VK_KHR_SWAPCHAIN_EXTENSION_NAME
                                                    };
 
 /**
- * @brief Vector with the different frame buffers. One per swap chain image
+ * \brief Vector with the different frame buffers. One per swap chain image
  */
 std::vector<VkFramebuffer>      m_frame_buffers;
 
 
 /**
- * @brief Vector with the different command buffers. One per swap chain image 
+ * \brief Vector with the different command buffers. One per swap chain image 
  */
 std::vector<VkCommandBuffer>    m_command_buffers;
 
 
 /**
- * @brief Flag used to enable validation layers or not
+ * \brief Flag used to enable validation layers or not
  */
 #ifdef NDEBUG
 const bool enable_validation_layers = false;
@@ -227,13 +228,13 @@ const bool enable_validation_layers = true;
 
 
 /**
- * @brief The memory allocator used to create Vulkan buffers
+ * \brief The memory allocator used to create Vulkan buffers
  */
 VmaAllocator                    m_vkallocator;
 
 
 /**
- * @brief The Vulkan Scene object to store the scene to render information
+ * \brief The Vulkan Scene object to store the scene to render information
  */
 VkScene                         m_scene;
 
@@ -253,12 +254,12 @@ VmaAllocation         m_uniform_allocation;
 void*                 m_udata = nullptr;
 
 /**
- * @brief Queries the physical device for the actual swap chain support
+ * \brief Queries the physical device for the actual swap chain support
  *
- * @param device The physical device to query the support from
- * @param surface The rendering surface
+ * \param device The physical device to query the support from
+ * \param surface The rendering surface
  *
- * @return Returns a SwapChainSupportDetails structure with the given available
+ * \return Returns a SwapChainSupportDetails structure with the given available
  * support
  */
 static SwapChainSupportDetails query_sc_support_details(VkPhysicalDevice device, 
@@ -274,7 +275,8 @@ static SwapChainSupportDetails query_sc_support_details(VkPhysicalDevice device,
                                        surface, 
                                        &format_count, 
                                        nullptr);
-  if (format_count != 0) {
+  if (format_count != 0) 
+  {
     sc_support_details.m_formats.resize(format_count);
     vkGetPhysicalDeviceSurfaceFormatsKHR(device, 
                                          surface, 
@@ -287,7 +289,8 @@ static SwapChainSupportDetails query_sc_support_details(VkPhysicalDevice device,
                                             surface, 
                                             &present_mode_count, 
                                             nullptr);
-  if (present_mode_count != 0) {
+  if (present_mode_count != 0) 
+  {
     sc_support_details.m_present_modes.resize(present_mode_count);
     vkGetPhysicalDeviceSurfacePresentModesKHR(device, 
                                               surface, 
@@ -298,12 +301,12 @@ static SwapChainSupportDetails query_sc_support_details(VkPhysicalDevice device,
 }
 
 /**
- * @brief Given the different available surface formats for the swap chain,
+ * \brief Given the different available surface formats for the swap chain,
  * choses the best one
  *
- * @param available_formats A vector with the available surface formats
+ * \param available_formats A vector with the available surface formats
  *
- * @return Returns the chosen surface format
+ * \return Returns the chosen surface format
  */
 static VkSurfaceFormatKHR choose_sc_surface_format(const std::vector<VkSurfaceFormatKHR>& available_formats) 
 {
@@ -322,11 +325,11 @@ static VkSurfaceFormatKHR choose_sc_surface_format(const std::vector<VkSurfaceFo
 }
 
 /**
- * @brief Given the different available present modes, choses the best one
+ * \brief Given the different available present modes, choses the best one
  *
- * @param available_present_modes A vector with the available present modes
+ * \param available_present_modes A vector with the available present modes
  *
- * @return The choosen present mode
+ * \return The choosen present mode
  */
 static VkPresentModeKHR choose_sc_present_mode(const std::vector<VkPresentModeKHR> available_present_modes) 
 {
@@ -344,13 +347,13 @@ static VkPresentModeKHR choose_sc_present_mode(const std::vector<VkPresentModeKH
 }
 
 /**
- * @brief Chooses the extent of the swap chain
+ * \brief Chooses the extent of the swap chain
  *
- * @param capabilities The capabilities of the surface
- * @param width The width of the viewport 
- * @param height The height of the viewport 
+ * \param capabilities The capabilities of the surface
+ * \param width The width of the viewport 
+ * \param height The height of the viewport 
  *
- * @return Returns the choosen extent
+ * \return Returns the choosen extent
  */
 static VkExtent2D choose_sc_extent(const VkSurfaceCapabilitiesKHR& capabilities, 
                                    uint32_t width,
@@ -378,18 +381,18 @@ static VkExtent2D choose_sc_extent(const VkSurfaceCapabilitiesKHR& capabilities,
 
 
 /**
- * @brief Callback used to capture debug information
+ * \brief Callback used to capture debug information
  *
- * @param flags
- * @param objType
- * @param obj
- * @param location
- * @param code
- * @param layerPrefix
- * @param msg
- * @param userData
+ * \param flags
+ * \param objType
+ * \param obj
+ * \param location
+ * \param code
+ * \param layerPrefix
+ * \param msg
+ * \param userData
  *
- * @return 
+ * \return 
  */
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
                                         VkDebugReportFlagsEXT flags,
@@ -408,12 +411,12 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
 
 
 /**
- * @brief Checks the support of the physical device for the desired extensions
+ * \brief Checks the support of the physical device for the desired extensions
  *
- * @param device The physical device to check the extensions support of
- * @param desired_extensions The extensions wanted to check
+ * \param device The physical device to check the extensions support of
+ * \param desired_extensions The extensions wanted to check
  *
- * @return Returns true if all the desired extensions are supported
+ * \return Returns true if all the desired extensions are supported
  */
 bool check_device_extension_support(VkPhysicalDevice device,
                                     const std::vector<const char*>& desired_extensions) {
@@ -436,12 +439,12 @@ bool check_device_extension_support(VkPhysicalDevice device,
 }
 
 /**
- * @brief Checks if the given physical device is suitable for our application
+ * \brief Checks if the given physical device is suitable for our application
  *
- * @param device The physical device to check for
- * @param surface The rendering surface 
+ * \param device The physical device to check for
+ * \param surface The rendering surface 
  *
- * @return Returns true if the device is suitable
+ * \return Returns true if the device is suitable
  */
 static bool is_device_suitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
 
@@ -1197,8 +1200,8 @@ recreate_swap_chain() {
 }
 
 static void 
-build_command_buffer(uint32_t index) {
-
+build_command_buffer(uint32_t index) 
+{
   m_view_matrix = m_scene.get_camera();
   m_projection_matrix = create_projection_matrix(45.0f, 
                                                  m_viewport_height / (float)(m_viewport_width),
@@ -1232,13 +1235,13 @@ build_command_buffer(uint32_t index) {
 
     VkWriteDescriptorSet descriptor_write = {};
     descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptor_write.pNext = nullptr;
     descriptor_write.dstSet = m_descriptor_set;
     descriptor_write.dstBinding = 0;
     descriptor_write.dstArrayElement = 0;
 
     descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
     descriptor_write.descriptorCount = 1;
-
     descriptor_write.pBufferInfo = &buffer_info;
     descriptor_write.pImageInfo = nullptr; // Optional
     descriptor_write.pTexelBufferView = nullptr; // Optional

@@ -81,6 +81,7 @@ initialize()
   register_directory("./");
 
   p_database = new furious::Database();
+  p_database->start_webserver("localhost", "8080");
 
   // Initializing Furious
   furious::__furious_init(p_database);
