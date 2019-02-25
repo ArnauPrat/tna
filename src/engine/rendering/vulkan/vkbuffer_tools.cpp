@@ -21,7 +21,8 @@ namespace tna
 }*/
 
 void 
-create_buffer(VkDeviceSize size, 
+create_buffer(VmaAllocator allocator,
+              VkDeviceSize size, 
               VkBufferUsageFlags buffer_usage, 
               VmaMemoryUsage memory_usage,
               VkBuffer* buffer, 
@@ -34,7 +35,7 @@ create_buffer(VkDeviceSize size,
   VmaAllocationCreateInfo alloc_info = {};
   alloc_info.usage = memory_usage;
 
-  if(vmaCreateBuffer(m_vkallocator, 
+  if(vmaCreateBuffer(allocator, 
                      &bufferInfo, 
                      &alloc_info, 
                      buffer, 
@@ -47,10 +48,11 @@ create_buffer(VkDeviceSize size,
 }
 
 void 
-destroy_buffer(VkBuffer buffer,
+destroy_buffer(VmaAllocator allocator,
+               VkBuffer buffer,
                VmaAllocation buffer_allocation) 
 {
-  vmaDestroyBuffer(m_vkallocator,
+  vmaDestroyBuffer(allocator,
                    buffer,
                    buffer_allocation);
 
@@ -58,18 +60,22 @@ destroy_buffer(VkBuffer buffer,
 }
 
 void
-copy_buffer(VkBuffer srcBuffer, 
+copy_buffer(VkDevice device,
+            VkQueue queue,
+            VkCommandPool command_pool,
+            VmaAllocator allocator,
+            VkBuffer srcBuffer, 
             VkBuffer dstBuffer, 
             VkDeviceSize size) 
 {
   VkCommandBufferAllocateInfo alloc_info = {};
   alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
   alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-  alloc_info.commandPool = m_command_pool;
+  alloc_info.commandPool = command_pool;
   alloc_info.commandBufferCount = 1;
 
   VkCommandBuffer command_buffer;
-  vkAllocateCommandBuffers(m_logical_device, &alloc_info, &command_buffer);
+  vkAllocateCommandBuffers(device, &alloc_info, &command_buffer);
 
   VkCommandBufferBeginInfo begin_info = {};
   begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -90,16 +96,20 @@ copy_buffer(VkBuffer srcBuffer,
   submit_info.commandBufferCount = 1;
   submit_info.pCommandBuffers = &command_buffer;
 
-  vkQueueSubmit(m_graphics_queue, 1, &submit_info, VK_NULL_HANDLE);
-  vkQueueWaitIdle(m_graphics_queue);
+  vkQueueSubmit(queue, 1, &submit_info, VK_NULL_HANDLE);
+  vkQueueWaitIdle(queue);
 
-  vkFreeCommandBuffers(m_logical_device, m_command_pool, 1, &command_buffer);
+  vkFreeCommandBuffers(device, command_pool, 1, &command_buffer);
 
   return;
 }
 
 void 
-create_vertex_buffer(const Vertex* vertices, 
+create_vertex_buffer(VkDevice device,
+                     VkQueue queue,
+                     VkCommandPool pool,
+                     VmaAllocator allocator,
+                     const Vertex* vertices, 
                      uint32_t num_vertices,
                      VkBuffer* buffer, 
                      VmaAllocation* buffer_memory) 
@@ -110,33 +120,44 @@ create_vertex_buffer(const Vertex* vertices,
   VkBuffer staging_buffer;
   VmaAllocation staging_buffer_allocation;
 
-  create_buffer(buffer_size, 
+  create_buffer(allocator,
+                buffer_size, 
                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
                 VMA_MEMORY_USAGE_CPU_ONLY, 
                 &staging_buffer, 
                 &staging_buffer_allocation);
 
   void* data;
-  vmaMapMemory(m_vkallocator, staging_buffer_allocation, &data);
+  vmaMapMemory(allocator, staging_buffer_allocation, &data);
   memcpy(data, vertices, (size_t) buffer_size);
-  vmaUnmapMemory(m_vkallocator, staging_buffer_allocation);
+  vmaUnmapMemory(allocator, staging_buffer_allocation);
 
-  create_buffer(buffer_size, 
-               VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 
-               VMA_MEMORY_USAGE_GPU_ONLY,
-               buffer, 
-               buffer_memory);
+  create_buffer(allocator,
+                buffer_size, 
+                VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 
+                VMA_MEMORY_USAGE_GPU_ONLY,
+                buffer, 
+                buffer_memory);
 
-  copy_buffer(staging_buffer, *buffer, buffer_size);
+  copy_buffer(device,
+              queue,
+              pool,
+              allocator,
+              staging_buffer, *buffer, buffer_size);
 
-  destroy_buffer(staging_buffer,
+  destroy_buffer(allocator,
+                 staging_buffer,
                  staging_buffer_allocation);
 
   return;
 }
 
 void 
-create_index_buffer(const uint32_t* indices, 
+create_index_buffer(VkDevice device,
+                    VkQueue queue,
+                    VkCommandPool pool,
+                    VmaAllocator allocator,
+                    const uint32_t* indices, 
                     uint32_t num_indices,
                     VkBuffer* buffer, 
                     VmaAllocation* buffer_memory) {
@@ -146,26 +167,29 @@ create_index_buffer(const uint32_t* indices,
   VkBuffer staging_buffer;
   VmaAllocation staging_buffer_allocation;
 
-  create_buffer(buffer_size, 
+  create_buffer(allocator,
+                buffer_size, 
                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
                 VMA_MEMORY_USAGE_CPU_ONLY, 
                 &staging_buffer, 
                 &staging_buffer_allocation);
 
   void* data;
-  vmaMapMemory(m_vkallocator, staging_buffer_allocation, &data);
+  vmaMapMemory(allocator, staging_buffer_allocation, &data);
   memcpy(data, indices, (size_t) buffer_size);
-  vmaUnmapMemory(m_vkallocator, staging_buffer_allocation);
+  vmaUnmapMemory(allocator, staging_buffer_allocation);
 
-  create_buffer(buffer_size, 
-               VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 
-               VMA_MEMORY_USAGE_GPU_ONLY,
-               buffer, 
-               buffer_memory);
+  create_buffer(allocator,
+                buffer_size, 
+                VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 
+                VMA_MEMORY_USAGE_GPU_ONLY,
+                buffer, 
+                buffer_memory);
 
-  copy_buffer(staging_buffer, *buffer, buffer_size);
+  copy_buffer(device, queue, pool, allocator,staging_buffer, *buffer, buffer_size);
 
-  destroy_buffer(staging_buffer,
+  destroy_buffer(allocator,
+                 staging_buffer,
                  staging_buffer_allocation);
 
   return;

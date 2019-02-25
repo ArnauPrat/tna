@@ -118,6 +118,7 @@ terminate()
   }
 
   terminate_renderer();
+  
 
   if(p_window != nullptr) 
   {
@@ -148,6 +149,7 @@ run(GameApp* game_app)
     // Keep running
     auto current_time = std::chrono::high_resolution_clock::now();
     float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
+    start_time = current_time;
 
     glfwPollEvents();
     begin_frame();

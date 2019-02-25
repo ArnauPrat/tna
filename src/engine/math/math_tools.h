@@ -7,6 +7,9 @@
 
 namespace tna
 {
+
+constexpr double PI=3.1415926535897932384626433;
+
 Matrix4
 create_projection_matrix(float field_of_view,
                          float ratio, 
@@ -30,6 +33,11 @@ Matrix4
 look_at(const Vector3& eye,
         const Vector3& center,
         const Vector3& up);
+
+float 
+radians(float angle);
+
 }
+
 
 #endif

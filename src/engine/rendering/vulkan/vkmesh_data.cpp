@@ -74,7 +74,7 @@ MeshData::load(const std::string& path)
           0.0};
       }
 
-      vertex.m_color = {1.0f, 1.0f, 1.0f};
+      vertex.m_color = {1.0f, 0.0f, 0.0f};
 
       if (unique_vertices.count(index.vertex_index) == 0) 
       {
@@ -86,12 +86,20 @@ MeshData::load(const std::string& path)
     }
   }
 
-  create_vertex_buffer(vertices.data(), 
+  create_vertex_buffer(p_renderer->m_logical_device, 
+                       p_renderer->m_graphics_queue,
+                       p_renderer->m_command_pool,
+                       p_renderer->m_vkallocator,
+                       vertices.data(), 
                        vertices.size(),
                        &vkmesh_data->m_vertex_buffer,
                        &vkmesh_data->m_vertex_buffer_allocation);
 
-  create_index_buffer(indices.data(), 
+  create_index_buffer(p_renderer->m_logical_device,
+                      p_renderer->m_graphics_queue,
+                      p_renderer->m_command_pool,
+                      p_renderer->m_vkallocator,
+                      indices.data(), 
                       indices.size(),
                       &vkmesh_data->m_index_buffer,
                       &vkmesh_data->m_index_buffer_allocation);
@@ -107,11 +115,11 @@ MeshData::unload(MeshData* mesh_data)
 {
   VkMeshData* vkmesh_data = static_cast<VkMeshData*>(mesh_data);
 
-  vmaDestroyBuffer(m_vkallocator,
+  vmaDestroyBuffer(p_renderer->m_vkallocator,
                    vkmesh_data->m_vertex_buffer,
                    vkmesh_data->m_vertex_buffer_allocation);
 
-  vmaDestroyBuffer(m_vkallocator,
+  vmaDestroyBuffer(p_renderer->m_vkallocator,
                    vkmesh_data->m_index_buffer,
                    vkmesh_data->m_index_buffer_allocation);
   delete vkmesh_data;

@@ -42,6 +42,7 @@ build_vertex_shader_stage(VkShaderModule shader_module)
   info.stage = VK_SHADER_STAGE_VERTEX_BIT;
   info.module = shader_module;
   info.pName = "main";
+  info.flags = 0;
   info.pNext = nullptr;
   info.pSpecializationInfo = nullptr;
   return info;
@@ -55,6 +56,7 @@ build_fragment_shader_stage(VkShaderModule shader_module)
   info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
   info.module = shader_module;
   info.pName = "main";
+  info.flags = 0;
   info.pNext = nullptr;
   info.pSpecializationInfo = nullptr;
   return info;

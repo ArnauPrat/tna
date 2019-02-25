@@ -24,9 +24,7 @@ struct RenderMesh
     Matrix4 rotateY = rotate(rotateX, transform->m_rotation.y, Vector3(0.0, 1.0, 0.0));
     Matrix4 rotateZ = rotate(rotateY, transform->m_rotation.z, Vector3(0.0, 0.0, 1.0));
     Matrix4 model = scale(rotateZ, transform->m_scale);
-
     render_mesh(mesh->m_mesh_data, &model);
-
   }
 };
 

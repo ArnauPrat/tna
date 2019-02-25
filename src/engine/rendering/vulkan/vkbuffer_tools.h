@@ -22,14 +22,16 @@ namespace tna
  * \param buffer_memory The created memory
  */
 void 
-create_buffer(VkDeviceSize size, 
+create_buffer(VmaAllocator allocator,
+              VkDeviceSize size, 
               VkBufferUsageFlags buffer_usage, 
               VmaMemoryUsage mem_usage,
               VkBuffer* buffer, 
               VmaAllocation* buffer_allocation);
 
 void 
-destroy_buffer(VkBuffer buffer,
+destroy_buffer(VmaAllocator allocator,
+               VkBuffer buffer,
                VmaAllocation buffer_allocation);
 
 /**
@@ -39,9 +41,13 @@ destroy_buffer(VkBuffer buffer,
  * \param dstBuffer The destination buffer
  * \param size The size in bytes to copy
  */
-void 
-copy_buffer(VkBuffer src_buffer, 
-            VkBuffer dst_buffer, 
+void
+copy_buffer(VkDevice device,
+            VkQueue queue,
+            VkCommandPool command_pool,
+            VmaAllocator allocator,
+            VkBuffer srcBuffer, 
+            VkBuffer dstBuffer, 
             VkDeviceSize size);
 
 /**
@@ -52,7 +58,11 @@ copy_buffer(VkBuffer src_buffer,
  * \param buffer_memory The created memory
  */
 void
-create_vertex_buffer(const Vertex* vertices, 
+create_vertex_buffer(VkDevice device,
+                     VkQueue queue,
+                     VkCommandPool pool,
+                     VmaAllocator allocator,
+                     const Vertex* vertices, 
                      uint32_t num_vertices,
                      VkBuffer* buffer, 
                      VmaAllocation* alloc_info);
@@ -65,7 +75,11 @@ create_vertex_buffer(const Vertex* vertices,
  * \param buffer_memory The created memory
  */
 void 
-create_index_buffer(const uint32_t* indices, 
+create_index_buffer(VkDevice device,
+                    VkQueue queue,
+                    VkCommandPool pool,
+                    VmaAllocator allocator,
+                    const uint32_t* indices, 
                     uint32_t num_indices,
                     VkBuffer* buffer, 
                     VmaAllocation* alloc_info);

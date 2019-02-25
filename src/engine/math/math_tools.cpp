@@ -28,7 +28,7 @@ Matrix4 rotate(const Matrix4& matrix,
                float angle,
                const Vector3& axis)
 {
-  return glm::rotate(matrix, angle, axis);
+  return glm::rotate(matrix, radians(angle), axis);
 }
 
 Matrix4
@@ -44,6 +44,12 @@ look_at(const Vector3& eye,
         const Vector3& up)
 {
   return glm::lookAt(eye, center, up);
+}
+
+float 
+radians(float angle)
+{
+  return glm::radians(angle);
 }
 
 }

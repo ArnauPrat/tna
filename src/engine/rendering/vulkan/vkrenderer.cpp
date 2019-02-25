@@ -19,203 +19,15 @@
 #include "vkshader.h"
 #include "vkshader_tools.h"
 #include "vkvertex_tools.h"
-#include <array>
-#include <cstring>
+#include "vkdevice.h"
+#include "vkswapchain.h"
 
-#include <limits>
-#include <set>
-#include <chrono>
+#include "string.h"
 
-namespace tna {
+namespace tna 
+{
 
 #define MAX_PRIMITIVE_COUNT 65536
-
-/**
- * \brief Structure used to store the indices to the different families of
- * available queues
- */
-struct QueueFamilyIndices 
-{
-
-	int32_t m_graphics_queue = -1;
-  int32_t m_present_queue = -1;
-
-  void reset(){
-    m_graphics_queue = -1;
-    m_present_queue = -1;
-  }
-
-  bool is_complete() {
-    return  m_graphics_queue != -1 &&
-            m_present_queue != -1;
-  }
-	
-};
-
-/**
- * \brief Struct used to store the Swap Chain capabilities and support details
- */
-struct SwapChainSupportDetails 
-{
-  VkSurfaceCapabilitiesKHR        m_capabilities;
-  std::vector<VkSurfaceFormatKHR> m_formats;
-  std::vector<VkPresentModeKHR>   m_present_modes;
-};
-
-
-/**
- * \brief Width of the viewport
- */
-uint32_t                  m_viewport_width = 0;
-
-/**
- * \brief Height of the viewport
- */
-uint32_t                  m_viewport_height = 0;
-
-/**
- * \brief Vulkan instance
- */
-VkInstance                m_vulkan_instance = VK_NULL_HANDLE;
-
-/**
- * \brief Rendering surface
- */
-VkSurfaceKHR              m_window_surface = VK_NULL_HANDLE;
-
-
-/**
- * \brief Debug report callback
- */
-VkDebugReportCallbackEXT  m_report_callback = VK_NULL_HANDLE;
-
-/**
- * \brief Physical device
- */
-VkPhysicalDevice          m_physical_device = VK_NULL_HANDLE;
-
-
-VkPhysicalDeviceProperties m_mem_properties;
-
-
-/**
- * \brief Logical device
- */
-VkDevice                  m_logical_device = VK_NULL_HANDLE;
-
-/**
- * \brief Rendering Surface format
- */
-VkSurfaceFormatKHR        m_surface_format;
-
-
-/**
- * \brief Rendering Surface extent
- */
-VkExtent2D                m_extent;
-
-/**
- * \brief Swap chain
- */
-VkSwapchainKHR            m_swap_chain = VK_NULL_HANDLE;
-
-
-/**
- * \brief Vector with the different swap chain images
- */
-std::vector<VkImage>      m_swap_chain_images;
-
-/**
- * \brief Vector with the different swap chain image views
- */
-std::vector<VkImageView>  m_swap_chain_image_views;
-
-
-/**
- * \brief pipeline layout
- */
-VkPipelineLayout          m_pipeline_layout;
-
-
-/**
- * \brief Render pass object
- */
-VkRenderPass              m_render_pass;
-
-
-/**
- * \brief Rendering pipeline
- */
-VkPipeline                m_pipeline;
-
-
-/**
- * \brief Rendering command pool
- */
-VkCommandPool             m_command_pool;
-
-/**
- * \brief The descriptor pool
- */
-VkDescriptorPool          m_descriptor_pool;
-
-/**
- * \brief The descriptor set of the pipeline
- */
-VkDescriptorSet           m_descriptor_set;
-
-/**
- * \brief Semaphore for synchronizing next frame image retrieval
- */
-VkSemaphore               m_image_available_semaphore;
-
-/**
- * \brief Sempahore to synchronize render pass finished
- */
-VkSemaphore               m_render_finished_semaphore;
-
-/**
- * \brief Queue family indices
- */
-QueueFamilyIndices 			  m_queue_indices;
-
-
-/**
- * \brief Graphics command queue
- */
-VkQueue                   m_graphics_queue;
-
-
-/**
- * \brief Present command queue
- */
-VkQueue                   m_present_queue;
-
-/**
- * \brief Vector with the different validation layers to load. Filled up
- * dynamically from the config file
- */
-std::vector<const char*>        m_validation_layers;
-
-
-/**
- * \brief Vector with the required physical device extensions
- */
-const std::vector<const char*>  m_device_extensions = {
-                                                    VK_KHR_SWAPCHAIN_EXTENSION_NAME
-                                                   };
-
-/**
- * \brief Vector with the different frame buffers. One per swap chain image
- */
-std::vector<VkFramebuffer>      m_frame_buffers;
-
-
-/**
- * \brief Vector with the different command buffers. One per swap chain image 
- */
-std::vector<VkCommandBuffer>    m_command_buffers;
-
 
 /**
  * \brief Flag used to enable validation layers or not
@@ -227,20 +39,11 @@ const bool enable_validation_layers = true;
 #endif
 
 
-/**
- * \brief The memory allocator used to create Vulkan buffers
- */
-VmaAllocator                    m_vkallocator;
+VulkanRenderer*                 p_renderer; ///<  This is the VulkanRenderer
 
-
-/**
- * \brief The Vulkan Scene object to store the scene to render information
- */
-VkScene                         m_scene;
-
-Matrix4                         m_projection_matrix;
-
-Matrix4                         m_view_matrix;
+VkScene                         m_scene; ///<  The Vulkan Scene object to store the scene to render information
+Matrix4                         m_projection_matrix; ///< The projection matrix
+Matrix4                         m_view_matrix; ///< The view matrix
 
 struct UniformBufferObject 
 {
@@ -248,137 +51,168 @@ struct UniformBufferObject
 };
 
 
-VkDescriptorSetLayout m_descriptor_set_layout;
-VkBuffer              m_uniform_buffer;
-VmaAllocation         m_uniform_allocation;
+uint32_t               m_num_uniform_buffers;
+VkBuffer*              m_uniform_buffers;
+VmaAllocation*         m_uniform_allocations;
+
 void*                 m_udata = nullptr;
 
-/**
- * \brief Queries the physical device for the actual swap chain support
- *
- * \param device The physical device to query the support from
- * \param surface The rendering surface
- *
- * \return Returns a SwapChainSupportDetails structure with the given available
- * support
- */
-static SwapChainSupportDetails query_sc_support_details(VkPhysicalDevice device, 
-                                                        VkSurfaceKHR surface) 
-{
-  SwapChainSupportDetails sc_support_details;
+void 
+clean_up_graphics_pipeline();
+void
+clean_up_image_views();
+void
+clean_up_swap_chain();
 
-  vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, 
-                                            surface, 
-                                            &sc_support_details.m_capabilities);
-  uint32_t format_count;
-  vkGetPhysicalDeviceSurfaceFormatsKHR(device, 
-                                       surface, 
-                                       &format_count, 
-                                       nullptr);
-  if (format_count != 0) 
+VulkanRenderer::VulkanRenderer() : 
+  m_viewport_width(0),                
+  m_viewport_height(0),                
+  m_vulkan_instance(VK_NULL_HANDLE),   
+  m_window_surface(VK_NULL_HANDLE),   
+  m_report_callback(VK_NULL_HANDLE),   
+  m_physical_device(VK_NULL_HANDLE),
+  m_logical_device(VK_NULL_HANDLE),
+  m_swap_chain(VK_NULL_HANDLE),   
+  m_pipeline_layout(VK_NULL_HANDLE),  
+  m_render_pass(VK_NULL_HANDLE),  
+  m_pipeline(VK_NULL_HANDLE),  
+  m_command_pool(VK_NULL_HANDLE),  
+  m_descriptor_pool(VK_NULL_HANDLE), 
+  m_descriptor_set_layout (VK_NULL_HANDLE), 
+  m_graphics_queue(VK_NULL_HANDLE), 
+  m_present_queue(VK_NULL_HANDLE),
+  m_swap_chain_images(nullptr),
+  m_swap_chain_image_views(nullptr), 
+  m_frame_buffers(nullptr),
+  m_command_buffers(nullptr),
+  m_descriptor_sets(nullptr),
+  m_validation_layers(nullptr),  
+  m_device_extensions(nullptr), 
+  m_num_swap_chain_images(0),  
+  m_num_swap_chain_image_views(0), 
+  m_num_validation_layers(0),    
+  m_num_device_extensions(0),   
+  m_num_frame_buffers(0),   
+  m_num_command_buffers(0),
+  m_num_descriptor_sets(0),
+  m_image_available_semaphore(VK_NULL_HANDLE),
+  m_render_finished_semaphore(VK_NULL_HANDLE)
+{
+}
+
+VulkanRenderer::~VulkanRenderer()
+{
+
+  if(p_renderer->m_render_finished_semaphore != VK_NULL_HANDLE)
   {
-    sc_support_details.m_formats.resize(format_count);
-    vkGetPhysicalDeviceSurfaceFormatsKHR(device, 
-                                         surface, 
-                                         &format_count, 
-                                         sc_support_details.m_formats.data());
+    vkDestroySemaphore(p_renderer->m_logical_device, 
+                       p_renderer->m_render_finished_semaphore, 
+                       nullptr);
+    p_renderer->m_render_finished_semaphore = VK_NULL_HANDLE;
   }
 
-  uint32_t present_mode_count;
-  vkGetPhysicalDeviceSurfacePresentModesKHR(device, 
-                                            surface, 
-                                            &present_mode_count, 
-                                            nullptr);
-  if (present_mode_count != 0) 
+  if(p_renderer->m_image_available_semaphore != VK_NULL_HANDLE)
   {
-    sc_support_details.m_present_modes.resize(present_mode_count);
-    vkGetPhysicalDeviceSurfacePresentModesKHR(device, 
-                                              surface, 
-                                              &present_mode_count, 
-                                              sc_support_details.m_present_modes.data());
-  }
-  return sc_support_details;
-}
-
-/**
- * \brief Given the different available surface formats for the swap chain,
- * choses the best one
- *
- * \param available_formats A vector with the available surface formats
- *
- * \return Returns the chosen surface format
- */
-static VkSurfaceFormatKHR choose_sc_surface_format(const std::vector<VkSurfaceFormatKHR>& available_formats) 
-{
-  if (available_formats.size() == 1 && available_formats[0].format == VK_FORMAT_UNDEFINED) {
-    return {VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR};
+    vkDestroySemaphore(p_renderer->m_logical_device, 
+                       p_renderer->m_image_available_semaphore, 
+                       nullptr);
+    p_renderer->m_image_available_semaphore = VK_NULL_HANDLE;
   }
 
-  for (const auto& available_format : available_formats) {
-    if (available_format.format == VK_FORMAT_B8G8R8A8_UNORM && 
-        available_format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-      return available_format;
-    }
+  clean_up_graphics_pipeline();
+  clean_up_image_views();
+  clean_up_swap_chain();
+
+  if(p_renderer->m_descriptor_sets)
+  {
+    delete [] p_renderer->m_descriptor_sets;
+    p_renderer->m_descriptor_sets = nullptr;
+    p_renderer->m_num_descriptor_sets = 0;
   }
 
-  return available_formats[0];
-}
+  if(p_renderer->m_descriptor_pool != VK_NULL_HANDLE)
+  {
+    vkDestroyDescriptorPool(p_renderer->m_logical_device, 
+                            p_renderer->m_descriptor_pool, 
+                            nullptr);
+    p_renderer->m_descriptor_pool = VK_NULL_HANDLE;
+  }
 
-/**
- * \brief Given the different available present modes, choses the best one
- *
- * \param available_present_modes A vector with the available present modes
- *
- * \return The choosen present mode
- */
-static VkPresentModeKHR choose_sc_present_mode(const std::vector<VkPresentModeKHR> available_present_modes) 
-{
-    VkPresentModeKHR best_mode = VK_PRESENT_MODE_FIFO_KHR;
+  if(p_renderer->m_descriptor_set_layout != VK_NULL_HANDLE)
+  {
+    vkDestroyDescriptorSetLayout(p_renderer->m_logical_device, 
+                                 p_renderer->m_descriptor_set_layout, 
+                                 nullptr);
+    p_renderer->m_descriptor_set_layout = VK_NULL_HANDLE;
+  }
 
-    for (const auto& available_present_mode : available_present_modes) {
-        if (available_present_mode == VK_PRESENT_MODE_MAILBOX_KHR) {
-            return available_present_mode;
-        } else if (available_present_mode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
-            best_mode = available_present_mode;
-        }
-    }
+  if(p_renderer->m_command_pool != VK_NULL_HANDLE)
+  {
+    vkDestroyCommandPool(p_renderer->m_logical_device, 
+                         p_renderer->m_command_pool, 
+                         nullptr);
+    p_renderer->m_command_pool = VK_NULL_HANDLE;
+  }
 
-    return best_mode;
-}
+  if(m_command_buffers)
+  {
+    delete [] m_command_buffers;
+    m_command_buffers = nullptr;;
+    m_num_command_buffers = 0;
+  }
 
-/**
- * \brief Chooses the extent of the swap chain
- *
- * \param capabilities The capabilities of the surface
- * \param width The width of the viewport 
- * \param height The height of the viewport 
- *
- * \return Returns the choosen extent
- */
-static VkExtent2D choose_sc_extent(const VkSurfaceCapabilitiesKHR& capabilities, 
-                                   uint32_t width,
-                                   uint32_t height) 
-{
-    if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) 
+  vmaDestroyAllocator(p_renderer->m_vkallocator);
+
+  if(p_renderer->m_logical_device != VK_NULL_HANDLE)
+  {
+    vkDestroyDevice(p_renderer->m_logical_device, 
+                    nullptr);
+    p_renderer->m_logical_device = VK_NULL_HANDLE;
+  }
+
+  if(p_renderer->m_window_surface != VK_NULL_HANDLE)
+  {
+    vkDestroySurfaceKHR(p_renderer->m_vulkan_instance, 
+                        p_renderer->m_window_surface, 
+                        nullptr);
+    p_renderer->m_window_surface = VK_NULL_HANDLE;
+  }
+
+  if (enable_validation_layers) 
+  {
+    auto func = (PFN_vkDestroyDebugReportCallbackEXT) vkGetInstanceProcAddr(p_renderer->m_vulkan_instance, "vkDestroyDebugReportCallbackEXT");
+    func(p_renderer->m_vulkan_instance, p_renderer->m_report_callback, nullptr);
+  }
+
+  if(p_renderer->m_vulkan_instance != VK_NULL_HANDLE)
+  {
+    vkDestroyInstance(p_renderer->m_vulkan_instance, nullptr);
+    p_renderer->m_vulkan_instance = VK_NULL_HANDLE;
+  }
+
+
+  if(m_validation_layers)
+  {
+    for(uint32_t i = 0; i < m_num_validation_layers; ++i)
     {
-        return capabilities.currentExtent;
-    } else {
-        VkExtent2D actual_extent = {width, height};
-
-        actual_extent.width = std::max(capabilities.minImageExtent.width, 
-                                       std::min(capabilities.maxImageExtent.width, 
-                                                actual_extent.width)
-                                       );
-
-        actual_extent.height = std::max(capabilities.minImageExtent.height, 
-                                        std::min(capabilities.maxImageExtent.height, 
-                                                 actual_extent.height)
-                                        );
-
-        return actual_extent;
+      delete [] m_validation_layers[i];
     }
-}
+    delete [] m_validation_layers;
+    m_validation_layers = nullptr;
+    m_num_validation_layers = 0; 
+  }
 
+  if(m_device_extensions)
+  {
+    for(uint32_t i = 0; i < m_num_device_extensions; ++i)
+    {
+      delete [] m_device_extensions[i];
+    }
+    delete [] m_device_extensions;
+    m_device_extensions = nullptr;
+    m_num_device_extensions = 0;
+  }
+}
 
 /**
  * \brief Callback used to capture debug information
@@ -394,15 +228,15 @@ static VkExtent2D choose_sc_extent(const VkSurfaceCapabilitiesKHR& capabilities,
  *
  * \return 
  */
-static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
-                                        VkDebugReportFlagsEXT flags,
-                                        VkDebugReportObjectTypeEXT objType,
-                                        uint64_t obj,
-                                        size_t location,
-                                        int32_t code,
-                                        const char* layerPrefix,
-                                        const char* msg,
-                                        void* userData) 
+VKAPI_ATTR VkBool32 VKAPI_CALL 
+debug_callback(VkDebugReportFlagsEXT flags,
+               VkDebugReportObjectTypeEXT objType,
+               uint64_t obj,
+               size_t location,
+               int32_t code,
+               const char* layerPrefix,
+               const char* msg,
+               void* userData) 
 {
   log->error("validation layer: %s", msg);
   report_error(TNA_ERROR::E_RENDERER_VULKAN_ERROR);
@@ -410,70 +244,25 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
 }
 
 
-/**
- * \brief Checks the support of the physical device for the desired extensions
- *
- * \param device The physical device to check the extensions support of
- * \param desired_extensions The extensions wanted to check
- *
- * \return Returns true if all the desired extensions are supported
- */
-bool check_device_extension_support(VkPhysicalDevice device,
-                                    const std::vector<const char*>& desired_extensions) {
-
-    uint32_t extension_count;
-    vkEnumerateDeviceExtensionProperties(device, nullptr, &extension_count, nullptr);
-
-    std::vector<VkExtensionProperties> available_extensions(extension_count);
-    vkEnumerateDeviceExtensionProperties(device, nullptr, &extension_count, available_extensions.data());
-
-    std::set<std::string> required_extensions(desired_extensions.begin(), 
-                                              desired_extensions.end());
-
-    for (const auto& extension : available_extensions) {
-      log->log("Found Vulkan device extension %s", extension.extensionName);
-      required_extensions.erase(extension.extensionName);
-    }
-
-    return required_extensions.empty();
-}
-
-/**
- * \brief Checks if the given physical device is suitable for our application
- *
- * \param device The physical device to check for
- * \param surface The rendering surface 
- *
- * \return Returns true if the device is suitable
- */
-static bool is_device_suitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
-
-  bool extensions_supported = check_device_extension_support(device, m_device_extensions);
-
-  bool swap_chain_adequate = false;
-  if(extensions_supported) {
-    SwapChainSupportDetails sc_support_details = query_sc_support_details(device, surface);
-    swap_chain_adequate = !sc_support_details.m_formats.empty() && !sc_support_details.m_present_modes.empty();
-  }
-
-  return m_queue_indices.is_complete() && extensions_supported && swap_chain_adequate;
-}
-
-static void 
+void 
 create_vulkan_instance() 
 {
   // Getting Available Validation Layers
   uint32_t layer_count;
   vkEnumerateInstanceLayerProperties(&layer_count, nullptr);
 
-  std::vector<VkLayerProperties> available_layers(layer_count);
-  vkEnumerateInstanceLayerProperties(&layer_count, available_layers.data()); 
+  VkLayerProperties* available_layers = new VkLayerProperties[layer_count];
+  vkEnumerateInstanceLayerProperties(&layer_count, available_layers); 
 
-  for (const char* layer : m_validation_layers) 
+  for (uint32_t i = 0; i < p_renderer->m_num_validation_layers; ++i) 
   {
+    const char* layer = p_renderer->m_validation_layers[i];
     bool layer_found = false;
-    for (const auto& layerProperties : available_layers) {
-      if (strcmp(layer, layerProperties.layerName) == 0) {
+    for (uint32_t j = 0; j < layer_count; ++j) 
+    {
+      VkLayerProperties* next_layer = &available_layers[j];
+      if (strcmp(layer, next_layer->layerName) == 0) 
+      {
         log->log("Found validation layer %s", layer);
         layer_found = true;
         break;
@@ -486,61 +275,70 @@ create_vulkan_instance()
       report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
     }
   }
+  delete [] available_layers;
 
-  // Creating Vulkan Instance info
+  // Creating Vulkan Application Information
   VkApplicationInfo app_info = {};
   app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
   app_info.pApplicationName = "TNA";
-  app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+  app_info.applicationVersion = VK_MAKE_VERSION(0, 0, 1);
   app_info.pEngineName = "TNA Engine";
-  app_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+  app_info.engineVersion = VK_MAKE_VERSION(0, 0, 1);
   app_info.apiVersion = VK_API_VERSION_1_0;
 
+  // Creating Vulkan Instance Information
   VkInstanceCreateInfo create_info = {};
   create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
   create_info.pApplicationInfo = &app_info;
 
   if(enable_validation_layers) 
   {
-    create_info.enabledLayerCount = static_cast<uint32_t>(m_validation_layers.size());
-    create_info.ppEnabledLayerNames = m_validation_layers.data();
+    create_info.enabledLayerCount = p_renderer->m_num_validation_layers;
+    create_info.ppEnabledLayerNames = p_renderer->m_validation_layers;
   }
 
   // Adding GLFW and other required extensions
-  std::vector<const char*> extensions;
   unsigned int glfw_extensions_count = 0;
-  const char** glfw_extensions;
-  glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extensions_count);
-  for(uint32_t i = 0; i < glfw_extensions_count; ++i) {
-    extensions.push_back(glfw_extensions[i]);
+  const char** glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extensions_count);
+  
+  uint32_t extensions_count = glfw_extensions_count;
+  if(enable_validation_layers) 
+  {
+    extensions_count += 1;
+  }
+
+  const char** extensions = new const char*[extensions_count];
+  for(uint32_t i = 0; i < glfw_extensions_count; ++i) 
+  {
+    extensions[i] = glfw_extensions[i];
   }
 
   if(enable_validation_layers) 
   {
-    extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+    extensions[extensions_count - 1] = VK_EXT_DEBUG_REPORT_EXTENSION_NAME;
   }
 
-  create_info.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
-  create_info.ppEnabledExtensionNames = extensions.data();
-
+  create_info.enabledExtensionCount = extensions_count;
+  create_info.ppEnabledExtensionNames = extensions;
 
   if(vkCreateInstance(&create_info, 
                       nullptr, 
-                      &m_vulkan_instance) != VK_SUCCESS) 
+                      &p_renderer->m_vulkan_instance) != VK_SUCCESS) 
   {
     log->error("failed to create instance!");
     report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
+  delete [] extensions;
   return;
 }
 
-static void
-create_surface(GLFWwindow* window) {
-
-  if (glfwCreateWindowSurface(m_vulkan_instance, 
+void
+create_surface(GLFWwindow* window) 
+{
+  if (glfwCreateWindowSurface(p_renderer->m_vulkan_instance, 
                               window, 
                               nullptr, 
-                              &m_window_surface) != VK_SUCCESS) 
+                              &p_renderer->m_window_surface) != VK_SUCCESS) 
   {
     log->error("failed to create window surface!");
     report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
@@ -548,7 +346,7 @@ create_surface(GLFWwindow* window) {
   return;
 }
 
-static void
+void
 add_debug_handler() 
 {
   // Adding debug callback
@@ -558,8 +356,11 @@ add_debug_handler()
     debug_callback_info.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
     debug_callback_info.pfnCallback = debug_callback;
 
-    auto func = (PFN_vkCreateDebugReportCallbackEXT) vkGetInstanceProcAddr(m_vulkan_instance, "vkCreateDebugReportCallbackEXT");
-    if(func(m_vulkan_instance, &debug_callback_info, nullptr, &m_report_callback) != VK_SUCCESS) 
+    auto func = (PFN_vkCreateDebugReportCallbackEXT) vkGetInstanceProcAddr(p_renderer->m_vulkan_instance, "vkCreateDebugReportCallbackEXT");
+    if(func(p_renderer->m_vulkan_instance, 
+            &debug_callback_info, 
+            nullptr, 
+            &p_renderer->m_report_callback) != VK_SUCCESS) 
     {
       log->error("Failed to create debug callback!");
       report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
@@ -568,145 +369,197 @@ add_debug_handler()
   return;
 }
 
-static void
+void
 create_physical_device() 
 {
+  // Adding the required device extensions
+  p_renderer->m_num_device_extensions = 1;
+  p_renderer->m_device_extensions = new const char*[p_renderer->m_num_device_extensions];
+  p_renderer->m_device_extensions[0] = new char[strlen(VK_KHR_SWAPCHAIN_EXTENSION_NAME)+1];
+  strcpy((char*)p_renderer->m_device_extensions[0], VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+
 	// Creating Physical Device
   uint32_t device_count = 0;
-  vkEnumeratePhysicalDevices(m_vulkan_instance, 
+  vkEnumeratePhysicalDevices(p_renderer->m_vulkan_instance, 
                              &device_count, 
                              nullptr);
 
-  std::vector<VkPhysicalDevice> devices(device_count);
-  vkEnumeratePhysicalDevices(m_vulkan_instance, 
+  VkPhysicalDevice* physical_devices = new VkPhysicalDevice[device_count];
+
+  vkEnumeratePhysicalDevices(p_renderer->m_vulkan_instance, 
                              &device_count, 
-                             devices.data());
+                             physical_devices);
 
-  for (const auto& device : devices) 
+
+  for (uint32_t i = 0; 
+       i < device_count && p_renderer->m_physical_device == VK_NULL_HANDLE; 
+       ++i) 
   {
-    m_queue_indices.reset();
+    QueueFamilyIndices indices;
 
-		uint32_t queue_familty_count = 0;
-		vkGetPhysicalDeviceQueueFamilyProperties(device, 
-                                             &queue_familty_count, 
+		uint32_t queue_family_count = 0;
+		vkGetPhysicalDeviceQueueFamilyProperties(physical_devices[i], 
+                                             &queue_family_count, 
                                              nullptr);
 
-		std::vector<VkQueueFamilyProperties> queue_families(queue_familty_count);
-		vkGetPhysicalDeviceQueueFamilyProperties(device, 
-                                             &queue_familty_count, 
-                                             queue_families.data());
+		VkQueueFamilyProperties * queue_families = new VkQueueFamilyProperties[queue_family_count];
+		vkGetPhysicalDeviceQueueFamilyProperties(physical_devices[i], 
+                                             &queue_family_count, 
+                                             queue_families);
 
-		int i = 0;
-		for (const auto& queue_family : queue_families) 
+    for(uint32_t j = 0; j < queue_family_count; ++j)
     {
-			if (queue_family.queueCount > 0 && queue_family.queueFlags & VK_QUEUE_GRAPHICS_BIT) 
+      VkQueueFamilyProperties* queue_family = &queue_families[j];
+			if (queue_family->queueCount > 0 && queue_family->queueFlags & VK_QUEUE_GRAPHICS_BIT) 
       {
-				m_queue_indices.m_graphics_queue = i;
+				indices.m_graphics_queue = j;
 			}
 
       VkBool32 presentSupport = false;
-      vkGetPhysicalDeviceSurfaceSupportKHR(device, i, m_window_surface, &presentSupport);
-      if(presentSupport) {
-        m_queue_indices.m_present_queue = i;
-      }
+      vkGetPhysicalDeviceSurfaceSupportKHR(physical_devices[i], 
+                                           j, 
+                                           p_renderer->m_window_surface, 
+                                           &presentSupport);
 
-			i++;
+      if(presentSupport) 
+      {
+        indices.m_present_queue = j;
+      }
 		}
 
-    if (is_device_suitable(device, m_window_surface)) 
+    if (is_device_suitable(physical_devices[i], 
+                           p_renderer->m_window_surface,
+                           &indices,
+                           p_renderer->m_device_extensions,
+                           p_renderer->m_num_device_extensions)) 
     {
-      m_physical_device = device;
-      break;
+      p_renderer->m_physical_device = physical_devices[i];
+      p_renderer->m_queue_indices = indices;
     }
+    delete [] queue_families;
   }
+  delete [] physical_devices;
 
-
-  if (m_physical_device == VK_NULL_HANDLE) 
+  if (p_renderer->m_physical_device == VK_NULL_HANDLE) 
   {
     log->error("failed to find a suitable GPU!");
     report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
 
-  vkGetPhysicalDeviceProperties(m_physical_device, &m_mem_properties);
+  vkGetPhysicalDeviceProperties(p_renderer->m_physical_device, &p_renderer->m_mem_properties);
   return;
 }
 
-static void
+void
 create_logical_device() 
 {
 
-  // Creating logical devie
-  std::vector<VkDeviceQueueCreateInfo> queue_create_infos;
-  std::set<int> unique_queue_families = {m_queue_indices.m_graphics_queue, 
-                                         m_queue_indices.m_present_queue};
-  float queue_priority = 1.0f;
+  uint32_t num_distinct_queue_families = 1;
+  if(p_renderer->m_queue_indices.m_graphics_queue != 
+     p_renderer->m_queue_indices.m_present_queue)
+  {
+    ++num_distinct_queue_families;
+  }
 
-  for(int queue_family : unique_queue_families) 
+  // Creating Queue creation information 
+  VkDeviceQueueCreateInfo* queue_create_infos = new VkDeviceQueueCreateInfo[num_distinct_queue_families];
+
+  float queue_priority = 1.0f;
+  if(num_distinct_queue_families == 1)
   {
     VkDeviceQueueCreateInfo queue_create_info = {};
     queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    queue_create_info.queueFamilyIndex = queue_family;
+    queue_create_info.queueFamilyIndex = p_renderer->m_queue_indices.m_graphics_queue;
     queue_create_info.queueCount = 1;
     queue_create_info.pQueuePriorities = &queue_priority;
-    queue_create_infos.push_back(queue_create_info);
+    queue_create_infos[0] = queue_create_info;
+  }
+  else
+  {
+    VkDeviceQueueCreateInfo queue_create_info = {};
+    queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    queue_create_info.queueFamilyIndex = p_renderer->m_queue_indices.m_graphics_queue;
+    queue_create_info.queueCount = 1;
+    queue_create_info.pQueuePriorities = &queue_priority;
+    queue_create_infos[0] = queue_create_info;
+
+    queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    queue_create_info.queueFamilyIndex = p_renderer->m_queue_indices.m_present_queue;
+    queue_create_info.queueCount = 1;
+    queue_create_info.pQueuePriorities = &queue_priority;
+    queue_create_infos[1] = queue_create_info;
   }
 
   VkPhysicalDeviceFeatures device_features = {};
 
   VkDeviceCreateInfo createInfo = {};
   createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-  createInfo.pQueueCreateInfos = queue_create_infos.data();
-  createInfo.queueCreateInfoCount = static_cast<uint32_t>(queue_create_infos.size());
+  createInfo.pQueueCreateInfos = queue_create_infos;
+  createInfo.queueCreateInfoCount = num_distinct_queue_families;
   createInfo.pEnabledFeatures = &device_features;
-  createInfo.enabledExtensionCount = static_cast<uint32_t>(m_device_extensions.size());
-  createInfo.ppEnabledExtensionNames = m_device_extensions.data();
+  createInfo.enabledExtensionCount = p_renderer->m_num_device_extensions;
+  createInfo.ppEnabledExtensionNames = p_renderer->m_device_extensions;
 
   if (enable_validation_layers) 
   {
-    createInfo.enabledLayerCount = static_cast<uint32_t>(m_validation_layers.size());
-    createInfo.ppEnabledLayerNames = m_validation_layers.data();
+    createInfo.enabledLayerCount = p_renderer->m_num_validation_layers;
+    createInfo.ppEnabledLayerNames = p_renderer->m_validation_layers;
   } 
   else 
   {
     createInfo.enabledLayerCount = 0;
   }
 
-  if (vkCreateDevice(m_physical_device, 
+  if (vkCreateDevice(p_renderer->m_physical_device, 
                      &createInfo, 
                      nullptr, 
-                     &m_logical_device) != VK_SUCCESS) 
+                     &p_renderer->m_logical_device) != VK_SUCCESS) 
   {
     log->error("failed to create logical device!");
     report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
+
+  delete [] queue_create_infos;
   return;
 }
 
-static void
+void
 create_command_queues() 
 {
   // Retrieving queues
-  vkGetDeviceQueue(m_logical_device, m_queue_indices.m_graphics_queue, 0, &m_graphics_queue);
-  vkGetDeviceQueue(m_logical_device, m_queue_indices.m_present_queue, 0, &m_present_queue);
+  vkGetDeviceQueue(p_renderer->m_logical_device, 
+                   p_renderer->m_queue_indices.m_graphics_queue, 
+                   0, 
+                   &p_renderer->m_graphics_queue);
+
+  vkGetDeviceQueue(p_renderer->m_logical_device, 
+                   p_renderer->m_queue_indices.m_present_queue, 
+                   0, 
+                   &p_renderer->m_present_queue);
   return;
 }
 
-static void
-create_swap_chain() {
-
+void
+create_swap_chain() 
+{
   // Creating Swap chain
-  SwapChainSupportDetails swap_chain_support = query_sc_support_details(m_physical_device, 
-                                                                        m_window_surface);
+  SwapChainSupportDetails swap_chain_support; 
+  query_sc_support_details(p_renderer->m_physical_device, 
+                           p_renderer->m_window_surface,
+                           &swap_chain_support);
 
-  m_surface_format = choose_sc_surface_format(swap_chain_support.m_formats);
+  p_renderer->m_surface_format = choose_sc_surface_format(swap_chain_support.m_formats,
+                                                         swap_chain_support.m_num_formats);
 
-  VkPresentModeKHR present_mode = choose_sc_present_mode(swap_chain_support.m_present_modes);
+  VkPresentModeKHR present_mode = choose_sc_present_mode(swap_chain_support.m_present_modes,
+                                                         swap_chain_support.m_num_present_modes);
 
-  m_extent = choose_sc_extent(swap_chain_support.m_capabilities, 
-                                       m_viewport_width, 
-                                       m_viewport_height);
+  p_renderer->m_extent = choose_sc_extent(swap_chain_support.m_capabilities, 
+                                         p_renderer->m_viewport_width, 
+                                         p_renderer->m_viewport_height);
 
   uint32_t image_count = swap_chain_support.m_capabilities.minImageCount + 1;
+
   if (swap_chain_support.m_capabilities.maxImageCount > 0 && 
       image_count > swap_chain_support.m_capabilities.maxImageCount) 
   {
@@ -715,18 +568,19 @@ create_swap_chain() {
 
   VkSwapchainCreateInfoKHR swap_chain_create_info = {};
   swap_chain_create_info.sType            = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-  swap_chain_create_info.surface          = m_window_surface;
+  swap_chain_create_info.surface          = p_renderer->m_window_surface;
   swap_chain_create_info.minImageCount    = image_count;
-  swap_chain_create_info.imageFormat      = m_surface_format.format;
-  swap_chain_create_info.imageColorSpace  = m_surface_format.colorSpace;
-  swap_chain_create_info.imageExtent      = m_extent;
+  swap_chain_create_info.imageFormat      = p_renderer->m_surface_format.format;
+  swap_chain_create_info.imageColorSpace  = p_renderer->m_surface_format.colorSpace;
+  swap_chain_create_info.imageExtent      = p_renderer->m_extent;
   swap_chain_create_info.imageArrayLayers = 1;
   swap_chain_create_info.imageUsage       = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-  uint32_t queue_family_indices[] = {(uint32_t) m_queue_indices.m_graphics_queue, 
-                                    (uint32_t) m_queue_indices.m_present_queue};
+  uint32_t queue_family_indices[] = {(uint32_t)p_renderer->m_queue_indices.m_graphics_queue, 
+                                    (uint32_t) p_renderer->m_queue_indices.m_present_queue};
 
-  if (m_queue_indices.m_graphics_queue != m_queue_indices.m_present_queue) {
+  if (p_renderer->m_queue_indices.m_graphics_queue != p_renderer->m_queue_indices.m_present_queue) 
+  {
     swap_chain_create_info.imageSharingMode       = VK_SHARING_MODE_CONCURRENT;
     swap_chain_create_info.queueFamilyIndexCount  = 2;
     swap_chain_create_info.pQueueFamilyIndices    = queue_family_indices;
@@ -745,32 +599,41 @@ create_swap_chain() {
 
   swap_chain_create_info.oldSwapchain   = VK_NULL_HANDLE;
 
-  if (vkCreateSwapchainKHR(m_logical_device, 
+  if (vkCreateSwapchainKHR(p_renderer->m_logical_device, 
                            &swap_chain_create_info, 
                            nullptr, 
-                           &m_swap_chain) != VK_SUCCESS) 
+                           &p_renderer->m_swap_chain) != VK_SUCCESS) 
   {
     log->error("failed to create swap chain!");
     report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
 
-  vkGetSwapchainImagesKHR(m_logical_device, m_swap_chain, &image_count, nullptr);
-  m_swap_chain_images.resize(image_count);
-  vkGetSwapchainImagesKHR(m_logical_device, m_swap_chain, &image_count, m_swap_chain_images.data());
+  vkGetSwapchainImagesKHR(p_renderer->m_logical_device, 
+                          p_renderer->m_swap_chain, 
+                          &p_renderer->m_num_swap_chain_images, 
+                          nullptr);
+
+  p_renderer->m_swap_chain_images = new VkImage[p_renderer->m_num_swap_chain_images];
+  vkGetSwapchainImagesKHR(p_renderer->m_logical_device, 
+                          p_renderer->m_swap_chain, 
+                          &p_renderer->m_num_swap_chain_images, 
+                          p_renderer->m_swap_chain_images);
   return;
 }
 
-static void
+void
 create_image_views() 
 {
-  m_swap_chain_image_views.resize(m_swap_chain_images.size());
-  for(size_t i = 0; i < m_swap_chain_image_views.size(); ++i) {
+  p_renderer->m_num_swap_chain_image_views = p_renderer->m_num_swap_chain_images;
+  p_renderer->m_swap_chain_image_views = new VkImageView[p_renderer->m_num_swap_chain_image_views];
 
+  for(size_t i = 0; i < p_renderer->m_num_swap_chain_image_views; ++i) 
+  {
     VkImageViewCreateInfo create_info = {};
     create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    create_info.image = m_swap_chain_images[i];
+    create_info.image = p_renderer->m_swap_chain_images[i];
     create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    create_info.format = m_surface_format.format;
+    create_info.format = p_renderer->m_surface_format.format;
     create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
     create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
     create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -781,10 +644,10 @@ create_image_views()
     create_info.subresourceRange.baseArrayLayer = 0;
     create_info.subresourceRange.layerCount = 1;
 
-    if (vkCreateImageView(m_logical_device, 
+    if (vkCreateImageView(p_renderer->m_logical_device, 
                           &create_info, 
                           nullptr, 
-                          &m_swap_chain_image_views[i]) != VK_SUCCESS) 
+                          &p_renderer->m_swap_chain_image_views[i]) != VK_SUCCESS) 
     {
       log->error("failed to create image views!");
       report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
@@ -793,7 +656,7 @@ create_image_views()
   return;
 }
 
-static void
+void
 create_graphics_pipeline() 
 {
   Shader* vertex_shader = shader_registry->load("shaders/vert.spv");
@@ -839,15 +702,14 @@ create_graphics_pipeline()
   VkViewport viewport = {};
   viewport.x = 0.0f;
   viewport.y = 0.0f;
-  viewport.width = (float) m_extent.width;
-  viewport.height = (float) m_extent.height;
+  viewport.width = (float) p_renderer->m_extent.width;
+  viewport.height = (float) p_renderer->m_extent.height;
   viewport.minDepth = 0.0f;
   viewport.maxDepth = 1.0f;
 
   VkRect2D scissor = {};
   scissor.offset = {0, 0};
-  scissor.extent = m_extent;
-
+  scissor.extent = p_renderer->m_extent;
 
   VkPipelineViewportStateCreateInfo viewport_state = {};
   viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -902,19 +764,22 @@ create_graphics_pipeline()
   VkPipelineLayoutCreateInfo pipeline_layout_info = {};
   pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
   pipeline_layout_info.setLayoutCount = 1; // Optional
-  pipeline_layout_info.pSetLayouts = &m_descriptor_set_layout; // Optional
+  pipeline_layout_info.pSetLayouts = &p_renderer->m_descriptor_set_layout; // Optional
   pipeline_layout_info.pushConstantRangeCount = 0; // Optional
   pipeline_layout_info.pPushConstantRanges = nullptr; // Optional
 
 
-  if (vkCreatePipelineLayout(m_logical_device, &pipeline_layout_info, nullptr, &m_pipeline_layout) != VK_SUCCESS) 
+  if (vkCreatePipelineLayout(p_renderer->m_logical_device, 
+                             &pipeline_layout_info, 
+                             nullptr, 
+                             &p_renderer->m_pipeline_layout) != VK_SUCCESS) 
   {
     log->error("failed to create pipeline layout!");
     report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
 
   VkAttachmentDescription color_attachment = {};
-  color_attachment.format = m_surface_format.format;
+  color_attachment.format = p_renderer->m_surface_format.format;
   color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
   color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
   color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -952,7 +817,10 @@ create_graphics_pipeline()
 	render_pass_info.dependencyCount = 1;
 	render_pass_info.pDependencies = &dependency;
 
-  if (vkCreateRenderPass(m_logical_device, &render_pass_info, nullptr, &m_render_pass) != VK_SUCCESS) 
+  if (vkCreateRenderPass(p_renderer->m_logical_device, 
+                         &render_pass_info, 
+                         nullptr, 
+                         &p_renderer->m_render_pass) != VK_SUCCESS) 
   {
     log->error("failed to create render pass!");
     report_error(TNA_ERROR::E_SUCCESS);
@@ -970,46 +838,46 @@ create_graphics_pipeline()
   pipeline_info.pDepthStencilState = nullptr; // Optional
   pipeline_info.pColorBlendState = &color_blending;
   pipeline_info.pDynamicState = nullptr; // Optional
-  pipeline_info.layout = m_pipeline_layout;
-  pipeline_info.renderPass = m_render_pass;
+  pipeline_info.layout = p_renderer->m_pipeline_layout;
+  pipeline_info.renderPass = p_renderer->m_render_pass;
   pipeline_info.subpass = 0;
   pipeline_info.basePipelineHandle = VK_NULL_HANDLE; // Optional
   pipeline_info.basePipelineIndex = -1; // Optional
   pipeline_info.pNext = nullptr;
 
-  if (vkCreateGraphicsPipelines(m_logical_device, 
+  if (vkCreateGraphicsPipelines(p_renderer->m_logical_device, 
                                 VK_NULL_HANDLE, 
                                 1, 
                                 &pipeline_info, 
                                 nullptr, 
-                                &m_pipeline) != VK_SUCCESS) 
+                                &p_renderer->m_pipeline) != VK_SUCCESS) 
   {
     log->error("failed to create graphics pipeline!");
     report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
 
+  p_renderer->m_num_frame_buffers = p_renderer->m_num_swap_chain_image_views;
+  p_renderer->m_frame_buffers = new VkFramebuffer[p_renderer->m_num_frame_buffers];
 
-  m_frame_buffers.resize(m_swap_chain_image_views.size());
-
-  for (size_t i = 0; i < m_swap_chain_image_views.size(); i++) 
+  for (size_t i = 0; i < p_renderer->m_num_frame_buffers; i++) 
   {
     VkImageView attachments[] = {
-      m_swap_chain_image_views[i]
+      p_renderer->m_swap_chain_image_views[i]
     };
 
     VkFramebufferCreateInfo frame_buffer_info = {};
     frame_buffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-    frame_buffer_info.renderPass = m_render_pass;
+    frame_buffer_info.renderPass = p_renderer->m_render_pass;
     frame_buffer_info.attachmentCount = 1;
     frame_buffer_info.pAttachments = attachments;
-    frame_buffer_info.width = m_extent.width;
-    frame_buffer_info.height = m_extent.height;
+    frame_buffer_info.width = p_renderer->m_extent.width;
+    frame_buffer_info.height = p_renderer->m_extent.height;
     frame_buffer_info.layers = 1;
 
-    if (vkCreateFramebuffer(m_logical_device, 
+    if (vkCreateFramebuffer(p_renderer->m_logical_device, 
                             &frame_buffer_info, 
                             nullptr, 
-                            &m_frame_buffers[i]) != VK_SUCCESS) 
+                            &p_renderer->m_frame_buffers[i]) != VK_SUCCESS) 
     {
       log->error("failed to create framebuffer!");
       report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
@@ -1021,19 +889,19 @@ create_graphics_pipeline()
   return;
 }
 
-static void
+void
 create_command_pool() 
 {
 
   VkCommandPoolCreateInfo pool_info = {};
   pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-  pool_info.queueFamilyIndex = m_queue_indices.m_graphics_queue;
+  pool_info.queueFamilyIndex = p_renderer->m_queue_indices.m_graphics_queue;
   pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT; // Optional
 
-  if (vkCreateCommandPool(m_logical_device, 
+  if (vkCreateCommandPool(p_renderer->m_logical_device, 
                           &pool_info, 
                           nullptr, 
-                          &m_command_pool) != VK_SUCCESS) 
+                          &p_renderer->m_command_pool) != VK_SUCCESS) 
   {
     log->error("failed to create command pool!");
     report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
@@ -1041,21 +909,23 @@ create_command_pool()
   return;
 }
 
-static void 
+void 
 create_descriptor_pool() 
 {
   VkDescriptorPoolSize pool_size = {};
   pool_size.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-  pool_size.descriptorCount = 1;
+  pool_size.descriptorCount = p_renderer->m_num_swap_chain_images;
 
   VkDescriptorPoolCreateInfo pool_info = {};
   pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
   pool_info.poolSizeCount = 1;
   pool_info.pPoolSizes = &pool_size;
+  pool_info.maxSets = p_renderer->m_num_swap_chain_images;
 
-  pool_info.maxSets = 1;
-
-  if (vkCreateDescriptorPool(m_logical_device, &pool_info, nullptr, &m_descriptor_pool) != VK_SUCCESS) 
+  if (vkCreateDescriptorPool(p_renderer->m_logical_device, 
+                             &pool_info, 
+                             nullptr, 
+                             &p_renderer->m_descriptor_pool) != VK_SUCCESS) 
   {
     log->error("failed to create descriptor pool!");
     report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
@@ -1063,9 +933,9 @@ create_descriptor_pool()
   return;
 }
 
-static void
-create_descriptor_set() {
-
+void
+create_descriptor_set() 
+{
   VkDescriptorSetLayoutBinding ubo_layout_info = {};
   ubo_layout_info.binding = 0;
   ubo_layout_info.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
@@ -1078,62 +948,85 @@ create_descriptor_set() {
   layout_info.bindingCount = 1;
   layout_info.pBindings = &ubo_layout_info;
 
-
-  if (vkCreateDescriptorSetLayout(m_logical_device, &layout_info, nullptr, &m_descriptor_set_layout) != VK_SUCCESS) 
+  if (vkCreateDescriptorSetLayout(p_renderer->m_logical_device, 
+                                  &layout_info, 
+                                  nullptr, 
+                                  &p_renderer->m_descriptor_set_layout) != VK_SUCCESS) 
   {
     log->error("failed to create descriptor set layout!");
     report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
 
-  VkDescriptorSetLayout layouts[] = {m_descriptor_set_layout};
+  p_renderer->m_num_descriptor_sets = p_renderer->m_num_swap_chain_images;
+  p_renderer->m_descriptor_sets = new VkDescriptorSet[p_renderer->m_num_descriptor_sets];
+
+  VkDescriptorSetLayout* layouts = new VkDescriptorSetLayout[p_renderer->m_num_descriptor_sets];
+  for(uint32_t i = 0; i < p_renderer->m_num_descriptor_sets; ++i)
+  {
+    layouts[i] = p_renderer->m_descriptor_set_layout;
+  }
+
   VkDescriptorSetAllocateInfo allocInfo = {};
   allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-  allocInfo.descriptorPool = m_descriptor_pool;
-  allocInfo.descriptorSetCount = 1;
+  allocInfo.descriptorPool = p_renderer->m_descriptor_pool;
+  allocInfo.descriptorSetCount = p_renderer->m_num_descriptor_sets;
   allocInfo.pSetLayouts = layouts;
 
-  if (vkAllocateDescriptorSets(m_logical_device, &allocInfo, &m_descriptor_set) != VK_SUCCESS) 
+  if (vkAllocateDescriptorSets(p_renderer->m_logical_device, 
+                               &allocInfo, 
+                               &p_renderer->m_descriptor_sets[0]) != VK_SUCCESS) 
   {
     log->error("failed to allocate descriptor set!");
     report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
 
+  delete [] layouts;
+
   return;
 }
 
-static void 
+void 
 create_uniform_buffers() 
 {
-  size_t device_alignment = m_mem_properties.limits.minUniformBufferOffsetAlignment;
+  size_t device_alignment = p_renderer->m_mem_properties.limits.minUniformBufferOffsetAlignment;
   size_t uniform_buffer_size = sizeof(UniformBufferObject);
   size_t dynamic_alignment = (uniform_buffer_size / device_alignment) * device_alignment + ((uniform_buffer_size % device_alignment) > 0 ? device_alignment : 0);
 
   size_t bufferSize = dynamic_alignment * MAX_PRIMITIVE_COUNT;
 
-  create_buffer(bufferSize, 
-                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
-                VMA_MEMORY_USAGE_CPU_TO_GPU,
-                &m_uniform_buffer, 
-                &m_uniform_allocation);
 
-  vmaMapMemory(m_vkallocator, m_uniform_allocation, &m_udata);
+  m_num_uniform_buffers = p_renderer->m_num_swap_chain_images;
+  m_uniform_buffers = new VkBuffer[m_num_uniform_buffers];
+  m_uniform_allocations = new VmaAllocation[m_num_uniform_buffers];
+
+  for(uint32_t i = 0; i < m_num_uniform_buffers; ++i)
+  {
+    create_buffer(p_renderer->m_vkallocator,
+                  bufferSize, 
+                  VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+                  VMA_MEMORY_USAGE_CPU_TO_GPU,
+                  &m_uniform_buffers[i], 
+                  &m_uniform_allocations[i]);
+
+  }
   return;
 }
 
-static void  
+void  
 create_command_buffers() 
 {
-  m_command_buffers.resize(m_frame_buffers.size());
+  p_renderer->m_num_command_buffers = p_renderer->m_num_frame_buffers;
+  p_renderer->m_command_buffers = new VkCommandBuffer[p_renderer->m_num_command_buffers];
 
   VkCommandBufferAllocateInfo allocInfo = {};
   allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-  allocInfo.commandPool = m_command_pool;
+  allocInfo.commandPool = p_renderer->m_command_pool;
   allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-  allocInfo.commandBufferCount = (uint32_t) m_command_buffers.size();
+  allocInfo.commandBufferCount = (uint32_t) p_renderer->m_num_command_buffers;
 
-  if (vkAllocateCommandBuffers(m_logical_device, 
+  if (vkAllocateCommandBuffers(p_renderer->m_logical_device, 
                                &allocInfo, 
-                               m_command_buffers.data()) != VK_SUCCESS) 
+                               p_renderer->m_command_buffers) != VK_SUCCESS) 
   {
     log->error("failed to allocate command buffers!");
     report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
@@ -1141,15 +1034,21 @@ create_command_buffers()
   return;
 }
 
-static void 
+void 
 create_semaphores() 
 {
   VkSemaphoreCreateInfo semaphore_info = {};
   semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-	if (vkCreateSemaphore(m_logical_device, &semaphore_info, nullptr, &m_image_available_semaphore) != VK_SUCCESS ||
-			vkCreateSemaphore(m_logical_device, &semaphore_info, nullptr, &m_render_finished_semaphore) != VK_SUCCESS) {
-
+	if (vkCreateSemaphore(p_renderer->m_logical_device, 
+                        &semaphore_info, 
+                        nullptr, 
+                        &p_renderer->m_image_available_semaphore) != VK_SUCCESS ||
+			vkCreateSemaphore(p_renderer->m_logical_device, 
+                        &semaphore_info, 
+                        nullptr, 
+                        &p_renderer->m_render_finished_semaphore) != VK_SUCCESS) 
+  {
 		log->error("failed to create semaphores!");
     report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
 	}
@@ -1157,63 +1056,94 @@ create_semaphores()
 }
 
 
-static void 
+void 
 clean_up_swap_chain() 
 {
-
-  for (auto framebuffer : m_frame_buffers) {
-    vkDestroyFramebuffer(m_logical_device, framebuffer, nullptr);
+  if(p_renderer->m_swap_chain_images)
+  {
+    delete [] p_renderer->m_swap_chain_images;
+    p_renderer->m_swap_chain_images = nullptr;
+    p_renderer->m_num_swap_chain_images = 0;
   }
 
-  vkDestroyPipeline(m_logical_device, m_pipeline, nullptr);
-  vkDestroyRenderPass(m_logical_device, m_render_pass, nullptr);
-  vkDestroyPipelineLayout(m_logical_device, m_pipeline_layout, nullptr);
-
-  for (auto imageView : m_swap_chain_image_views) {
-    vkDestroyImageView(m_logical_device, 
-                       imageView, 
-                       nullptr);
-  }
-
-  vkDestroySwapchainKHR(m_logical_device, 
-                        m_swap_chain, 
+  vkDestroySwapchainKHR(p_renderer->m_logical_device, 
+                        p_renderer->m_swap_chain, 
                         nullptr);
 
   return;
 }
 
-static void 
-recreate_swap_chain() {
+void
+clean_up_image_views()
+{
+  if(p_renderer->m_swap_chain_image_views)
+  {
+    for(uint32_t i = 0; i < p_renderer->m_num_swap_chain_image_views; ++i)
+    {
+      vkDestroyImageView(p_renderer->m_logical_device, 
+                         p_renderer->m_swap_chain_image_views[i], 
+                         nullptr);
+    }
+    delete [] p_renderer->m_swap_chain_image_views;
+    p_renderer->m_swap_chain_image_views = nullptr;
+    p_renderer->m_num_swap_chain_image_views = 0;
+  }
+  return;
+}
 
-  vkDeviceWaitIdle(m_logical_device);
+void
+clean_up_graphics_pipeline()
+{
+  if(p_renderer->m_frame_buffers)
+  {
+    for (uint32_t i = 0; i < p_renderer->m_num_frame_buffers; ++i) 
+    {
+      vkDestroyFramebuffer(p_renderer->m_logical_device, 
+                           p_renderer->m_frame_buffers[i], 
+                           nullptr);
+    }
+    delete [] p_renderer->m_frame_buffers;
+    p_renderer->m_frame_buffers = nullptr;
+    p_renderer->m_num_frame_buffers = 0;
+  }
 
+  vkDestroyPipeline(p_renderer->m_logical_device, p_renderer->m_pipeline, nullptr);
+  vkDestroyRenderPass(p_renderer->m_logical_device, p_renderer->m_render_pass, nullptr);
+  vkDestroyPipelineLayout(p_renderer->m_logical_device, p_renderer->m_pipeline_layout, nullptr);
+  return;
+}
+
+void 
+recreate_swap_chain() 
+{
+  vkDeviceWaitIdle(p_renderer->m_logical_device);
+
+  clean_up_graphics_pipeline();
+  clean_up_image_views();
   clean_up_swap_chain();
+
   create_swap_chain();
-
   create_image_views();
-
   create_graphics_pipeline();
-
   create_command_buffers();
 
   return;
 }
 
-static void 
+void 
 build_command_buffer(uint32_t index) 
 {
   m_view_matrix = m_scene.get_camera();
-  m_projection_matrix = create_projection_matrix(45.0f, 
-                                                 m_viewport_height / (float)(m_viewport_width),
+  m_projection_matrix = create_projection_matrix(60.0f, 
+                                                 p_renderer->m_viewport_width / (float)(p_renderer->m_viewport_height),
                                                  0.1f,
                                                  10.0f);
   m_projection_matrix[1][1] *= -1;
 
-  size_t device_alignment = m_mem_properties.limits.minUniformBufferOffsetAlignment;
+  size_t device_alignment = p_renderer->m_mem_properties.limits.minUniformBufferOffsetAlignment;
   size_t uniform_buffer_size = sizeof(UniformBufferObject);
   size_t dynamic_alignment = (uniform_buffer_size / device_alignment) * device_alignment + ((uniform_buffer_size % device_alignment) > 0 ? device_alignment : 0);
   
-  char* uniform_data = static_cast<char*>(m_udata);
   const VkRenderingInfo* meshes;
   uint32_t num_meshes;
   m_scene.get_meshes(&meshes, &num_meshes);
@@ -1224,19 +1154,24 @@ build_command_buffer(uint32_t index)
       const VkRenderingInfo* info = &meshes[i];
       UniformBufferObject ubo;
       ubo.projmodelview = m_projection_matrix * m_view_matrix * info->m_model_mat;
-      memcpy(&uniform_data[i*dynamic_alignment], &ubo, sizeof(ubo)); 
+
+      void* uniform_data = nullptr;
+      vmaMapMemory(p_renderer->m_vkallocator, m_uniform_allocations[index], &uniform_data);
+      memcpy(&(((char*)uniform_data)[i*dynamic_alignment]), &ubo, sizeof(ubo)); 
+      vmaUnmapMemory(p_renderer->m_vkallocator, m_uniform_allocations[index]);
+      //vmaFlushAllocation(p_renderer->m_vkallocator, m_uniform_allocations[index], i*dynamic_alignment, sizeof(ubo));
     }
 
     /// Update descriptor set
     VkDescriptorBufferInfo buffer_info = {};
-    buffer_info.buffer = m_uniform_buffer;
+    buffer_info.buffer = m_uniform_buffers[index];
     buffer_info.offset = 0;
     buffer_info.range = dynamic_alignment*num_meshes;
 
     VkWriteDescriptorSet descriptor_write = {};
     descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     descriptor_write.pNext = nullptr;
-    descriptor_write.dstSet = m_descriptor_set;
+    descriptor_write.dstSet = p_renderer->m_descriptor_sets[index];
     descriptor_write.dstBinding = 0;
     descriptor_write.dstArrayElement = 0;
 
@@ -1246,7 +1181,11 @@ build_command_buffer(uint32_t index)
     descriptor_write.pImageInfo = nullptr; // Optional
     descriptor_write.pTexelBufferView = nullptr; // Optional
 
-    vkUpdateDescriptorSets(m_logical_device, 1, &descriptor_write, 0, nullptr);
+    vkUpdateDescriptorSets(p_renderer->m_logical_device, 
+                           1, 
+                           &descriptor_write, 
+                           0, 
+                           nullptr);
   }
 
   /// Setting up command buffer
@@ -1255,27 +1194,26 @@ build_command_buffer(uint32_t index)
   begin_info.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
   begin_info.pInheritanceInfo = nullptr; // Optional
 
-  if (vkBeginCommandBuffer(m_command_buffers[index], &begin_info) != VK_SUCCESS) 
+  if (vkBeginCommandBuffer(p_renderer->m_command_buffers[index], &begin_info) != VK_SUCCESS) 
   {
     log->error("failed to begin recording command buffer!");
     report_error(TNA_ERROR::E_RENDERER_RUNTIME_ERROR);
   }
 
-  vkCmdBindPipeline(m_command_buffers[index], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
+  vkCmdBindPipeline(p_renderer->m_command_buffers[index], VK_PIPELINE_BIND_POINT_GRAPHICS, p_renderer->m_pipeline);
 
   VkRenderPassBeginInfo renderpass_info = {};
   renderpass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-  renderpass_info.renderPass = m_render_pass;
-  renderpass_info.framebuffer = m_frame_buffers[index];
+  renderpass_info.renderPass = p_renderer->m_render_pass;
+  renderpass_info.framebuffer = p_renderer->m_frame_buffers[index];
   renderpass_info.renderArea.offset = {0, 0};
-  renderpass_info.renderArea.extent = m_extent;
+  renderpass_info.renderArea.extent = p_renderer->m_extent;
 
-  VkClearValue clear_color = {0.0f, 0.0f, 0.0f, 1.0f};
+  VkClearValue clear_color = {0.0f, 0.0f, 1.0f, 1.0f};
   renderpass_info.clearValueCount = 1;
   renderpass_info.pClearValues = &clear_color;
 
-  vkCmdBeginRenderPass(m_command_buffers[index], &renderpass_info, VK_SUBPASS_CONTENTS_INLINE);
-
+  vkCmdBeginRenderPass(p_renderer->m_command_buffers[index], &renderpass_info, VK_SUBPASS_CONTENTS_INLINE);
 
   for(size_t i = 0; i < num_meshes && i < MAX_PRIMITIVE_COUNT; ++i) 
   {
@@ -1283,19 +1221,24 @@ build_command_buffer(uint32_t index)
     VkBuffer vertex_buffers[] = {info->m_mesh_data->m_vertex_buffer};
     VkDeviceSize offsets[] = {0};
 
-    vkCmdBindVertexBuffers(m_command_buffers[index], 0, 1, vertex_buffers, offsets);
-    vkCmdBindIndexBuffer(m_command_buffers[index], info->m_mesh_data->m_index_buffer, 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindVertexBuffers(p_renderer->m_command_buffers[index], 0, 1, vertex_buffers, offsets);
+    vkCmdBindIndexBuffer(p_renderer->m_command_buffers[index], info->m_mesh_data->m_index_buffer, 0, VK_INDEX_TYPE_UINT32);
     uint32_t offset = dynamic_alignment*i;
-    vkCmdBindDescriptorSets(m_command_buffers[index], 
+    vkCmdBindDescriptorSets(p_renderer->m_command_buffers[index], 
                             VK_PIPELINE_BIND_POINT_GRAPHICS, 
-                            m_pipeline_layout, 0, 1, &m_descriptor_set, 1, &offset);
+                            p_renderer->m_pipeline_layout, 
+                            0, 
+                            1, 
+                            &p_renderer->m_descriptor_sets[index], 
+                            1, 
+                            &offset);
 
-    vkCmdDrawIndexed(m_command_buffers[index], info->m_mesh_data->m_num_indices, 1, 0, 0, 0);
+    vkCmdDrawIndexed(p_renderer->m_command_buffers[index], info->m_mesh_data->m_num_indices, 1, 0, 0, 0);
   }
 
-  vkCmdEndRenderPass(m_command_buffers[index]);
+  vkCmdEndRenderPass(p_renderer->m_command_buffers[index]);
 
-  if (vkEndCommandBuffer(m_command_buffers[index]) != VK_SUCCESS) 
+  if (vkEndCommandBuffer(p_renderer->m_command_buffers[index]) != VK_SUCCESS) 
   {
     log->error("failed to record command buffer!");
     report_error(TNA_ERROR::E_RENDERER_RUNTIME_ERROR);
@@ -1312,15 +1255,22 @@ void
 init_renderer(const Config* config, 
               GLFWwindow* window) 
 {
-  for(uint32_t i = 0; i < config->m_num_vk_vlayers; ++i) 
+  p_renderer = new VulkanRenderer();
+  
+  // Retrieving vulkan validation layers from engine config
+  p_renderer->m_num_validation_layers = config->m_num_vk_vlayers;
+  p_renderer->m_validation_layers = new const char*[p_renderer->m_num_validation_layers];
+  for(uint32_t i = 0; i < p_renderer->m_num_validation_layers; ++i) 
   {
     const char* layer = (config->m_vk_vlayers[i])->c_str();
-    char* str = new char[strlen(layer)+1];
-    strcpy(str, layer);
-    m_validation_layers.push_back(str);
+    p_renderer->m_validation_layers[i] = new char[strlen(layer)+1];
+    strcpy((char*)p_renderer->m_validation_layers[i], layer);
   }
-  m_viewport_width = config->m_viewport_width;
-  m_viewport_height = config->m_viewport_height;
+
+
+  // Retrieving viewport dimensions from engine config
+  p_renderer->m_viewport_width = config->m_viewport_width;
+  p_renderer->m_viewport_height = config->m_viewport_height;
 
   if(enable_validation_layers)
   {
@@ -1328,19 +1278,16 @@ init_renderer(const Config* config,
   }
 
   create_vulkan_instance();
-
   create_surface(window);
-
   add_debug_handler();
-
   create_physical_device();
-
   create_logical_device();
 
+  // Creating memory allocator
   VmaAllocatorCreateInfo allocator_info = {};
-  allocator_info.physicalDevice = m_physical_device;
-  allocator_info.device = m_logical_device;
-  vmaCreateAllocator(&allocator_info, &m_vkallocator);
+  allocator_info.physicalDevice = p_renderer->m_physical_device;
+  allocator_info.device = p_renderer->m_logical_device;
+  vmaCreateAllocator(&allocator_info, &p_renderer->m_vkallocator);
 
   create_command_queues();
 
@@ -1367,41 +1314,25 @@ init_renderer(const Config* config,
 
 
 void 
-terminate_renderer() {
-
-  vkDeviceWaitIdle(m_logical_device);
+terminate_renderer() 
+{
+  vkDeviceWaitIdle(p_renderer->m_logical_device);
 
   shader_registry->clear();
   mesh_registry->clear();
 
-	vkDestroySemaphore(m_logical_device, m_render_finished_semaphore, nullptr);
-	vkDestroySemaphore(m_logical_device, m_image_available_semaphore, nullptr);
-
-  clean_up_swap_chain();
-
-  vkDestroyDescriptorPool(m_logical_device, m_descriptor_pool, nullptr);
-  vkDestroyDescriptorSetLayout(m_logical_device, m_descriptor_set_layout, nullptr);
-  vmaUnmapMemory(m_vkallocator, m_uniform_allocation);
-  destroy_buffer(m_uniform_buffer, m_uniform_allocation);
-  vkDestroyCommandPool(m_logical_device, m_command_pool, nullptr);
-
-  vmaDestroyAllocator(m_vkallocator);
-
-  vkDestroyDevice(m_logical_device, 
-                  nullptr);
-
-  vkDestroySurfaceKHR(m_vulkan_instance, 
-                      m_window_surface, 
-                      nullptr);
-
-  if (enable_validation_layers) {
-    auto func = (PFN_vkDestroyDebugReportCallbackEXT) vkGetInstanceProcAddr(m_vulkan_instance, "vkDestroyDebugReportCallbackEXT");
-    func(m_vulkan_instance, m_report_callback, nullptr);
+  for(uint32_t i = 0; i < m_num_uniform_buffers; ++i)
+  {
+    destroy_buffer(p_renderer->m_vkallocator,
+                   m_uniform_buffers[i],
+                   m_uniform_allocations[i]);
   }
-  vkDestroyInstance(m_vulkan_instance, nullptr);
-  for(const char * str : m_validation_layers) {
-    delete [] str;
-  }
+  delete [] m_uniform_buffers;
+  delete [] m_uniform_allocations;
+
+  delete p_renderer;
+
+  return;
 }
 
 
@@ -1409,16 +1340,17 @@ void
 begin_frame() 
 {
   m_scene.clear();
+  return;
 }
 
 void 
 end_frame() 
 {
 	uint32_t image_index;
-	VkResult result = vkAcquireNextImageKHR(m_logical_device, 
-                                          m_swap_chain, 
+	VkResult result = vkAcquireNextImageKHR(p_renderer->m_logical_device, 
+                                          p_renderer->m_swap_chain, 
                                           std::numeric_limits<uint64_t>::max(), 
-                                          m_image_available_semaphore, 
+                                          p_renderer->m_image_available_semaphore, 
                                           VK_NULL_HANDLE, 
                                           &image_index);
 
@@ -1438,20 +1370,20 @@ end_frame()
 	VkSubmitInfo submit_info = {};
 	submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-	VkSemaphore wait_semaphores[] = {m_image_available_semaphore};
+	VkSemaphore wait_semaphores[] = {p_renderer->m_image_available_semaphore};
 	VkPipelineStageFlags wait_stages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 	submit_info.waitSemaphoreCount = 1;
 	submit_info.pWaitSemaphores = wait_semaphores;
 	submit_info.pWaitDstStageMask = wait_stages;
 
   submit_info.commandBufferCount = 1;
-  submit_info.pCommandBuffers = &m_command_buffers[image_index];
+  submit_info.pCommandBuffers = &p_renderer->m_command_buffers[image_index];
 
-  VkSemaphore signal_semaphores[] = {m_render_finished_semaphore};
+  VkSemaphore signal_semaphores[] = {p_renderer->m_render_finished_semaphore};
   submit_info.signalSemaphoreCount = 1;
   submit_info.pSignalSemaphores = signal_semaphores;
 
-  if (vkQueueSubmit(m_graphics_queue, 
+  if (vkQueueSubmit(p_renderer->m_graphics_queue, 
                     1, 
                     &submit_info, 
                     VK_NULL_HANDLE) != VK_SUCCESS) 
@@ -1466,13 +1398,13 @@ end_frame()
 	present_info.waitSemaphoreCount = 1;
 	present_info.pWaitSemaphores = signal_semaphores;
 
-	VkSwapchainKHR swapChains[] = {m_swap_chain};
+	VkSwapchainKHR swapChains[] = {p_renderer->m_swap_chain};
 	present_info.swapchainCount = 1;
 	present_info.pSwapchains = swapChains;
 	present_info.pImageIndices = &image_index;
 	present_info.pResults = nullptr; // Optional
 
-	result = vkQueuePresentKHR(m_present_queue, 
+	result = vkQueuePresentKHR(p_renderer->m_present_queue, 
                              &present_info);
 
   if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) 
@@ -1485,7 +1417,7 @@ end_frame()
     report_error(TNA_ERROR::E_RENDERER_RUNTIME_ERROR);
   }
 
-  vkQueueWaitIdle(m_present_queue);
+  vkQueueWaitIdle(p_renderer->m_present_queue);
   return;
 }
 
@@ -1496,13 +1428,14 @@ render_mesh(const MeshData* mesh_data,
 
   m_scene.add_mesh(static_cast<const VkMeshData*>(mesh_data),
                    model_mat);
-
+  return;
 }
 
 void 
 set_camera(const Matrix4* camera_mat) 
 {
   m_scene.set_camera(camera_mat);
+  return;
 }
 
 }
