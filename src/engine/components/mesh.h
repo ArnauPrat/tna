@@ -19,12 +19,6 @@ struct Mesh
     m_mesh_data = mesh_registry->load(name);
   }
 
-  static 
-  std::string name() 
-  {
-    return "Mesh";
-  }
-
   const MeshData* m_mesh_data;
 };
   

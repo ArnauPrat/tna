@@ -9,14 +9,16 @@ class Context;
 }
 
 
-namespace tna {
+namespace tna 
+{
 
-struct Rotation {
-  void run(furious::Context* context, 
-           int32_t id, Transform* transform) {
-
+struct Rotation 
+{
+  void 
+  run(furious::Context* context, 
+           int32_t id, Transform* transform) 
+  {
     //transform->m_rotation.y = context->get_dt()*glm::radians(90.0f);
-
   }
 };
   

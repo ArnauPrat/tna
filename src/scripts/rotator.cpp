@@ -28,6 +28,6 @@ struct Rotator
   float m_speed;
 };
 
-furious::select<Transform>().foreach<Rotator>(1.0);
+furious::match<Transform>().foreach<Rotator>(1.0);
 
 END_FURIOUS_SCRIPT

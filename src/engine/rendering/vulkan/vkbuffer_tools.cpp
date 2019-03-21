@@ -3,6 +3,8 @@
 #include "../../common.h"
 #include "vkbuffer_tools.h"
 
+#include <string.h>
+
 namespace tna 
 {
 

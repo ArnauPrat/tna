@@ -28,7 +28,7 @@ struct RenderMesh
   }
 };
 
-furious::select<Mesh,Transform>().foreach<RenderMesh>();
+furious::match<Mesh,Transform>().foreach<RenderMesh>();
 
 END_FURIOUS_SCRIPT
 

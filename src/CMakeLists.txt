@@ -27,11 +27,11 @@ set(BULLET_LIBRARIES
 find_package(glfw3 3.2 REQUIRED)
 
 ### Setting up GLM
-find_package(glm REQUIRED)
+#find_package(glm REQUIRED)
 
 ### Setting up Vulkan
 #find_package(Vulkan REQUIRED)
-set(Vulkan_SDK_ROOT "/usr/local/vulkan-sdk/x86_64")
+set(Vulkan_SDK_ROOT "/opt/vulkan-sdk/1.1.101.0/x86_64")
 set(Vulkan_INCLUDE_DIR "${Vulkan_SDK_ROOT}/include")
 set(Vulkan_LIBRARIES_DIR "${Vulkan_SDK_ROOT}/lib")
 set(Vulkan_LIBRARIES "libvulkan.so")
@@ -135,7 +135,9 @@ add_custom_command(
 	OUTPUT engine/furious_runtime.cpp
 	COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/engine/
 	COMMAND ${FURIOUS_ROOT}/bin/fcc -o
-  ${CMAKE_CURRENT_BINARY_DIR}/engine/furious_runtime.cpp ${TNA_SCRIPTS} -- --std=c++17 -I${CLANG_INCLUDES_DIR} -I${CMAKE_CURRENT_SOURCE_DIR} -I${FURIOUS_INCLUDE_DIR}
+  ${CMAKE_CURRENT_BINARY_DIR}/engine/furious_runtime.cpp ${TNA_SCRIPTS} --
+  --std=c++17 -I${CLANG_INCLUDES_DIR} -I${CMAKE_CURRENT_SOURCE_DIR}
+  -I${FURIOUS_INCLUDE_DIR} -I ${Vulkan_INCLUDE_DIR}
   DEPENDS ${FURIOUS_ROOT}/bin/fcc ${TNA_SCRIPTS} ${TNA_COMPONENTS}
 	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 	)
