@@ -1,7 +1,7 @@
 
 
-#ifndef _TNA_MESH_H_
-#define _TNA_MESH_H_ value
+#ifndef _TNA_ENGINE_MESH_H_
+#define _TNA_ENGINE_MESH_H_ value
 
 #include "../resources/resources.h"
 #include <furious/components.h>

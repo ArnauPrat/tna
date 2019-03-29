@@ -142,6 +142,7 @@ run(GameApp* game_app)
   static auto start_time = std::chrono::high_resolution_clock::now();
 
   p_current_app = game_app;
+  p_current_app->start();
   p_current_app->on_app_start();
 
   while (!glfwWindowShouldClose(p_window)) 

@@ -23,11 +23,34 @@ struct Rotator
            Transform* transform) 
   {
     float angle = context->m_dt*m_speed*360.0;
-    transform->m_rotation.y += angle;
+    transform->m_local_rotation.y += angle;
   }
   float m_speed;
 };
 
-furious::match<Transform>().foreach<Rotator>(1.0);
+struct RotatorAroundParent
+{
+  RotatorAroundParent(float speed) : 
+  m_speed(speed)
+  {
+  }
+  
+  void run(furious::Context* context, 
+           uint32_t id, 
+           Transform* transform) 
+  {
+    float angle = context->m_dt*m_speed*360.0;
+    transform->m_global_rotation.y += angle;
+  }
+  float m_speed;
+};
+
+furious::match<Transform>().has_not_tag("MainCamera")
+                           .foreach<Rotator>(1.0)
+                           .set_priority(1);
+
+furious::match<Transform>().expand<>("parent")
+                           .foreach<RotatorAroundParent>(1.0)
+                           .set_priority(0);
 
 END_FURIOUS_SCRIPT

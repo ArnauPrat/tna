@@ -47,10 +47,12 @@ public:
 
 private:
 
+  void
+  create_camera();
+
   int32_t m_game_width;
   int32_t m_game_height;
 
-  //Entity  m_entity;
 };
 
 }

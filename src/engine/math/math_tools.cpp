@@ -52,4 +52,10 @@ radians(float angle)
   return glm::radians(angle);
 }
 
+Matrix4
+inverse(const Matrix4 matrix)
+{
+  return glm::inverse(matrix);
+}
+
 }

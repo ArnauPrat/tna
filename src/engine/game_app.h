@@ -19,6 +19,9 @@ public:
   GameApp();
   virtual ~GameApp();
 
+  void
+  start();
+
   virtual void 
   on_app_start() = 0;
 
@@ -67,9 +70,14 @@ public:
   void 
   remove_entity(Entity entity);
 
-protected:
+  /**
+   * \brief Creates the camera for the scene.
+   */
+  void
+  create_camera();
 
-  // BULLET PHYSICS
+protected:
+  Entity m_camera;
 };
 
 }

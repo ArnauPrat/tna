@@ -81,12 +81,12 @@ set(VK_RENDERER_SOURCE_FILES
 set(TNA_COMPONENTS
   engine/components/mesh.h
   engine/components/transform.h
+  engine/components/transform_matrix.h
   )
 
 set(TNA_SOURCE_FILES 
   ${TNA_COMPONENTS}
   ${VK_RENDERER_SOURCE_FILES}
-  components/rotation.h
   engine/config.cpp
   engine/config.h
   engine/engine.cpp
@@ -122,11 +122,15 @@ set(TNA_SOURCE_FILES
   tnasdk/definitions.h
 	)
 
+set(TNA_ENGINE_SCRIPTS
+  engine/scripts/render_mesh.cpp
+  engine/scripts/transform_hierarchy.cpp
+  engine/scripts/set_camera.cpp
+  )
 
 set(TNA_SCRIPTS
-  engine/scripts/render_mesh.cpp
   scripts/rotator.cpp
-	scripts/test.cpp
+  scripts/test.cpp
   )
 
 message(STATUS ${CMAKE_CURRENT_BINARY_DIR})
@@ -135,10 +139,8 @@ add_custom_command(
 	OUTPUT engine/furious_runtime.cpp
 	COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/engine/
 	COMMAND ${FURIOUS_ROOT}/bin/fcc -o
-  ${CMAKE_CURRENT_BINARY_DIR}/engine/furious_runtime.cpp ${TNA_SCRIPTS} --
-  --std=c++17 -I${CLANG_INCLUDES_DIR} -I${CMAKE_CURRENT_SOURCE_DIR}
-  -I${FURIOUS_INCLUDE_DIR} -I ${Vulkan_INCLUDE_DIR}
-  DEPENDS ${FURIOUS_ROOT}/bin/fcc ${TNA_SCRIPTS} ${TNA_COMPONENTS}
+  ${CMAKE_CURRENT_BINARY_DIR}/engine/furious_runtime.cpp ${TNA_SCRIPTS} ${TNA_ENGINE_SCRIPTS} -- --std=c++17 -I${CLANG_INCLUDES_DIR} -I${CMAKE_CURRENT_SOURCE_DIR} -I${FURIOUS_INCLUDE_DIR} -I ${Vulkan_INCLUDE_DIR}
+  DEPENDS ${FURIOUS_ROOT}/bin/fcc ${TNA_SCRIPTS} ${TNA_ENGINE_SCRIPTS} ${TNA_COMPONENTS}
 	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 	)
 

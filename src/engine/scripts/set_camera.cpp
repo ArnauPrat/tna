@@ -1,8 +1,5 @@
 
 #include "../engine.h"
-#include "../math/matrix.h"
-#include "../math/math_tools.h"
-#include "../components/mesh.h"
 #include "../components/transform_matrix.h"
 
 #include <furious/lang/lang.h>
@@ -11,19 +8,17 @@ BEGIN_FURIOUS_SCRIPT
 
 using namespace tna;
 
-struct RenderMesh 
+struct SetCamera 
 {
   void run(furious::Context* context, 
            uint32_t id, 
-           const Mesh* mesh, 
            const TransformMatrix* transform_matrix) 
   {
-    render_mesh(mesh->m_mesh_data, &transform_matrix->m_matrix);
+    Matrix4 inv = inverse(transform_matrix->m_matrix);
+    set_camera(&inv);
   }
 };
 
-furious::match<Mesh,TransformMatrix>().foreach<RenderMesh>();
+furious::match<TransformMatrix>().has_tag("MainCamera").foreach<SetCamera>();
 
 END_FURIOUS_SCRIPT
-
-

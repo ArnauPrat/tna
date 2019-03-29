@@ -37,6 +37,10 @@ look_at(const Vector3& eye,
 float 
 radians(float angle);
 
+
+Matrix4
+inverse(const Matrix4 matrix);
+
 }
 
 
