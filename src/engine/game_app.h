@@ -23,13 +23,16 @@ public:
   start();
 
   virtual void 
-  on_app_start() = 0;
+  on_app_start(GLFWwindow* window) = 0;
 
   virtual void 
   on_app_finish() = 0;
 
   virtual void 
-  on_frame_update(float delta) = 0;
+  on_frame_start(float delta) = 0;
+
+  virtual void 
+  on_frame_end() = 0;
 
   virtual void 
   on_key_event(GLFWwindow* window, 

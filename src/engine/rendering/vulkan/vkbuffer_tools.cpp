@@ -2,6 +2,7 @@
 
 #include "../../common.h"
 #include "vkbuffer_tools.h"
+#include "vkrenderer_tools.h"
 
 #include <string.h>
 
@@ -70,7 +71,7 @@ copy_buffer(VkDevice device,
             VkBuffer dstBuffer, 
             VkDeviceSize size) 
 {
-  VkCommandBufferAllocateInfo alloc_info = {};
+  /*VkCommandBufferAllocateInfo alloc_info = {};
   alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
   alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
   alloc_info.commandPool = command_pool;
@@ -83,7 +84,8 @@ copy_buffer(VkDevice device,
   begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
   begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-  vkBeginCommandBuffer(command_buffer, &begin_info);
+  vkBeginCommandBuffer(command_buffer, &begin_info);*/
+  VkCommandBuffer command_buffer = begin_single_time_commands(device, command_pool);
 
   VkBufferCopy copyRegion = {};
   copyRegion.srcOffset = 0; // Optional
@@ -91,7 +93,8 @@ copy_buffer(VkDevice device,
   copyRegion.size = size;
   vkCmdCopyBuffer(command_buffer, srcBuffer, dstBuffer, 1, &copyRegion);
 
-  vkEndCommandBuffer(command_buffer);
+  end_single_time_commands(device, queue, command_pool, command_buffer);
+  /*vkEndCommandBuffer(command_buffer);
 
   VkSubmitInfo submit_info = {};
   submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -102,6 +105,7 @@ copy_buffer(VkDevice device,
   vkQueueWaitIdle(queue);
 
   vkFreeCommandBuffers(device, command_pool, 1, &command_buffer);
+  */
 
   return;
 }
@@ -194,6 +198,69 @@ create_index_buffer(VkDevice device,
                  staging_buffer,
                  staging_buffer_allocation);
 
+  return;
+}
+
+void 
+create_image(VmaAllocator allocator,
+             VmaMemoryUsage memory_usage,
+             uint32_t width, 
+             uint32_t height, 
+             VkFormat format, 
+             VkImageTiling tiling, 
+             VkImageUsageFlags usage, 
+             VkImage* image, 
+             VmaAllocation* image_allocation) {
+
+    VkImageCreateInfo image_info = {};
+    image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    image_info.imageType = VK_IMAGE_TYPE_2D;
+    image_info.extent.width = width;
+    image_info.extent.height = height;
+    image_info.extent.depth = 1;
+    image_info.mipLevels = 1;
+    image_info.arrayLayers = 1;
+    image_info.format = format;
+    image_info.tiling = tiling;
+    image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    image_info.usage = usage;
+    image_info.samples = VK_SAMPLE_COUNT_1_BIT;
+    image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    VmaAllocationCreateInfo alloc_info = {};
+    alloc_info.usage = memory_usage;
+
+#ifndef NDEBUG
+    // This is needed to make a vulkan validation layer warning to disappear. 
+    // Apparently this happens on Intel GPUs where memory is unified so the 
+    // validation layer does not like using the same allocated memory for 
+    // different types of allocations
+    alloc_info.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
+#endif
+
+
+    if (vmaCreateImage(allocator, 
+                       &image_info, 
+                       &alloc_info, 
+                       image, 
+                       image_allocation, 
+                       NULL) != VK_SUCCESS) 
+    {
+      log->error("failed to create image!");
+      report_error(TNA_ERROR::E_RENDERER_RESOURCE_ALLOCATION_ERROR);
+    }
+    return;
+}
+
+void
+destroy_image(VmaAllocator allocator,
+              VkImage image,
+              VmaAllocation allocation)
+{
+
+  vmaDestroyImage(allocator,
+                   image,
+                   allocation);
   return;
 }
 

@@ -67,6 +67,7 @@ create_vertex_buffer(VkDevice device,
                      VkBuffer* buffer, 
                      VmaAllocation* alloc_info);
 
+
 /**
  * \brief Creates an index buffer
  *
@@ -84,7 +85,41 @@ create_index_buffer(VkDevice device,
                     VkBuffer* buffer, 
                     VmaAllocation* alloc_info);
 
+/**
+ * \brief Creates an image
+ *
+ * \param allocator The allocator to use
+ * \param memory_usage The type of memory
+ * \param width The width of the image
+ * \param height The height of the image
+ * \param format The format of the image
+ * \param tiling The tiling arrangement
+ * \param usage The image usage flags
+ * \param image The pointer to the image object to store the image
+ * \param image_allocation The pointer to the image allocation info
+ */
+void
+create_image(VmaAllocator allocator,
+             VmaMemoryUsage memory_usage,
+             uint32_t width, 
+             uint32_t height, 
+             VkFormat format, 
+             VkImageTiling tiling, 
+             VkImageUsageFlags usage, 
+             VkImage* image, 
+             VmaAllocation* image_allocation);
   
+/**
+ * \brief Destroys an image
+ *
+ * \param allocator The memory allocator
+ * \param image The image to detroy
+ * \param allocation The memory allocation
+ */
+void
+destroy_image(VmaAllocator allocator,
+              VkImage image,
+              VmaAllocation allocation);
 } /* tna */ 
 
 #endif /* ifndef _TNA_BUFFER_TOOLS_H_ */

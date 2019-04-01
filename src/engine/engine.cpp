@@ -143,7 +143,7 @@ run(GameApp* game_app)
 
   p_current_app = game_app;
   p_current_app->start();
-  p_current_app->on_app_start();
+  p_current_app->on_app_start(p_window);
 
   while (!glfwWindowShouldClose(p_window)) 
   {
@@ -154,8 +154,9 @@ run(GameApp* game_app)
 
     glfwPollEvents();
     begin_frame();
-    p_current_app->on_frame_update(time);
+    p_current_app->on_frame_start(time);
     furious::__furious_frame(time, p_database);
+    p_current_app->on_frame_end();
     end_frame();
   }
 

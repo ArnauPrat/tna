@@ -57,6 +57,8 @@ message(STATUS ${FURIOUS_INCLUDE_DIR})
 message(STATUS ${FURIOUS_LIBRARIES_DIR})
 
 set(VK_RENDERER_SOURCE_FILES 
+  engine/rendering/vulkan/vkrenderer_tools.cpp
+  engine/rendering/vulkan/vkrenderer_tools.h
   engine/rendering/vulkan/vkswapchain.cpp
   engine/rendering/vulkan/vkswapchain.h
   engine/rendering/vulkan/vkdevice.cpp

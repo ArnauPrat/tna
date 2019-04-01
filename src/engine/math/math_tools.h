@@ -41,6 +41,9 @@ radians(float angle);
 Matrix4
 inverse(const Matrix4 matrix);
 
+float 
+dot(const Vector3& a, const Vector3 b);
+
 }
 
 

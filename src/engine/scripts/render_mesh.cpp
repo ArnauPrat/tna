@@ -18,7 +18,9 @@ struct RenderMesh
            const Mesh* mesh, 
            const TransformMatrix* transform_matrix) 
   {
-    render_mesh(mesh->m_mesh_data, &transform_matrix->m_matrix);
+    render_mesh(mesh->m_mesh_data, 
+                &transform_matrix->m_matrix,
+                &mesh->m_color);
   }
 };
 

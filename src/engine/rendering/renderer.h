@@ -4,7 +4,8 @@
 #define _TNA_RENDERER_H_ value
 
 #include "mesh_data.h"
-#include <glm/glm.hpp>
+#include "../math/matrix.h"
+#include "../math/vector.h"
 
 class GLFWwindow;
 
@@ -48,7 +49,8 @@ end_frame();
  */
 void 
 render_mesh(const MeshData* mesh_data, 
-            const glm::mat4* model_mat );
+            const Matrix4* model_mat,
+            const Vector3* color);
 
 
 /**
@@ -58,7 +60,15 @@ render_mesh(const MeshData* mesh_data,
  * @param camera_mat The camera matrix to set the camera to
  */
 void 
-set_camera(const glm::mat4* camera_mat);
+set_camera(const Matrix4* camera_mat);
+
+/**
+ * \brief Sets the clear color 
+ *
+ * \param color The color to set
+ */
+void
+set_clear_color(const Vector3* color);
 
 }
 

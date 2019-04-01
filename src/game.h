@@ -5,7 +5,7 @@
 
 #include "engine/game_app.h"
 
-class GLFWWindow;
+class GLFWwindow;
 
 namespace tna 
 {
@@ -19,13 +19,16 @@ public:
   ~Game() = default;
 
   virtual void 
-  on_app_start();
+  on_app_start(GLFWwindow* window);
 
   virtual void 
   on_app_finish();
 
   virtual void 
-  on_frame_update(float delta);
+  on_frame_start(float delta);
+
+  virtual void 
+  on_frame_end();
 
   virtual void 
   on_key_event(GLFWwindow* window, 
@@ -53,6 +56,16 @@ private:
   int32_t m_game_width;
   int32_t m_game_height;
 
+  bool m_forwards_camera;
+  bool m_backwards_camera;
+  bool m_strafe_left_camera;
+  bool m_strafe_right_camera;
+
+  double m_mouse_old_pos_x;
+  double m_mouse_old_pos_y;
+
+  double m_mouse_current_pos_x;
+  double m_mouse_current_pos_y;
 };
 
 }

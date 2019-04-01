@@ -45,12 +45,13 @@ struct RotatorAroundParent
   float m_speed;
 };
 
-furious::match<Transform>().has_not_tag("MainCamera")
+/*furious::match<Transform>().has_not_tag("MainCamera")
                            .foreach<Rotator>(1.0)
                            .set_priority(1);
+                           */
 
 furious::match<Transform>().expand<>("parent")
-                           .foreach<RotatorAroundParent>(1.0)
+                           .foreach<RotatorAroundParent>(0.25)
                            .set_priority(0);
 
 END_FURIOUS_SCRIPT

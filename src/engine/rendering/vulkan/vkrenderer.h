@@ -42,6 +42,11 @@ struct VulkanRenderer
   VkExtent2D                    m_extent;           ///< Rendering Surface extent
   QueueFamilyIndices 			      m_queue_indices;    ///< Queue family indices
 
+  VkFormat                      m_depth_format;
+  VkImage                       m_depth_image;            ///< The depth buffer image
+  VkImageView                   m_depth_image_view;       ///< The depth buffer image view
+  VmaAllocation                 m_depth_image_allocation; ///< The depth buffer image allocation
+
   VkImage*                      m_swap_chain_images;       ///< Vector with the different swap chain images
   VkImageView*                  m_swap_chain_image_views;  ///< Vector with the different swap chain image views
   VkFramebuffer*                m_frame_buffers;           ///< Vector with the different frame buffers. One per swap chain image

@@ -74,7 +74,7 @@ MeshData::load(const std::string& path)
           0.0};
       }
 
-      vertex.m_color = {1.0f, 0.0f, 0.0f};
+      vertex.m_color = {1.0f, 1.0f, 1.0f};
 
       if (unique_vertices.count(index.vertex_index) == 0) 
       {

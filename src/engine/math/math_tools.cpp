@@ -58,4 +58,10 @@ inverse(const Matrix4 matrix)
   return glm::inverse(matrix);
 }
 
+float 
+dot(const Vector3& a, const Vector3 b)
+{
+  return glm::dot(a,b);
+}
+
 }

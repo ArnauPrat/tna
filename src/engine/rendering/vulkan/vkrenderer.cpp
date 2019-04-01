@@ -13,6 +13,7 @@
 #define VMA_IMPLEMENTATION
 #include "vkmem_alloc.h"
 
+#include "vkrenderer_tools.h"
 #include "vkbuffer_tools.h"
 #include "vkmesh_data.h"
 #include "vkscene.h"
@@ -47,7 +48,8 @@ Matrix4                         m_view_matrix; ///< The view matrix
 
 struct UniformBufferObject 
 {
-    Matrix4 projmodelview;
+    Matrix4 m_projmodelview;
+    Vector3 m_color;
 };
 
 
@@ -81,6 +83,9 @@ VulkanRenderer::VulkanRenderer() :
   m_descriptor_set_layout (VK_NULL_HANDLE), 
   m_graphics_queue(VK_NULL_HANDLE), 
   m_present_queue(VK_NULL_HANDLE),
+  m_depth_format(VK_FORMAT_UNDEFINED),
+  m_depth_image(VK_NULL_HANDLE),
+  m_depth_image_view(VK_NULL_HANDLE),
   m_swap_chain_images(nullptr),
   m_swap_chain_image_views(nullptr), 
   m_frame_buffers(nullptr),
@@ -238,7 +243,7 @@ debug_callback(VkDebugReportFlagsEXT flags,
                const char* msg,
                void* userData) 
 {
-  log->error("validation layer: %s", msg);
+  log->warning("validation layer: %s", msg);
   report_error(TNA_ERROR::E_RENDERER_VULKAN_ERROR);
   return VK_FALSE;
 }
@@ -253,6 +258,11 @@ create_vulkan_instance()
 
   VkLayerProperties* available_layers = new VkLayerProperties[layer_count];
   vkEnumerateInstanceLayerProperties(&layer_count, available_layers); 
+
+  if(enable_validation_layers && layer_count == 0)
+  {
+    log->warning("Can't find validation layers. Is VK_LAYER_PATH variable set?");
+  }
 
   for (uint32_t i = 0; i < p_renderer->m_num_validation_layers; ++i) 
   {
@@ -618,6 +628,30 @@ create_swap_chain()
                           p_renderer->m_swap_chain, 
                           &p_renderer->m_num_swap_chain_images, 
                           p_renderer->m_swap_chain_images);
+
+  /// We create the depth buffer image
+  VkFormat candidates[] = {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT};
+  p_renderer->m_depth_format = find_supported_format(p_renderer->m_physical_device,
+                                                     candidates, 
+                                                     sizeof(candidates),
+                                                     VK_IMAGE_TILING_OPTIMAL,
+                                                     VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+
+  if (p_renderer->m_depth_format == VK_FORMAT_UNDEFINED) 
+  {
+    log->error("failed to obtain the depth buffer format!");
+    report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
+  }
+
+  create_image(p_renderer->m_vkallocator,
+              VMA_MEMORY_USAGE_GPU_ONLY,
+              p_renderer->m_viewport_width, 
+              p_renderer->m_viewport_height, 
+              p_renderer->m_depth_format, 
+              VK_IMAGE_TILING_OPTIMAL, 
+              VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 
+              &p_renderer->m_depth_image, 
+              &p_renderer->m_depth_image_allocation);
   return;
 }
 
@@ -653,6 +687,41 @@ create_image_views()
       report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
     }
   }
+
+
+    VkImageViewCreateInfo create_info = {};
+    create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    create_info.image = p_renderer->m_depth_image;
+    create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    create_info.format = p_renderer->m_depth_format;
+    create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+    create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+    create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+    create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+    create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+    create_info.subresourceRange.baseMipLevel = 0;
+    create_info.subresourceRange.levelCount = 1;
+    create_info.subresourceRange.baseArrayLayer = 0;
+    create_info.subresourceRange.layerCount = 1;
+
+    if (vkCreateImageView(p_renderer->m_logical_device, 
+                          &create_info, 
+                          nullptr, 
+                          &p_renderer->m_depth_image_view) != VK_SUCCESS) 
+    {
+      log->error("failed to create depth image view!");
+      report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
+    }
+
+
+    transition_image_layout(p_renderer->m_logical_device,
+                            p_renderer->m_command_pool,
+                            p_renderer->m_graphics_queue,
+                            p_renderer->m_depth_image, 
+                            p_renderer->m_depth_format, 
+                            VK_IMAGE_LAYOUT_UNDEFINED, 
+                            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+
   return;
 }
 
@@ -740,6 +809,24 @@ create_graphics_pipeline()
   multisampling.alphaToCoverageEnable = VK_FALSE; // Optional
   multisampling.alphaToOneEnable = VK_FALSE; // Optional
 
+  VkPipelineDepthStencilStateCreateInfo depth_stencil_state;
+  depth_stencil_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+  depth_stencil_state.depthTestEnable = VK_TRUE;
+  depth_stencil_state.depthWriteEnable = VK_TRUE;
+  depth_stencil_state.depthCompareOp = VK_COMPARE_OP_LESS;
+  depth_stencil_state.depthBoundsTestEnable = VK_FALSE;
+  depth_stencil_state.stencilTestEnable = VK_FALSE;
+  depth_stencil_state.pNext = nullptr;
+  depth_stencil_state.flags = 0;
+  depth_stencil_state.back.failOp = VK_STENCIL_OP_KEEP;
+  depth_stencil_state.back.passOp = VK_STENCIL_OP_KEEP;
+  depth_stencil_state.back.compareOp = VK_COMPARE_OP_ALWAYS;
+  depth_stencil_state.back.compareMask = 0;
+  depth_stencil_state.back.reference = 0;
+  depth_stencil_state.back.depthFailOp = VK_STENCIL_OP_KEEP;
+  depth_stencil_state.back.writeMask = 0;
+  depth_stencil_state.front = depth_stencil_state.back;
+
   VkPipelineColorBlendAttachmentState color_blend_attachment = {};
   color_blend_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
   color_blend_attachment.blendEnable = VK_FALSE;
@@ -768,7 +855,6 @@ create_graphics_pipeline()
   pipeline_layout_info.pushConstantRangeCount = 0; // Optional
   pipeline_layout_info.pPushConstantRanges = nullptr; // Optional
 
-
   if (vkCreatePipelineLayout(p_renderer->m_logical_device, 
                              &pipeline_layout_info, 
                              nullptr, 
@@ -778,7 +864,7 @@ create_graphics_pipeline()
     report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
 
-  VkAttachmentDescription color_attachment = {};
+  VkAttachmentDescription color_attachment;
   color_attachment.format = p_renderer->m_surface_format.format;
   color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
   color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -787,33 +873,48 @@ create_graphics_pipeline()
   color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
   color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
   color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+  color_attachment.flags = 0;
+
+  VkAttachmentDescription depth_attachment;
+  depth_attachment.format = p_renderer->m_depth_format;
+  depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+  depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+  depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+  depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+  depth_attachment.flags = 0;
 
   VkAttachmentReference color_attachment_ref = {};
   color_attachment_ref.attachment = 0;
   color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
+  VkAttachmentReference depth_attachment_ref = {};
+  depth_attachment_ref.attachment = 1;
+  depth_attachment_ref.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
   VkSubpassDescription subpass = {};
   subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
   subpass.colorAttachmentCount = 1;
   subpass.pColorAttachments = &color_attachment_ref;
-
-  VkRenderPassCreateInfo render_pass_info = {};
-  render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-  render_pass_info.attachmentCount = 1;
-  render_pass_info.pAttachments = &color_attachment;
-  render_pass_info.subpassCount = 1;
-  render_pass_info.pSubpasses = &subpass;
+  subpass.pDepthStencilAttachment = &depth_attachment_ref;
 
 	VkSubpassDependency dependency = {};
 	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
 	dependency.dstSubpass = 0;
-
 	dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 	dependency.srcAccessMask = 0;
-
 	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
+  VkAttachmentDescription attachments[] = {color_attachment, depth_attachment};
+  VkRenderPassCreateInfo render_pass_info = {};
+  render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+  render_pass_info.attachmentCount = sizeof(attachments) / sizeof(VkAttachmentDescription);
+  render_pass_info.pAttachments = &attachments[0];
+  render_pass_info.subpassCount = 1;
+  render_pass_info.pSubpasses = &subpass;
 	render_pass_info.dependencyCount = 1;
 	render_pass_info.pDependencies = &dependency;
 
@@ -823,7 +924,7 @@ create_graphics_pipeline()
                          &p_renderer->m_render_pass) != VK_SUCCESS) 
   {
     log->error("failed to create render pass!");
-    report_error(TNA_ERROR::E_SUCCESS);
+    report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
 
   VkGraphicsPipelineCreateInfo pipeline_info = {};
@@ -835,7 +936,7 @@ create_graphics_pipeline()
   pipeline_info.pViewportState = &viewport_state;
   pipeline_info.pRasterizationState = &rasterizer;
   pipeline_info.pMultisampleState = &multisampling;
-  pipeline_info.pDepthStencilState = nullptr; // Optional
+  pipeline_info.pDepthStencilState = &depth_stencil_state; // Optional
   pipeline_info.pColorBlendState = &color_blending;
   pipeline_info.pDynamicState = nullptr; // Optional
   pipeline_info.layout = p_renderer->m_pipeline_layout;
@@ -862,14 +963,16 @@ create_graphics_pipeline()
   for (size_t i = 0; i < p_renderer->m_num_frame_buffers; i++) 
   {
     VkImageView attachments[] = {
-      p_renderer->m_swap_chain_image_views[i]
+      p_renderer->m_swap_chain_image_views[i],
+      p_renderer->m_depth_image_view
     };
+
 
     VkFramebufferCreateInfo frame_buffer_info = {};
     frame_buffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
     frame_buffer_info.renderPass = p_renderer->m_render_pass;
-    frame_buffer_info.attachmentCount = 1;
-    frame_buffer_info.pAttachments = attachments;
+    frame_buffer_info.attachmentCount = sizeof(attachments) / sizeof(VkImageView);
+    frame_buffer_info.pAttachments = &attachments[0];
     frame_buffer_info.width = p_renderer->m_extent.width;
     frame_buffer_info.height = p_renderer->m_extent.height;
     frame_buffer_info.layers = 1;
@@ -1059,6 +1162,10 @@ create_semaphores()
 void 
 clean_up_swap_chain() 
 {
+  destroy_image(p_renderer->m_vkallocator,
+                p_renderer->m_depth_image,
+                p_renderer->m_depth_image_allocation);
+
   if(p_renderer->m_swap_chain_images)
   {
     delete [] p_renderer->m_swap_chain_images;
@@ -1076,6 +1183,11 @@ clean_up_swap_chain()
 void
 clean_up_image_views()
 {
+
+  vkDestroyImageView(p_renderer->m_logical_device, 
+                     p_renderer->m_depth_image_view, 
+                     nullptr);
+
   if(p_renderer->m_swap_chain_image_views)
   {
     for(uint32_t i = 0; i < p_renderer->m_num_swap_chain_image_views; ++i)
@@ -1133,11 +1245,11 @@ recreate_swap_chain()
 void 
 build_command_buffer(uint32_t index) 
 {
-  m_view_matrix = m_scene.get_camera();
+  m_view_matrix = m_scene.m_camera;
   m_projection_matrix = create_projection_matrix(60.0f, 
                                                  p_renderer->m_viewport_width / (float)(p_renderer->m_viewport_height),
                                                  0.1f,
-                                                 10.0f);
+                                                 100.0f);
   m_projection_matrix[1][1] *= -1;
 
   size_t device_alignment = p_renderer->m_mem_properties.limits.minUniformBufferOffsetAlignment;
@@ -1153,7 +1265,8 @@ build_command_buffer(uint32_t index)
     {
       const VkRenderingInfo* info = &meshes[i];
       UniformBufferObject ubo;
-      ubo.projmodelview = m_projection_matrix * m_view_matrix * info->m_model_mat;
+      ubo.m_projmodelview = m_projection_matrix * m_view_matrix * info->m_model_mat;
+      ubo.m_color = info->m_color;
 
       void* uniform_data = nullptr;
       vmaMapMemory(p_renderer->m_vkallocator, m_uniform_allocations[index], &uniform_data);
@@ -1209,9 +1322,15 @@ build_command_buffer(uint32_t index)
   renderpass_info.renderArea.offset = {0, 0};
   renderpass_info.renderArea.extent = p_renderer->m_extent;
 
-  VkClearValue clear_color = {0.0f, 0.0f, 1.0f, 1.0f};
-  renderpass_info.clearValueCount = 1;
-  renderpass_info.pClearValues = &clear_color;
+
+  VkClearValue clear_values[2];
+  clear_values[0].color = {m_scene.m_clear_color.x,
+                              m_scene.m_clear_color.y,
+                              m_scene.m_clear_color.z, 
+                              1.0f};
+  clear_values[1].depthStencil = {1.0f, 0};
+  renderpass_info.clearValueCount = 2;
+  renderpass_info.pClearValues = &clear_values[0];
 
   vkCmdBeginRenderPass(p_renderer->m_command_buffers[index], &renderpass_info, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -1274,7 +1393,7 @@ init_renderer(const Config* config,
 
   if(enable_validation_layers)
   {
-    log->warning("Vulkan validation layers loaded");
+    log->warning("Vulkan validation layers enabled");
   }
 
   create_vulkan_instance();
@@ -1423,11 +1542,13 @@ end_frame()
 
 void 
 render_mesh(const MeshData* mesh_data, 
-            const Matrix4* model_mat ) 
+            const Matrix4* model_mat,
+            const Vector3* color) 
 {
 
   m_scene.add_mesh(static_cast<const VkMeshData*>(mesh_data),
-                   model_mat);
+                   model_mat,
+                   color);
   return;
 }
 
@@ -1435,6 +1556,13 @@ void
 set_camera(const Matrix4* camera_mat) 
 {
   m_scene.set_camera(camera_mat);
+  return;
+}
+
+void 
+set_clear_color(const Vector3* color) 
+{
+  m_scene.set_clear_color(color);
   return;
 }
 
