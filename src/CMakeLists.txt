@@ -1,7 +1,7 @@
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wno-ignored-attributes -fno-exceptions -fno-rtti")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -pg")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 ")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -g -ggdb")
 
 ### Setting up furious
 set(FURIOUS_ROOT "/home/aprat/projects/personal/furious/build/dist")
@@ -57,6 +57,8 @@ message(STATUS ${FURIOUS_INCLUDE_DIR})
 message(STATUS ${FURIOUS_LIBRARIES_DIR})
 
 set(VK_RENDERER_SOURCE_FILES 
+  engine/rendering/vulkan/vkbuffer.h
+  engine/rendering/vulkan/vkbuffer.cpp
   engine/rendering/vulkan/vkrenderer_tools.cpp
   engine/rendering/vulkan/vkrenderer_tools.h
   engine/rendering/vulkan/vkswapchain.cpp
@@ -65,8 +67,6 @@ set(VK_RENDERER_SOURCE_FILES
   engine/rendering/vulkan/vkdevice.h
   engine/rendering/vulkan/vkbuffer_tools.cpp
   engine/rendering/vulkan/vkbuffer_tools.h
-  engine/rendering/vulkan/vkmesh_data.cpp
-  engine/rendering/vulkan/vkmesh_data.h
   engine/rendering/vulkan/vkrenderer.cpp
   engine/rendering/vulkan/vkrenderer.h
   engine/rendering/vulkan/vkshader.cpp
@@ -81,7 +81,7 @@ set(VK_RENDERER_SOURCE_FILES
   )
 
 set(TNA_COMPONENTS
-  engine/components/mesh.h
+  engine/components/render_mesh_data.h
   engine/components/transform.h
   engine/components/transform_matrix.h
   )
@@ -95,14 +95,18 @@ set(TNA_SOURCE_FILES
   engine/engine.h
   engine/error.cpp
   engine/error.h
-  engine/game_app.cpp
+  engine/furious_runtime.cpp
   engine/game_app.h
+  engine/game_state.cpp
+  engine/game_state.h
   engine/log.cpp
   engine/log.h
   engine/math/math_tools.cpp
   engine/math/math_tools.h
   engine/math/matrix.h
   engine/math/vector.h
+  engine/rendering/buffer.h
+  engine/rendering/mesh_data.cpp
   engine/rendering/mesh_data.h
   engine/rendering/renderer.h
   engine/rendering/shader.h
@@ -116,27 +120,28 @@ set(TNA_SOURCE_FILES
   engine/tools/files.cpp
   engine/tools/files.h
   engine/types.h
-  engine/furious_runtime.cpp
   game.cpp
   game.h
   main.cpp
   platform.h
+  scene.h
+  scene.cpp
   tnasdk/definitions.h
 	)
 
 set(TNA_ENGINE_SCRIPTS
   engine/scripts/render_mesh.cpp
   engine/scripts/transform_hierarchy.cpp
-  engine/scripts/set_camera.cpp
+  engine/scripts/set_proj_view.cpp
   )
 
 set(TNA_SCRIPTS
-  scripts/rotator.cpp
+  #scripts/rotator.cpp
   scripts/test.cpp
   )
 
 message(STATUS ${CMAKE_CURRENT_BINARY_DIR})
-set(CLANG_INCLUDES_DIR "/usr/lib/clang/7.0.1/include")
+set(CLANG_INCLUDES_DIR "/usr/lib/clang/8.0.0/include")
 add_custom_command(
 	OUTPUT engine/furious_runtime.cpp
 	COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/engine/
@@ -146,7 +151,13 @@ add_custom_command(
 	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 	)
 
-
+add_custom_target(
+  regen
+	COMMAND ${FURIOUS_ROOT}/bin/fcc -o
+  ${CMAKE_CURRENT_BINARY_DIR}/engine/furious_runtime.cpp ${TNA_SCRIPTS} ${TNA_ENGINE_SCRIPTS} -- --std=c++17 -I${CLANG_INCLUDES_DIR} -I${CMAKE_CURRENT_SOURCE_DIR} -I${FURIOUS_INCLUDE_DIR} -I ${Vulkan_INCLUDE_DIR}
+	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  COMMENT "Regenerating furious code"
+  )
 
 add_executable(tna
 	${TNA_SOURCE_FILES}
@@ -156,7 +167,5 @@ target_link_libraries(tna
   ${FURIOUS_LIBRARIES} 
   glfw
   ${Vulkan_LIBRARIES}
-  #${BULLET_LIBRARIES} 
-  #  ${Boost_LIBRARIES}
   )
 

@@ -9,6 +9,9 @@
 #include <glm/glm.hpp>
 #include <furious/furious.h>
 
+#include "components/proj_view_matrix.h"
+#include "components/viewport.h"
+
 
 namespace tna 
 {
@@ -80,12 +83,6 @@ initialize()
   init_resources();
   register_directory("./");
 
-  p_database = new furious::Database();
-  p_database->start_webserver("localhost", "8080");
-
-  // Initializing Furious
-  furious::__furious_init(p_database);
-
   // Creating Window
   glfwInit();
 
@@ -125,12 +122,7 @@ terminate()
     glfwDestroyWindow(p_window);
   }
   glfwTerminate();
-  furious::__furious_release();
 
-  if(p_database)
-  {
-    delete p_database;
-  }
   terminate_resources();
   delete log;
   return;
@@ -141,10 +133,29 @@ run(GameApp* game_app)
 {
   static auto start_time = std::chrono::high_resolution_clock::now();
 
-  p_current_app = game_app;
-  p_current_app->start();
-  p_current_app->on_app_start(p_window);
+  p_database = new furious::Database();
+  p_database->start_webserver("localhost", "8080");
 
+  /// ADDING GLOBALS TO FURIOUS
+  FURIOUS_CREATE_GLOBAL((p_database),
+                        ProjViewMatrix);
+
+  FURIOUS_CREATE_GLOBAL((p_database),
+                        Viewport,
+                        m_config.m_viewport_width,
+                        m_config.m_viewport_height,
+                        0.1f,
+                        1000.0f,
+                        60.0f);
+
+  // Initializing Furious
+  furious::__furious_init(p_database);
+
+  p_current_app = game_app;
+  p_current_app->m_state.p_database = p_database;
+  p_current_app->m_state.p_window = p_window;
+
+  p_current_app->on_app_start();
   while (!glfwWindowShouldClose(p_window)) 
   {
     // Keep running
@@ -162,6 +173,12 @@ run(GameApp* game_app)
 
   p_current_app->on_app_finish();
   p_current_app = nullptr;
+
+  if(p_database)
+  {
+    furious::__furious_release();
+    delete p_database;
+  }
   return;
 }
 

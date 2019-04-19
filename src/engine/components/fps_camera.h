@@ -78,14 +78,12 @@ struct FPSCamera
     m_pitch += -m_pitch_speed*radians(amount);
   }
 
-
   Vector3 m_eye;
   float m_pitch;
   float m_yaw;
   float m_speed;
   float m_pitch_speed;
   float m_yaw_speed;
-
 
 };
   

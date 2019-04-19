@@ -4,47 +4,41 @@
 
 namespace tna {
 
-VkRenderingInfo::VkRenderingInfo(const VkMeshData* mesh_data,
-                                 const Matrix4*  model_mat,
-                                 const Vector3*   color) :
-m_mesh_data(mesh_data),
-m_model_mat(*model_mat),
-m_color(*color)
-{
-
-}
-
 void 
-VkScene::add_mesh(const VkMeshData* mesh,
-                  const Matrix4* model_mat,
-                  const Vector3* color) 
+VkScene::add_mesh(const RenderMeshDescriptor& rmesh_desc) 
 {
-  m_meshes.emplace_back(mesh, model_mat, color);
+  m_meshes.append(rmesh_desc);
 }
 
 void 
 VkScene::clear() 
 {
-  m_meshes.clear();
+  m_meshes.reset();
 }
 
 void 
-VkScene::set_camera(const Matrix4* camera_mat) 
+VkScene::set_view_matrix(const Matrix4& view_mat) 
 {
-  m_camera = *camera_mat;
+  m_view_mat = view_mat;
+}
+
+void 
+VkScene::set_proj_matrix(const Matrix4& proj_mat) 
+{
+  m_proj_mat = proj_mat;
 }
 
 void
-VkScene::set_clear_color(const Vector3* color)
+VkScene::set_clear_color(const Vector3& color)
 {
-  m_clear_color = *color;
+  m_clear_color = color;
 }
 
 void
-VkScene::get_meshes(const VkRenderingInfo** meshes, 
+VkScene::get_meshes(const RenderMeshDescriptor** meshes, 
                     uint32_t* num_meshes) const 
 {
-  *meshes = m_meshes.data();
+  *meshes = m_meshes.buffer();
   *num_meshes = m_meshes.size();
 }
   

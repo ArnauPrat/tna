@@ -115,13 +115,13 @@ create_vertex_buffer(VkDevice device,
                      VkQueue queue,
                      VkCommandPool pool,
                      VmaAllocator allocator,
-                     const Vertex* vertices, 
-                     uint32_t num_vertices,
+                     void* data, 
+                     size_t size,
                      VkBuffer* buffer, 
                      VmaAllocation* buffer_memory) 
 {
 
-  VkDeviceSize buffer_size = sizeof(Vertex) * num_vertices;
+  VkDeviceSize buffer_size = size;
 
   VkBuffer staging_buffer;
   VmaAllocation staging_buffer_allocation;
@@ -133,9 +133,9 @@ create_vertex_buffer(VkDevice device,
                 &staging_buffer, 
                 &staging_buffer_allocation);
 
-  void* data;
-  vmaMapMemory(allocator, staging_buffer_allocation, &data);
-  memcpy(data, vertices, (size_t) buffer_size);
+  void* tmp_data;
+  vmaMapMemory(allocator, staging_buffer_allocation, &tmp_data);
+  memcpy(tmp_data, data, (size_t) buffer_size);
   vmaUnmapMemory(allocator, staging_buffer_allocation);
 
   create_buffer(allocator,
@@ -163,12 +163,12 @@ create_index_buffer(VkDevice device,
                     VkQueue queue,
                     VkCommandPool pool,
                     VmaAllocator allocator,
-                    const uint32_t* indices, 
-                    uint32_t num_indices,
+                    void* data, 
+                    size_t size,
                     VkBuffer* buffer, 
                     VmaAllocation* buffer_memory) {
 
-  VkDeviceSize buffer_size = sizeof(uint32_t) * num_indices;
+  VkDeviceSize buffer_size = size;
 
   VkBuffer staging_buffer;
   VmaAllocation staging_buffer_allocation;
@@ -180,9 +180,9 @@ create_index_buffer(VkDevice device,
                 &staging_buffer, 
                 &staging_buffer_allocation);
 
-  void* data;
-  vmaMapMemory(allocator, staging_buffer_allocation, &data);
-  memcpy(data, indices, (size_t) buffer_size);
+  void* tmp_data;
+  vmaMapMemory(allocator, staging_buffer_allocation, &tmp_data);
+  memcpy(tmp_data, data, (size_t) buffer_size);
   vmaUnmapMemory(allocator, staging_buffer_allocation);
 
   create_buffer(allocator,

@@ -4,7 +4,6 @@
 #include "../math/math_tools.h"
 #include "../components/transform.h"
 #include "../components/transform_matrix.h"
-#include "../components/mesh.h"
 
 #include <furious/lang/lang.h>
 
@@ -31,6 +30,13 @@ struct InitTransformMatrix
   }
 };
 
+furious::match<TransformMatrix, Transform>().foreach<InitTransformMatrix>()
+                                            .set_priority(2);
+
+////////////////////////////////////////////////
+////////////////////////////////////////////////
+////////////////////////////////////////////////
+
 struct TransformMatrixHierarchy 
 {
   void run(furious::Context* context, 
@@ -42,8 +48,6 @@ struct TransformMatrixHierarchy
   }
 };
 
-furious::match<TransformMatrix, Transform>().foreach<InitTransformMatrix>()
-                                            .set_priority(2);
 
 furious::match<TransformMatrix>().expand<TransformMatrix>("parent")
                                  .foreach<TransformMatrixHierarchy>()

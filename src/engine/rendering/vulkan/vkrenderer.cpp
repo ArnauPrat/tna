@@ -15,7 +15,8 @@
 
 #include "vkrenderer_tools.h"
 #include "vkbuffer_tools.h"
-#include "vkmesh_data.h"
+#include "vkbuffer.h"
+#include "../mesh_data.h"
 #include "vkscene.h"
 #include "vkshader.h"
 #include "vkshader_tools.h"
@@ -43,8 +44,6 @@ const bool enable_validation_layers = true;
 VulkanRenderer*                 p_renderer; ///<  This is the VulkanRenderer
 
 VkScene                         m_scene; ///<  The Vulkan Scene object to store the scene to render information
-Matrix4                         m_projection_matrix; ///< The projection matrix
-Matrix4                         m_view_matrix; ///< The view matrix
 
 struct UniformBufferObject 
 {
@@ -728,8 +727,8 @@ create_image_views()
 void
 create_graphics_pipeline() 
 {
-  Shader* vertex_shader = shader_registry->load("shaders/vert.spv");
-  Shader* fragment_shader = shader_registry->load("shaders/frag.spv");
+  Shader* vertex_shader = shader_registry->load("shaders/shader.vert.spv");
+  Shader* fragment_shader = shader_registry->load("shaders/shader.frag.spv");
   
   if(!vertex_shader) 
   {
@@ -1245,60 +1244,68 @@ recreate_swap_chain()
 void 
 build_command_buffer(uint32_t index) 
 {
-  m_view_matrix = m_scene.m_camera;
-  m_projection_matrix = create_projection_matrix(60.0f, 
+  /*m_projection_matrix = create_projection_matrix(60.0f, 
                                                  p_renderer->m_viewport_width / (float)(p_renderer->m_viewport_height),
                                                  0.1f,
                                                  100.0f);
-  m_projection_matrix[1][1] *= -1;
+                                                 */
+  /*m_projection_matrix[1][1] *= -1;*/
 
   size_t device_alignment = p_renderer->m_mem_properties.limits.minUniformBufferOffsetAlignment;
   size_t uniform_buffer_size = sizeof(UniformBufferObject);
   size_t dynamic_alignment = (uniform_buffer_size / device_alignment) * device_alignment + ((uniform_buffer_size % device_alignment) > 0 ? device_alignment : 0);
   
-  const VkRenderingInfo* meshes;
+  const RenderMeshDescriptor* meshes;
   uint32_t num_meshes;
   m_scene.get_meshes(&meshes, &num_meshes);
+
   if(num_meshes > 0)
   {
+    void* uniform_data = nullptr;
+    vmaMapMemory(p_renderer->m_vkallocator, m_uniform_allocations[index], &uniform_data);
+    uint32_t count_visible = 0;
     for(size_t i = 0; i < num_meshes && i < MAX_PRIMITIVE_COUNT; ++i) 
     {
-      const VkRenderingInfo* info = &meshes[i];
-      UniformBufferObject ubo;
-      ubo.m_projmodelview = m_projection_matrix * m_view_matrix * info->m_model_mat;
-      ubo.m_color = info->m_color;
+      const RenderMeshDescriptor* info = &meshes[i];
+      if(info->m_placement.m_frustrum_visible)
+      {
+        UniformBufferObject ubo;
+        ubo.m_projmodelview = m_scene.m_proj_mat * m_scene.m_view_mat * info->m_placement.m_model_mat;
+        ubo.m_color = info->m_material.m_color;
 
-      void* uniform_data = nullptr;
-      vmaMapMemory(p_renderer->m_vkallocator, m_uniform_allocations[index], &uniform_data);
-      memcpy(&(((char*)uniform_data)[i*dynamic_alignment]), &ubo, sizeof(ubo)); 
-      vmaUnmapMemory(p_renderer->m_vkallocator, m_uniform_allocations[index]);
-      //vmaFlushAllocation(p_renderer->m_vkallocator, m_uniform_allocations[index], i*dynamic_alignment, sizeof(ubo));
+        memcpy(&(((char*)uniform_data)[count_visible*dynamic_alignment]), &ubo, sizeof(ubo)); 
+        count_visible++;
+      }
     }
+    vmaUnmapMemory(p_renderer->m_vkallocator, m_uniform_allocations[index]);
 
-    /// Update descriptor set
-    VkDescriptorBufferInfo buffer_info = {};
-    buffer_info.buffer = m_uniform_buffers[index];
-    buffer_info.offset = 0;
-    buffer_info.range = dynamic_alignment*num_meshes;
+    if(count_visible > 0)
+    {
+      /// Update descriptor set
+      VkDescriptorBufferInfo buffer_info = {};
+      buffer_info.buffer = m_uniform_buffers[index];
+      buffer_info.offset = 0;
+      buffer_info.range = dynamic_alignment*count_visible;
 
-    VkWriteDescriptorSet descriptor_write = {};
-    descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptor_write.pNext = nullptr;
-    descriptor_write.dstSet = p_renderer->m_descriptor_sets[index];
-    descriptor_write.dstBinding = 0;
-    descriptor_write.dstArrayElement = 0;
+      VkWriteDescriptorSet descriptor_write = {};
+      descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+      descriptor_write.pNext = nullptr;
+      descriptor_write.dstSet = p_renderer->m_descriptor_sets[index];
+      descriptor_write.dstBinding = 0;
+      descriptor_write.dstArrayElement = 0;
 
-    descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-    descriptor_write.descriptorCount = 1;
-    descriptor_write.pBufferInfo = &buffer_info;
-    descriptor_write.pImageInfo = nullptr; // Optional
-    descriptor_write.pTexelBufferView = nullptr; // Optional
+      descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+      descriptor_write.descriptorCount = 1;
+      descriptor_write.pBufferInfo = &buffer_info;
+      descriptor_write.pImageInfo = nullptr; // Optional
+      descriptor_write.pTexelBufferView = nullptr; // Optional
 
-    vkUpdateDescriptorSets(p_renderer->m_logical_device, 
-                           1, 
-                           &descriptor_write, 
-                           0, 
-                           nullptr);
+      vkUpdateDescriptorSets(p_renderer->m_logical_device, 
+                             1, 
+                             &descriptor_write, 
+                             0, 
+                             nullptr);
+    }
   }
 
   /// Setting up command buffer
@@ -1313,7 +1320,9 @@ build_command_buffer(uint32_t index)
     report_error(TNA_ERROR::E_RENDERER_RUNTIME_ERROR);
   }
 
-  vkCmdBindPipeline(p_renderer->m_command_buffers[index], VK_PIPELINE_BIND_POINT_GRAPHICS, p_renderer->m_pipeline);
+  vkCmdBindPipeline(p_renderer->m_command_buffers[index], 
+                    VK_PIPELINE_BIND_POINT_GRAPHICS, 
+                    p_renderer->m_pipeline);
 
   VkRenderPassBeginInfo renderpass_info = {};
   renderpass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -1334,25 +1343,46 @@ build_command_buffer(uint32_t index)
 
   vkCmdBeginRenderPass(p_renderer->m_command_buffers[index], &renderpass_info, VK_SUBPASS_CONTENTS_INLINE);
 
+  uint32_t count_visible = 0;
   for(size_t i = 0; i < num_meshes && i < MAX_PRIMITIVE_COUNT; ++i) 
   {
-    const VkRenderingInfo* info = &meshes[i];
-    VkBuffer vertex_buffers[] = {info->m_mesh_data->m_vertex_buffer};
-    VkDeviceSize offsets[] = {0};
+    const RenderMeshDescriptor* info = &meshes[i];
+    if(info->m_placement.m_frustrum_visible)
+    {
+      const MeshData* mesh_data = info->p_mesh_data;
+      VkVertexBuffer* vkvertex_buffer = (VkVertexBuffer*)mesh_data->m_vertex_buffer.p_data;
+      VkBuffer vertex_buffers[] = {vkvertex_buffer->m_buffer};
+      VkDeviceSize offsets[] = {0};
 
-    vkCmdBindVertexBuffers(p_renderer->m_command_buffers[index], 0, 1, vertex_buffers, offsets);
-    vkCmdBindIndexBuffer(p_renderer->m_command_buffers[index], info->m_mesh_data->m_index_buffer, 0, VK_INDEX_TYPE_UINT32);
-    uint32_t offset = dynamic_alignment*i;
-    vkCmdBindDescriptorSets(p_renderer->m_command_buffers[index], 
-                            VK_PIPELINE_BIND_POINT_GRAPHICS, 
-                            p_renderer->m_pipeline_layout, 
-                            0, 
-                            1, 
-                            &p_renderer->m_descriptor_sets[index], 
-                            1, 
-                            &offset);
+      vkCmdBindVertexBuffers(p_renderer->m_command_buffers[index], 
+                             0, 
+                             1, 
+                             vertex_buffers, offsets);
 
-    vkCmdDrawIndexed(p_renderer->m_command_buffers[index], info->m_mesh_data->m_num_indices, 1, 0, 0, 0);
+      VkIndexBuffer* vkindex_buffer = (VkIndexBuffer*)mesh_data->m_index_buffer.p_data;
+      vkCmdBindIndexBuffer(p_renderer->m_command_buffers[index], 
+                           vkindex_buffer->m_buffer, 
+                           0, 
+                           VK_INDEX_TYPE_UINT32);
+
+      uint32_t offset = dynamic_alignment*count_visible;
+      vkCmdBindDescriptorSets(p_renderer->m_command_buffers[index], 
+                              VK_PIPELINE_BIND_POINT_GRAPHICS, 
+                              p_renderer->m_pipeline_layout, 
+                              0, 
+                              1, 
+                              &p_renderer->m_descriptor_sets[index], 
+                              1, 
+                              &offset);
+
+      vkCmdDrawIndexed(p_renderer->m_command_buffers[index], 
+                       mesh_data->m_num_indices, 
+                       1, 
+                       0, 
+                       0, 
+                       0);
+      count_visible++;
+    }
   }
 
   vkCmdEndRenderPass(p_renderer->m_command_buffers[index]);
@@ -1541,26 +1571,28 @@ end_frame()
 }
 
 void 
-render_mesh(const MeshData* mesh_data, 
-            const Matrix4* model_mat,
-            const Vector3* color) 
+render_mesh(const RenderMeshDescriptor& render_mesh) 
 {
-
-  m_scene.add_mesh(static_cast<const VkMeshData*>(mesh_data),
-                   model_mat,
-                   color);
+  m_scene.add_mesh(render_mesh);
   return;
 }
 
 void 
-set_camera(const Matrix4* camera_mat) 
+set_view_matrix(const Matrix4& view_mat) 
 {
-  m_scene.set_camera(camera_mat);
+  m_scene.set_view_matrix(view_mat);
   return;
 }
 
 void 
-set_clear_color(const Vector3* color) 
+set_proj_matrix(const Matrix4& proj_mat) 
+{
+  m_scene.set_proj_matrix(proj_mat);
+  return;
+}
+
+void 
+set_clear_color(const Vector3& color) 
 {
   m_scene.set_clear_color(color);
   return;

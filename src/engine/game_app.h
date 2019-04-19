@@ -6,24 +6,22 @@
 
 #include "common.h"
 #include "entity.h"
-
-struct GLFWwindow;
+#include "game_state.h"
 
 namespace tna 
 {
+
+struct GameState;
 
 class GameApp 
 {
 public:
 
-  GameApp();
-  virtual ~GameApp();
-
-  void
-  start();
+  GameApp(){};
+  virtual ~GameApp(){};
 
   virtual void 
-  on_app_start(GLFWwindow* window) = 0;
+  on_app_start() = 0;
 
   virtual void 
   on_app_finish() = 0;
@@ -52,35 +50,7 @@ public:
                   int32_t action, 
                   int32_t mods) = 0;
 
-  ////////////////////////////////////////////////
-  ////////////////////////////////////////////////
-  ////////////////////////////////////////////////
-  
-
-  /**
-   * \brief Creates an entity in the this game app
-   *
-   * \return The newly created entity
-   */
-  Entity 
-  create_entity();
-
-  /**
-   * \brief Removes an entity in this current game app
-   *
-   * \param entity The entity to be removed
-   */
-  void 
-  remove_entity(Entity entity);
-
-  /**
-   * \brief Creates the camera for the scene.
-   */
-  void
-  create_camera();
-
-protected:
-  Entity m_camera;
+  GameState m_state;
 };
 
 }

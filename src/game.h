@@ -19,7 +19,7 @@ public:
   ~Game() = default;
 
   virtual void 
-  on_app_start(GLFWwindow* window);
+  on_app_start();
 
   virtual void 
   on_app_finish();
@@ -50,9 +50,6 @@ public:
 
 private:
 
-  void
-  create_camera();
-
   int32_t m_game_width;
   int32_t m_game_height;
 
@@ -66,6 +63,8 @@ private:
 
   double m_mouse_current_pos_x;
   double m_mouse_current_pos_y;
+  
+  Entity  m_camera;
 };
 
 }

@@ -3,7 +3,6 @@
 #ifndef _TNA_RENDERER_H_
 #define _TNA_RENDERER_H_ value
 
-#include "mesh_data.h"
 #include "../math/matrix.h"
 #include "../math/vector.h"
 
@@ -13,6 +12,25 @@ namespace tna
 {
 
 class Config;
+struct MeshData;
+
+struct MaterialDescriptor
+{
+  Vector3   m_color;
+};
+
+struct PlacementDescriptor
+{
+  Matrix4   m_model_mat;
+  bool      m_frustrum_visible;
+};
+
+struct RenderMeshDescriptor
+{
+  const MeshData*     p_mesh_data;
+  MaterialDescriptor  m_material;
+  PlacementDescriptor m_placement;
+};
 
 /**
  * @brief Initializes the rendering subsystem
@@ -44,23 +62,28 @@ end_frame();
 /**
  * @brief Renders a mesh with tht given model matrix
  *
- * @param mesh_data The mesh to render
- * @param model_mat The model matrix
+ * @param rmesh_desc The render mesh descriptor to render
  */
 void 
-render_mesh(const MeshData* mesh_data, 
-            const Matrix4* model_mat,
-            const Vector3* color);
+render_mesh(const RenderMeshDescriptor& rdesc);
 
 
 /**
  * @brief Sets the camera of the scene at the given position represented the
  * given matrix.
  *
- * @param camera_mat The camera matrix to set the camera to
+ * @param view_mat The view matrix
  */
 void 
-set_camera(const Matrix4* camera_mat);
+set_view_matrix(const Matrix4& view_mat);
+
+/**
+ * \brief Sets the projection matrix of the renderer
+ *
+ * \param proj_mat The projection matrix
+ */
+void
+set_proj_matrix(const Matrix4& proj_mat);
 
 /**
  * \brief Sets the clear color 
@@ -68,7 +91,7 @@ set_camera(const Matrix4* camera_mat);
  * \param color The color to set
  */
 void
-set_clear_color(const Vector3* color);
+set_clear_color(const Vector3& color);
 
 }
 

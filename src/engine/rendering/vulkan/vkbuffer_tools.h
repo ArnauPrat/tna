@@ -62,8 +62,8 @@ create_vertex_buffer(VkDevice device,
                      VkQueue queue,
                      VkCommandPool pool,
                      VmaAllocator allocator,
-                     const Vertex* vertices, 
-                     uint32_t num_vertices,
+                     void* vertices, 
+                     size_t size,
                      VkBuffer* buffer, 
                      VmaAllocation* alloc_info);
 
@@ -80,8 +80,8 @@ create_index_buffer(VkDevice device,
                     VkQueue queue,
                     VkCommandPool pool,
                     VmaAllocator allocator,
-                    const uint32_t* indices, 
-                    uint32_t num_indices,
+                    void* indices, 
+                    size_t size,
                     VkBuffer* buffer, 
                     VmaAllocation* alloc_info);
 

@@ -15,7 +15,6 @@ namespace tna
 class Config;
 class GameApp;
 
-
 /**
  * \brief Initializes the resources of the game engine
  */
