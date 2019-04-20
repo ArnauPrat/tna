@@ -96,6 +96,10 @@ load_config(const std::string& configFileName, Config* config)
   uint32_t line_count = 0;
   while (fread_line(fd, &buffer, &buffer_size) > 0) 
   {
+    if(buffer[0] == '#')
+    {
+      continue;
+    }
     char* tok = strtok(buffer," \t" );
     if(tok == NULL)
     {

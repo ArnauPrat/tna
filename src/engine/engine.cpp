@@ -4,6 +4,7 @@
 #include "game_app.h"
 #include "rendering/rendering.h"
 #include "resources/resources.h"
+#include "gui/imgui.h"
 #include <chrono>
 #include <fstream>
 #include <glm/glm.hpp>
@@ -18,6 +19,8 @@ namespace tna
 
 Log*               log     = nullptr;
 
+bool               m_show_gui = true;
+bool               m_edit_mode = false;
 GLFWwindow*        p_window  = nullptr;
 GameApp*           p_current_app = nullptr;
 Config             m_config;
@@ -102,7 +105,17 @@ initialize()
   glfwSetKeyCallback(p_window, key_callback);
   glfwSetMouseButtonCallback(p_window, mouse_button_callback);
   glfwSetCursorPosCallback(p_window, cursor_position_callback);
+  glfwSetInputMode(p_window, 
+                   GLFW_CURSOR,
+                   GLFW_CURSOR_DISABLED);
+
+  glfwSetCursorPos(p_window, 
+                   m_config.m_viewport_width/2.0, 
+                   m_config.m_viewport_height/2.0);
+
   init_renderer(&m_config, p_window);
+  init_gui();
+
   return;
 }
 
@@ -114,6 +127,7 @@ terminate()
     p_current_app->on_app_finish();
   }
 
+  terminate_gui();
   terminate_renderer();
   
 
@@ -126,6 +140,60 @@ terminate()
   terminate_resources();
   delete log;
   return;
+}
+
+void
+toggle_gui()
+{
+  m_show_gui = !m_show_gui;
+}
+
+void
+toggle_edit_mode()
+{
+  if(m_edit_mode)
+  {
+    glfwSetInputMode(p_window, 
+                     GLFW_CURSOR,
+                     GLFW_CURSOR_DISABLED);
+  }
+  else
+  {
+    glfwSetInputMode(p_window, 
+                     GLFW_CURSOR,
+                     GLFW_CURSOR_NORMAL);
+
+    Viewport* viewport = FURIOUS_FIND_GLOBAL(p_database, Viewport);
+    glfwSetCursorPos(p_window, 
+                     viewport->m_width/2.0, 
+                     viewport->m_height/2.0);
+
+  }
+  m_edit_mode = !m_edit_mode;
+}
+
+bool
+is_edit_mode()
+{
+  return m_edit_mode;
+}
+
+void
+draw_gui()
+{
+  ImGui::NewFrame();
+  if(m_show_gui)
+  {
+    ImGui::Begin("TNA");                         
+    ImGui::Text("Frame time %.3f ms",
+                1000.0f / ImGui::GetIO().Framerate);
+
+    ImGui::Text("FPS %.1f", 
+                ImGui::GetIO().Framerate);
+
+    ImGui::End();
+  }
+  ImGui::Render();
 }
 
 void
@@ -168,6 +236,7 @@ run(GameApp* game_app)
     p_current_app->on_frame_start(time);
     furious::__furious_frame(time, p_database);
     p_current_app->on_frame_end();
+    draw_gui();
     end_frame();
   }
 

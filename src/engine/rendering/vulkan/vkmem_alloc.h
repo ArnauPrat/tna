@@ -6093,8 +6093,8 @@ public:
     virtual uint32_t GetAllocationsMoved() const { return m_AllocationsMoved; }
 
 private:
-    uint32_t m_AllocationCount;
     bool m_AllAllocations;
+    uint32_t m_AllocationCount;
 
     VkDeviceSize m_BytesMoved;
     uint32_t m_AllocationsMoved;
@@ -10291,8 +10291,7 @@ void VmaBlockMetadata_Linear::Alloc(
         break;
     case VmaAllocationRequestType::EndOf2nd:
         {
-            //SuballocationVectorType& suballocations1st = AccessSuballocations1st();
-            AccessSuballocations1st();
+            SuballocationVectorType& suballocations1st = AccessSuballocations1st();
             // New allocation at the end of 2-part ring buffer, so before first allocation from 1st vector.
             VMA_ASSERT(!suballocations1st.empty() &&
                 request.offset + allocSize <= suballocations1st[m_1stNullItemsBeginCount].offset);
@@ -12228,7 +12227,7 @@ void VmaBlockVector::ApplyDefragmentationMovesGpu(
     const size_t blockCount = m_Blocks.size();
 
     pDefragCtx->blockContexts.resize(blockCount);
-    memset(pDefragCtx->blockContexts.data(), 0, blockCount * sizeof(VmaBlockDefragmentationContext));
+    memset((void*)pDefragCtx->blockContexts.data(), 0, blockCount * sizeof(VmaBlockDefragmentationContext));
 
     // Go over all moves. Mark blocks that are used with BLOCK_FLAG_USED.
     const size_t moveCount = moves.size();
@@ -12268,8 +12267,8 @@ void VmaBlockVector::ApplyDefragmentationMovesGpu(
     // Go over all moves. Post data transfer commands to command buffer.
     if(pDefragCtx->res == VK_SUCCESS)
     {
-        const VkDeviceSize nonCoherentAtomSize = m_hAllocator->m_PhysicalDeviceProperties.limits.nonCoherentAtomSize;
-        VkMappedMemoryRange memRange = { VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE };
+        //const VkDeviceSize nonCoherentAtomSize = m_hAllocator->m_PhysicalDeviceProperties.limits.nonCoherentAtomSize;
+        //VkMappedMemoryRange memRange = { VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE };
 
         for(size_t moveIndex = 0; moveIndex < moveCount; ++moveIndex)
         {
@@ -12403,7 +12402,7 @@ void VmaBlockVector::Defragment(
     const VkMemoryPropertyFlags memPropFlags =
         m_hAllocator->m_MemProps.memoryTypes[m_MemoryTypeIndex].propertyFlags;
     const bool isHostVisible = (memPropFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) != 0;
-    const bool isHostCoherent = (memPropFlags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) != 0;
+    //const bool isHostCoherent = (memPropFlags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) != 0;
 
     const bool canDefragmentOnCpu = maxCpuBytesToMove > 0 && maxCpuAllocationsToMove > 0 &&
         isHostVisible;

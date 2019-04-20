@@ -2,6 +2,8 @@
 
 #include "game.h"
 #include "scene.h"
+#include "engine/engine.h"
+#include "engine/gui/imgui.h"
 #include "engine/components/fps_camera.h"
 #include "engine/components/viewport.h"
 #include "engine/rendering/renderer.h"
@@ -41,6 +43,7 @@ void Game::on_app_start()
   Viewport* viewport = FURIOUS_FIND_GLOBAL(m_state.p_database, Viewport); 
   viewport->m_far = 10000.0f;
 
+  // SETTING CAMERA POSITION
   FPSCamera* fps_camera = FURIOUS_FIND_GLOBAL(m_state.p_database, FPSCamera);
   fps_camera->m_eye = {0.0f, 1000.0f, 1000.0f};
   fps_camera->m_speed = 200.0f;
@@ -49,14 +52,7 @@ void Game::on_app_start()
   fps_camera->m_yaw_speed = radians(10.0f);
   fps_camera->m_pitch_speed = radians(10.0f);
 
-  glfwSetInputMode(m_state.p_window, 
-                   GLFW_CURSOR,
-                   GLFW_CURSOR_DISABLED);
-
-  glfwSetCursorPos(m_state.p_window, 
-                   m_game_width/2.0, 
-                   m_game_height/2.0);
-
+  // INITIALIZING CURRENT MOUSE POSITION
   glfwGetCursorPos(m_state.p_window, 
                    &m_mouse_old_pos_x, 
                    &m_mouse_old_pos_y);
@@ -66,6 +62,8 @@ void Game::on_app_start()
 
   set_clear_color(TNA_COLOR_BLUE_SKY);
 
+
+  // CREATING SCENE
   create_terrain(&m_state);
   create_buildings(&m_state);
   create_cars(&m_state);
@@ -124,8 +122,8 @@ void Game::on_frame_start(float delta)
     camera->strafe(delta);
   }
 
-  int32_t delta_x = m_mouse_current_pos_x - m_mouse_old_pos_x;
-  int32_t delta_y = m_mouse_current_pos_y - m_mouse_old_pos_y;
+  int32_t delta_x = (m_mouse_current_pos_x - m_mouse_old_pos_x);
+  int32_t delta_y = (m_mouse_current_pos_y - m_mouse_old_pos_y);
   m_mouse_old_pos_x = m_mouse_current_pos_x;
   m_mouse_old_pos_y = m_mouse_current_pos_y;
 
@@ -144,58 +142,78 @@ void Game::on_key_event(GLFWwindow* window,
                         int action, 
                         int mods) 
 {
-  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+
+  if(!is_edit_mode())
   {
-    glfwSetWindowShouldClose(window, GLFW_TRUE);
+    switch(key)
+    {
+      case GLFW_KEY_W:
+        if (action == GLFW_PRESS)
+        {
+          m_forwards_camera = true;
+        }
+        else if(action == GLFW_RELEASE)
+        {
+          m_forwards_camera = false;
+        }
+        break;
+
+      case GLFW_KEY_S:
+        if (action == GLFW_PRESS)
+        {
+          m_backwards_camera = true;
+        }
+        else if(action == GLFW_RELEASE)
+        {
+          m_backwards_camera = false;
+        }
+        break;
+
+      case GLFW_KEY_A:
+        if (action == GLFW_PRESS)
+        {
+          m_strafe_left_camera = true;
+        }
+        else if(action == GLFW_RELEASE)
+        {
+          m_strafe_left_camera = false;
+        }
+        break;
+
+      case GLFW_KEY_D:
+        if (action == GLFW_PRESS)
+        {
+          m_strafe_right_camera = true;
+        }
+        else if(action == GLFW_RELEASE)
+        {
+          m_strafe_right_camera = false;
+        }
+        break;
+    }
   }
-
-  if (key == GLFW_KEY_W)
+  switch(key)
   {
-    if (action == GLFW_PRESS)
-    {
-      m_forwards_camera = true;
-    }
-    else if(action == GLFW_RELEASE)
-    {
-      m_forwards_camera = false;
-    }
-  }
+    case GLFW_KEY_ESCAPE:
+      glfwSetWindowShouldClose(window, GLFW_TRUE);
+      break;
+    case GLFW_KEY_G:
+      if (action == GLFW_PRESS)
+      {
+        toggle_gui();
+      }
+      break;
+    case GLFW_KEY_E:
+      if (action == GLFW_PRESS)
+      {
+        toggle_edit_mode();
+        glfwGetCursorPos(m_state.p_window, 
+                         &m_mouse_old_pos_x, 
+                         &m_mouse_old_pos_y);
 
-  if (key == GLFW_KEY_S)
-  {
-    if (action == GLFW_PRESS)
-    {
-      m_backwards_camera = true;
-    }
-    else if(action == GLFW_RELEASE)
-    {
-      m_backwards_camera = false;
-    }
-  }
-
-  if (key == GLFW_KEY_A)
-  {
-    if (action == GLFW_PRESS)
-    {
-      m_strafe_left_camera = true;
-    }
-    else if(action == GLFW_RELEASE)
-    {
-      m_strafe_left_camera = false;
-    }
-
-  }
-
-  if (key == GLFW_KEY_D)
-  {
-    if (action == GLFW_PRESS)
-    {
-      m_strafe_right_camera = true;
-    }
-    else if(action == GLFW_RELEASE)
-    {
-      m_strafe_right_camera = false;
-    }
+        m_mouse_current_pos_x = m_mouse_old_pos_x;
+        m_mouse_current_pos_y = m_mouse_old_pos_y;
+      }
   }
 }
 
@@ -203,10 +221,13 @@ void Game::on_cursor_position(GLFWwindow* window,
                               double xpos,
                               double ypos) 
 {
-  m_mouse_old_pos_x = m_mouse_current_pos_x;
-  m_mouse_old_pos_y = m_mouse_current_pos_y;
-  m_mouse_current_pos_x = xpos;
-  m_mouse_current_pos_y = ypos;
+  if(!is_edit_mode())
+  {
+    m_mouse_old_pos_x = m_mouse_current_pos_x;
+    m_mouse_old_pos_y = m_mouse_current_pos_y;
+    m_mouse_current_pos_x = xpos;
+    m_mouse_current_pos_y = ypos;
+  }
 }
 
 void Game::on_mouse_button(GLFWwindow* window, 

@@ -28,6 +28,24 @@ void
 terminate();
 
 /**
+ * \brief Toggle the engine GUI
+ */
+void
+toggle_gui();
+
+/**
+ * \brief Toggles the edit mode
+ */
+void
+toggle_edit_mode();
+
+/**
+ * \brief Returns if in edit mode 
+ */
+bool
+is_edit_mode();
+
+/**
  * \brief Runs the given GameApp
  *
  * \param game_app

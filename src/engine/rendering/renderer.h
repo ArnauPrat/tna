@@ -93,6 +93,18 @@ set_proj_matrix(const Matrix4& proj_mat);
 void
 set_clear_color(const Vector3& color);
 
+/**
+ * \brief Initializes the gui subsystem
+ */
+void
+init_gui();
+
+/**
+ * \brief Terminates the gui subsystem
+ */
+void
+terminate_gui();
+
 }
 
 #endif /* ifndef _TNA_RENDERING_H_ */

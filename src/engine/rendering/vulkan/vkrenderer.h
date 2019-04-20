@@ -10,6 +10,8 @@
 
 #include <vector>
 
+struct GLFWwindow;
+
 namespace tna 
 {
 
@@ -18,6 +20,8 @@ struct VulkanRenderer
 
   VulkanRenderer();
   ~VulkanRenderer();
+
+  GLFWwindow*                    p_window;
 
   uint32_t                      m_viewport_width;   ///< Width of the viewport
   uint32_t                      m_viewport_height;  ///< Height of the viewport

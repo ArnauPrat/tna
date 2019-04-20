@@ -3,11 +3,12 @@
 
 #include "../../common.h"
 #include "../../config.h"
+#include "../../math/math_tools.h"
+#include "../../math/matrix.h"
 #include "../../resources/resources.h"
 #include "../../tools/files.h"
 #include "../vertex.h"
-#include "../../math/matrix.h"
-#include "../../math/math_tools.h"
+#include "gui/vkgui.h"
 
 
 #define VMA_IMPLEMENTATION
@@ -66,6 +67,7 @@ void
 clean_up_swap_chain();
 
 VulkanRenderer::VulkanRenderer() : 
+  p_window(nullptr),
   m_viewport_width(0),                
   m_viewport_height(0),                
   m_vulkan_instance(VK_NULL_HANDLE),   
@@ -1014,15 +1016,35 @@ create_command_pool()
 void 
 create_descriptor_pool() 
 {
-  VkDescriptorPoolSize pool_size = {};
+  /*VkDescriptorPoolSize pool_size = {};
   pool_size.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
   pool_size.descriptorCount = p_renderer->m_num_swap_chain_images;
+  */
+
+  uint32_t num_descriptors = 1000*p_renderer->m_num_swap_chain_images;
+
+  VkDescriptorPoolSize pool_sizes[] =
+  {
+    { VK_DESCRIPTOR_TYPE_SAMPLER, num_descriptors },
+    { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, num_descriptors },
+    { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, num_descriptors },
+    { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, num_descriptors },
+    { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, num_descriptors },
+    { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, num_descriptors },
+    { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, num_descriptors },
+    { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, num_descriptors },
+    { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, num_descriptors },
+    { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, num_descriptors },
+    { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, num_descriptors }
+  };
+
+  size_t pool_sizes_count = sizeof(pool_sizes) / sizeof(VkDescriptorPoolSize);
 
   VkDescriptorPoolCreateInfo pool_info = {};
   pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-  pool_info.poolSizeCount = 1;
-  pool_info.pPoolSizes = &pool_size;
-  pool_info.maxSets = p_renderer->m_num_swap_chain_images;
+  pool_info.poolSizeCount = pool_sizes_count;
+  pool_info.pPoolSizes = pool_sizes;
+  pool_info.maxSets = num_descriptors;
 
   if (vkCreateDescriptorPool(p_renderer->m_logical_device, 
                              &pool_info, 
@@ -1244,12 +1266,6 @@ recreate_swap_chain()
 void 
 build_command_buffer(uint32_t index) 
 {
-  /*m_projection_matrix = create_projection_matrix(60.0f, 
-                                                 p_renderer->m_viewport_width / (float)(p_renderer->m_viewport_height),
-                                                 0.1f,
-                                                 100.0f);
-                                                 */
-  /*m_projection_matrix[1][1] *= -1;*/
 
   size_t device_alignment = p_renderer->m_mem_properties.limits.minUniformBufferOffsetAlignment;
   size_t uniform_buffer_size = sizeof(UniformBufferObject);
@@ -1385,6 +1401,9 @@ build_command_buffer(uint32_t index)
     }
   }
 
+  // ADD IMGUI COMMAND BUFFER
+  vkgui_build_commands(index);
+
   vkCmdEndRenderPass(p_renderer->m_command_buffers[index]);
 
   if (vkEndCommandBuffer(p_renderer->m_command_buffers[index]) != VK_SUCCESS) 
@@ -1396,6 +1415,7 @@ build_command_buffer(uint32_t index)
 }
 
 
+
 ////////////////////////////////////////////////
 ////////////// PUBLIC METHODS //////////////////
 ////////////////////////////////////////////////
@@ -1405,6 +1425,7 @@ init_renderer(const Config* config,
               GLFWwindow* window) 
 {
   p_renderer = new VulkanRenderer();
+  p_renderer->p_window = window;
   
   // Retrieving vulkan validation layers from engine config
   p_renderer->m_num_validation_layers = config->m_num_vk_vlayers;
@@ -1489,6 +1510,7 @@ void
 begin_frame() 
 {
   m_scene.clear();
+  vkgui_begin_frame();
   return;
 }
 
@@ -1506,6 +1528,7 @@ end_frame()
   if (result == VK_ERROR_OUT_OF_DATE_KHR) 
   {
     recreate_swap_chain();
+   vkgui_recreate();
     return;
   } 
   else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) 
@@ -1559,6 +1582,7 @@ end_frame()
   if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) 
   {
     recreate_swap_chain();
+    vkgui_recreate();
   } 
   else if (result != VK_SUCCESS) 
   {
@@ -1596,6 +1620,18 @@ set_clear_color(const Vector3& color)
 {
   m_scene.set_clear_color(color);
   return;
+}
+
+void
+init_gui()
+{
+  vkgui_init();
+}
+
+void
+terminate_gui()
+{
+  vkgui_terminate();
 }
 
 }

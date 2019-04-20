@@ -1,13 +1,12 @@
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wno-ignored-attributes -fno-exceptions -fno-rtti")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -pg")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -g -ggdb")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_DEBUG_FLAGS} -O0 -pg")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_RELEASE_FLAGS} -O2 -g -ggdb")
 
 ### Setting up furious
 set(FURIOUS_ROOT "/home/aprat/projects/personal/furious/build/dist")
 set(FURIOUS_INCLUDE_DIR "${FURIOUS_ROOT}/include")
 set(FURIOUS_LIBRARIES_DIR "${FURIOUS_ROOT}/lib")
-#set(FURIOUS_LIBRARIES "libfurious.so")
 set(FURIOUS_LIBRARIES "libfurious.so")
 
 set(BULLET_ROOT "/usr/")
@@ -30,18 +29,10 @@ find_package(glfw3 3.2 REQUIRED)
 #find_package(glm REQUIRED)
 
 ### Setting up Vulkan
-#find_package(Vulkan REQUIRED)
 set(Vulkan_SDK_ROOT "/opt/vulkan-sdk/1.1.101.0/x86_64")
 set(Vulkan_INCLUDE_DIR "${Vulkan_SDK_ROOT}/include")
 set(Vulkan_LIBRARIES_DIR "${Vulkan_SDK_ROOT}/lib")
 set(Vulkan_LIBRARIES "libvulkan.so")
-
-### Setting up boost
-#set(Boost_USE_STATIC_LIBS OFF) 
-#set(Boost_USE_MULTITHREADED ON)  
-#set(Boost_USE_STATIC_RUNTIME OFF) 
-#find_package(Boost 1.66 COMPONENTS program_options date_time thread system locale context REQUIRED)
-
 
 include_directories(${CMAKE_SOURCE_DIR}/src)
 include_directories(${FURIOUS_INCLUDE_DIR})
@@ -78,17 +69,37 @@ set(VK_RENDERER_SOURCE_FILES
   engine/rendering/vulkan/vkmem_alloc.h
   engine/rendering/vulkan/vkscene.h
   engine/rendering/vulkan/vkscene.cpp
+  engine/rendering/vulkan/gui/vkgui.h
+  engine/rendering/vulkan/gui/vkgui.cpp
+  engine/rendering/vulkan/gui/imgui_impl_vulkan.h
+  engine/rendering/vulkan/gui/imgui_impl_vulkan.cpp
   )
 
-set(TNA_COMPONENTS
+set(TNA_ENGINE_COMPONENTS
   engine/components/render_mesh_data.h
   engine/components/transform.h
   engine/components/transform_matrix.h
   )
 
-set(TNA_SOURCE_FILES 
-  ${TNA_COMPONENTS}
+set(TNA_ENGINE_GUI
+  engine/gui/imconfig.h
+  engine/gui/imgui.h
+  engine/gui/imgui.cpp
+  engine/gui/imgui_demo.cpp
+  engine/gui/imgui_draw.cpp
+  engine/gui/imgui_internal.h
+  engine/gui/imgui_widgets.cpp
+  engine/gui/imstb_rectpack.h
+  engine/gui/imstb_textedit.h
+  engine/gui/imstb_truetype.h
+  engine/gui/imgui_impl_glfw.h
+  engine/gui/imgui_impl_glfw.cpp
+  )
+
+set(TNA_ENGINE_SOURCE_FILES 
+  ${TNA_ENGINE_COMPONENTS}
   ${VK_RENDERER_SOURCE_FILES}
+  ${TNA_ENGINE_GUI}
   engine/config.cpp
   engine/config.h
   engine/engine.cpp
@@ -121,6 +132,10 @@ set(TNA_SOURCE_FILES
   engine/tools/files.h
   engine/tools/colors.h
   engine/types.h
+	)
+
+set(TNA_SOURCE_FILES 
+  ${TNA_ENGINE_SOURCE_FILES}
   game.cpp
   game.h
   main.cpp
@@ -129,6 +144,7 @@ set(TNA_SOURCE_FILES
   scene.cpp
   tnasdk/definitions.h
 	)
+
 
 set(TNA_ENGINE_SCRIPTS
   engine/scripts/render_mesh.cpp
