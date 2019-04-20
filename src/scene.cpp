@@ -6,6 +6,7 @@
 #include "engine/components/render_mesh_data.h"
 #include "engine/components/transform.h"
 #include "engine/resources/resources.h"
+#include "engine/tools/colors.h"
 
 namespace tna
 {
@@ -21,20 +22,21 @@ create_terrain(GameState* state)
     {
       Entity terrain = create_entity(state);
 
-      terrain.get_component<Transform>()->m_scale.x = TILE_HALF_EDGE;
-      terrain.get_component<Transform>()->m_scale.y = TILE_HALF_EDGE;
-      terrain.get_component<Transform>()->m_scale.z = TILE_HALF_EDGE;
+      Transform* transform = terrain.get_component<Transform>();
+      transform->m_scale.x = TILE_HALF_EDGE;
+      transform->m_scale.y = TILE_HALF_EDGE;
+      transform->m_scale.z = TILE_HALF_EDGE;
 
-      terrain.get_component<Transform>()->m_position.x  = i*TILE_HALF_EDGE*2.0 - TILE_HALF_EDGE*NUM_TILES;
-      terrain.get_component<Transform>()->m_position.y -= TILE_HALF_EDGE;
-      terrain.get_component<Transform>()->m_position.z  = j*TILE_HALF_EDGE*2.0 - TILE_HALF_EDGE*NUM_TILES;
+      transform->m_position.x  = i*TILE_HALF_EDGE*2.0 - TILE_HALF_EDGE*NUM_TILES;
+      transform->m_position.y -= TILE_HALF_EDGE;
+      transform->m_position.z  = j*TILE_HALF_EDGE*2.0 - TILE_HALF_EDGE*NUM_TILES;
 
       FURIOUS_ADD_COMPONENT(&terrain, RenderMeshData);
 
-      terrain.get_component<RenderMeshData>()->p_mesh_data = mesh_registry->load("models/cube.obj");
-      terrain.get_component<RenderMeshData>()->m_material.m_color.r = 0.0;
-      terrain.get_component<RenderMeshData>()->m_material.m_color.g = 0.0;
-      terrain.get_component<RenderMeshData>()->m_material.m_color.b = 1.0;
+      RenderMeshData* render_mesh_data = terrain.get_component<RenderMeshData>();
+      render_mesh_data->p_mesh_data = mesh_registry->load("models/cube.obj");
+      render_mesh_data->m_material.m_color = TNA_COLOR_LIGHT_GREY_2;
+
     }
   }
 }

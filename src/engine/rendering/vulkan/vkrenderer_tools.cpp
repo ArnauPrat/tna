@@ -114,8 +114,8 @@ transition_image_layout(VkDevice device,
     }
 
 
-    VkPipelineStageFlags sourceStage;
-    VkPipelineStageFlags destinationStage;
+    VkPipelineStageFlags sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    VkPipelineStageFlags destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 
     if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED 
         && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) 

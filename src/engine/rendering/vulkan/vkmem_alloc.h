@@ -10291,7 +10291,8 @@ void VmaBlockMetadata_Linear::Alloc(
         break;
     case VmaAllocationRequestType::EndOf2nd:
         {
-            SuballocationVectorType& suballocations1st = AccessSuballocations1st();
+            //SuballocationVectorType& suballocations1st = AccessSuballocations1st();
+            AccessSuballocations1st();
             // New allocation at the end of 2-part ring buffer, so before first allocation from 1st vector.
             VMA_ASSERT(!suballocations1st.empty() &&
                 request.offset + allocSize <= suballocations1st[m_1stNullItemsBeginCount].offset);

@@ -3,8 +3,10 @@
 #include "game.h"
 #include "scene.h"
 #include "engine/components/fps_camera.h"
+#include "engine/components/viewport.h"
 #include "engine/rendering/renderer.h"
 #include "engine/math/math_tools.h"
+#include "engine/tools/colors.h"
 #include "tnasdk/definitions.h"
 
 #include "engine/components/transform.h"
@@ -36,8 +38,16 @@ void Game::on_app_start()
 
   create_camera(&m_state);
 
+  Viewport* viewport = FURIOUS_FIND_GLOBAL(m_state.p_database, Viewport); 
+  viewport->m_far = 10000.0f;
+
   FPSCamera* fps_camera = FURIOUS_FIND_GLOBAL(m_state.p_database, FPSCamera);
-  fps_camera->m_eye.y = 2.0f;
+  fps_camera->m_eye = {0.0f, 1000.0f, 1000.0f};
+  fps_camera->m_speed = 200.0f;
+
+  fps_camera->m_pitch = radians(-45.0f);
+  fps_camera->m_yaw_speed = radians(10.0f);
+  fps_camera->m_pitch_speed = radians(10.0f);
 
   glfwSetInputMode(m_state.p_window, 
                    GLFW_CURSOR,
@@ -54,13 +64,12 @@ void Game::on_app_start()
   m_mouse_current_pos_x = m_mouse_old_pos_x;
   m_mouse_current_pos_y = m_mouse_old_pos_y;
 
-  set_clear_color({0.2f, 0.2f, 0.2f});
+  set_clear_color(TNA_COLOR_BLUE_SKY);
 
   create_terrain(&m_state);
   create_buildings(&m_state);
   create_cars(&m_state);
   create_player(&m_state);
-
 
   /*Entity entity1 = create_entity(&m_state);
   FURIOUS_ADD_COMPONENT(&entity1, Mesh, "models/cube.obj");

@@ -6,7 +6,8 @@
 #include <fstream>
 #include <vector>
 
-namespace tna {
+namespace tna 
+{
 
 std::vector<char> read_file(const std::string& filename);   
 

@@ -119,6 +119,7 @@ set(TNA_SOURCE_FILES
   engine/resources/resources.h
   engine/tools/files.cpp
   engine/tools/files.h
+  engine/tools/colors.h
   engine/types.h
   game.cpp
   game.h
