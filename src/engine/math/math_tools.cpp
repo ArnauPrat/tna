@@ -28,7 +28,7 @@ Matrix4 rotate(const Matrix4& matrix,
                float angle,
                const Vector3& axis)
 {
-  return glm::rotate(matrix, radians(angle), axis);
+  return glm::rotate(matrix, angle, axis);
 }
 
 Matrix4

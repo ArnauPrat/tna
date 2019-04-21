@@ -14,6 +14,7 @@
 #include "engine/components/transform.h"
 #include "engine/components/fps_camera.h"
 #include "engine/components/render_mesh_data.h"
+#include "components/rotation_speed.h"
 
 #include <time.h>
 #include <stdlib.h>
@@ -46,7 +47,7 @@ void Game::on_app_start()
 
   // SETTING CAMERA POSITION
   FPSCamera* fps_camera = FURIOUS_FIND_GLOBAL(m_state.p_database, FPSCamera);
-  fps_camera->m_eye = {0.0f, 1000.0f, 1000.0f};
+  fps_camera->m_eye = {0.0f, 100.0f, 100.0f};
   fps_camera->m_speed = 200.0f;
 
   fps_camera->m_pitch = radians(-45.0f);
@@ -80,14 +81,17 @@ void Game::on_app_start()
 
   
   double factor = 3.1416f / 180.0f;
-  for(uint32_t i = 0; i < 20; ++i)
+  for(uint32_t i = 0; i < 5000; ++i)
   {
     Entity entity2 = create_entity(&m_state);
     FURIOUS_ADD_COMPONENT(&entity2, RenderMeshData);
+    float speed_factor = rand() / (float)INT_MAX;
+    FURIOUS_ADD_COMPONENT(&entity2, RotationSpeed, radians(speed_factor*360));
     entity2.get_component<RenderMeshData>()->p_mesh_data = mesh_registry->load("models/cube.obj");
     int seed = rand() % 360;
-    float posx = sin(seed*factor)*3.0;
-    float posz = cos(seed*factor)*3.0;
+    int dist = (rand() % 30) + 5;
+    float posx = sin(seed*factor)*dist;
+    float posz = cos(seed*factor)*dist;
     entity2.get_component<Transform>()->m_position = {posx,0.0f,posz};
     entity2.get_component<Transform>()->m_scale = {0.25f,0.25f,0.25f};
     entity2.get_component<RenderMeshData>()->m_material.m_color = {0.0f, 1.0f, 0.0f};

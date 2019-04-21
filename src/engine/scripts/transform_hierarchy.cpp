@@ -20,22 +20,15 @@ struct InitTransformMatrix
   {
     if(transform->m_dirty)
     {
-      model_matrix->m_matrix = Matrix4(1.0f);
-      model_matrix->m_matrix = rotate(model_matrix->m_matrix, transform->m_global_rotation.x, Vector3(1.0, 0.0, 0.0));
-      model_matrix->m_matrix = rotate(model_matrix->m_matrix, transform->m_global_rotation.y, Vector3(0.0, 1.0, 0.0));
-      model_matrix->m_matrix = rotate(model_matrix->m_matrix, transform->m_global_rotation.z, Vector3(0.0, 0.0, 1.0));
-      model_matrix->m_matrix = translate(model_matrix->m_matrix, transform->m_position);
-      model_matrix->m_matrix = rotate(model_matrix->m_matrix, transform->m_local_rotation.x, Vector3(1.0, 0.0, 0.0));
-      model_matrix->m_matrix = rotate(model_matrix->m_matrix, transform->m_local_rotation.y, Vector3(0.0, 1.0, 0.0));
-      model_matrix->m_matrix = rotate(model_matrix->m_matrix, transform->m_local_rotation.z, Vector3(0.0, 0.0, 1.0));
-      model_matrix->m_matrix = scale(model_matrix->m_matrix, transform->m_scale);
+      model_matrix->m_matrix = transform->to_matrix();
       model_matrix->m_dirty = true;
       transform->m_dirty = false;
     }
   }
 };
 
-furious::match<TransformMatrix, Transform>().foreach<InitTransformMatrix>()
+furious::match<TransformMatrix, Transform>().has_not_tag("static")
+                                            .foreach<InitTransformMatrix>()
                                             .set_priority(1000);
 
 ////////////////////////////////////////////////
@@ -97,7 +90,8 @@ struct ResetTransformMatrix
   }
 };
 
-furious::match<TransformMatrix>().foreach<ResetTransformMatrix>()
+furious::match<TransformMatrix>().has_not_tag("static")
+                                 .foreach<ResetTransformMatrix>()
                                  .set_post_frame();
 
 END_FURIOUS_SCRIPT

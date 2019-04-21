@@ -4,6 +4,7 @@
 #define _TNA_ENGINE_TRANSFORM_H_
 
 #include "../math/vector.h"
+#include "../math/math_tools.h"
 #include <furious/components.h>
 
 namespace tna 
@@ -55,6 +56,22 @@ struct Transform
   m_dirty(true)
   {
   }
+
+  Matrix4
+  to_matrix() const
+  {
+    Matrix4 mat(1.0f);
+    mat = rotate(mat, m_global_rotation.x, Vector3(1.0, 0.0, 0.0));
+    mat = rotate(mat, m_global_rotation.y, Vector3(0.0, 1.0, 0.0));
+    mat = rotate(mat, m_global_rotation.z, Vector3(0.0, 0.0, 1.0));
+    mat = translate(mat, m_position);
+    mat = rotate(mat, m_local_rotation.x, Vector3(1.0, 0.0, 0.0));
+    mat = rotate(mat, m_local_rotation.y, Vector3(0.0, 1.0, 0.0));
+    mat = rotate(mat, m_local_rotation.z, Vector3(0.0, 0.0, 1.0));
+    mat = scale(mat, m_scale);
+    return mat;
+  }
+
 
 };
   
