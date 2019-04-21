@@ -13,11 +13,13 @@ struct TransformMatrix
   FURIOUS_COMPONENT(TransformMatrix);
 
   TransformMatrix() : 
-  m_matrix(1.0f)
+  m_matrix(1.0f),
+  m_dirty(true)
   {
   }
 
   Matrix4 m_matrix;
+  bool    m_dirty;
 };
   
 } /* tna */ 

@@ -1,23 +1,18 @@
 
 
-#ifndef _TNA_VKSCENE_H_
-#define _TNA_VKSCENE_H_
+#ifndef _TNA_RENDERING_SCENE_H_
+#define _TNA_RENDERING_SCENE_H_
 
-#include "../../math/matrix.h"
-#include "../../math/vector.h"
+#include "../math/matrix.h"
+#include "../math/vector.h"
+#include "renderer.h"
 #include "furious/common/dyn_array.h"
-#include "../renderer.h"
 
 namespace tna 
 {
 
-struct VkMeshData;
-
-struct VkScene 
+struct RenderingScene 
 {
-  VkScene() = default;
-  virtual ~VkScene() = default;
-
   void 
   add_mesh(const RenderMeshDescriptor& rmesh_desc);
 
@@ -43,7 +38,6 @@ struct VkScene
   Matrix4                                 m_view_mat;
   Matrix4                                 m_proj_mat;
   Vector3                                 m_clear_color;
-
 };
   
 } /* tna */ 

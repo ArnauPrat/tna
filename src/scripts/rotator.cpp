@@ -41,6 +41,7 @@ struct RotatorAroundParent
   {
     float angle = context->m_dt*m_speed*360.0;
     transform->m_global_rotation.y += angle;
+    transform->m_dirty = true;
   }
   float m_speed;
 };
@@ -53,7 +54,6 @@ struct RotatorAroundParent
 
 
 furious::match<Transform>().expand<>("parent")
-                           .foreach<RotatorAroundParent>(0.25)
-                           .set_priority(0);
+                           .foreach<RotatorAroundParent>(0.25);
 
 END_FURIOUS_SCRIPT

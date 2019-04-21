@@ -14,23 +14,23 @@
 #define VMA_IMPLEMENTATION
 #include "vkmem_alloc.h"
 
-#include "vkrenderer_tools.h"
-#include "vkbuffer_tools.h"
-#include "vkbuffer.h"
 #include "../mesh_data.h"
-#include "vkscene.h"
+#include "../renderer.h"
+#include "vkbuffer.h"
+#include "vkbuffer_tools.h"
+#include "vkdevice.h"
+#include "vkrenderer.h"
+#include "vkrenderer_tools.h"
 #include "vkshader.h"
 #include "vkshader_tools.h"
-#include "vkvertex_tools.h"
-#include "vkdevice.h"
 #include "vkswapchain.h"
-
+#include "vkvertex_tools.h"
 #include "string.h"
+#include "../rendering_scene.h"
 
 namespace tna 
 {
 
-#define MAX_PRIMITIVE_COUNT 65536
 
 /**
  * \brief Flag used to enable validation layers or not
@@ -43,8 +43,6 @@ const bool enable_validation_layers = true;
 
 
 VulkanRenderer*                 p_renderer; ///<  This is the VulkanRenderer
-
-VkScene                         m_scene; ///<  The Vulkan Scene object to store the scene to render information
 
 struct UniformBufferObject 
 {
@@ -1264,16 +1262,15 @@ recreate_swap_chain()
 }
 
 void 
-build_command_buffer(uint32_t index) 
+build_command_buffer(uint32_t index, RenderingScene* scene) 
 {
-
   size_t device_alignment = p_renderer->m_mem_properties.limits.minUniformBufferOffsetAlignment;
   size_t uniform_buffer_size = sizeof(UniformBufferObject);
   size_t dynamic_alignment = (uniform_buffer_size / device_alignment) * device_alignment + ((uniform_buffer_size % device_alignment) > 0 ? device_alignment : 0);
   
   const RenderMeshDescriptor* meshes;
   uint32_t num_meshes;
-  m_scene.get_meshes(&meshes, &num_meshes);
+  scene->get_meshes(&meshes, &num_meshes);
 
   if(num_meshes > 0)
   {
@@ -1286,7 +1283,7 @@ build_command_buffer(uint32_t index)
       if(info->m_placement.m_frustrum_visible)
       {
         UniformBufferObject ubo;
-        ubo.m_projmodelview = m_scene.m_proj_mat * m_scene.m_view_mat * info->m_placement.m_model_mat;
+        ubo.m_projmodelview = scene->m_proj_mat * scene->m_view_mat * info->m_placement.m_model_mat;
         ubo.m_color = info->m_material.m_color;
 
         memcpy(&(((char*)uniform_data)[count_visible*dynamic_alignment]), &ubo, sizeof(ubo)); 
@@ -1349,10 +1346,10 @@ build_command_buffer(uint32_t index)
 
 
   VkClearValue clear_values[2];
-  clear_values[0].color = {m_scene.m_clear_color.x,
-                              m_scene.m_clear_color.y,
-                              m_scene.m_clear_color.z, 
-                              1.0f};
+  clear_values[0].color = {scene->m_clear_color.x,
+                           scene->m_clear_color.y,
+                           scene->m_clear_color.z, 
+                           1.0f};
   clear_values[1].depthStencil = {1.0f, 0};
   renderpass_info.clearValueCount = 2;
   renderpass_info.pClearValues = &clear_values[0];
@@ -1507,15 +1504,15 @@ terminate_renderer()
 
 
 void
-begin_frame() 
+begin_frame(RenderingScene* scene) 
 {
-  m_scene.clear();
+  scene->clear();
   vkgui_begin_frame();
   return;
 }
 
 void 
-end_frame() 
+end_frame(RenderingScene* scene) 
 {
 	uint32_t image_index;
 	VkResult result = vkAcquireNextImageKHR(p_renderer->m_logical_device, 
@@ -1537,7 +1534,8 @@ end_frame()
     report_error(TNA_ERROR::E_RENDERER_RUNTIME_ERROR);
   }
 
-  build_command_buffer(image_index);
+  build_command_buffer(image_index, 
+                       scene);
 
 	VkSubmitInfo submit_info = {};
 	submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -1591,34 +1589,6 @@ end_frame()
   }
 
   vkQueueWaitIdle(p_renderer->m_present_queue);
-  return;
-}
-
-void 
-render_mesh(const RenderMeshDescriptor& render_mesh) 
-{
-  m_scene.add_mesh(render_mesh);
-  return;
-}
-
-void 
-set_view_matrix(const Matrix4& view_mat) 
-{
-  m_scene.set_view_matrix(view_mat);
-  return;
-}
-
-void 
-set_proj_matrix(const Matrix4& proj_mat) 
-{
-  m_scene.set_proj_matrix(proj_mat);
-  return;
-}
-
-void 
-set_clear_color(const Vector3& color) 
-{
-  m_scene.set_clear_color(color);
   return;
 }
 

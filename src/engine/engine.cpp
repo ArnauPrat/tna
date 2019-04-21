@@ -12,6 +12,8 @@
 
 #include "components/proj_view_matrix.h"
 #include "components/viewport.h"
+#include "components/transform.h"
+#include "components/transform_matrix.h"
 
 
 namespace tna 
@@ -115,6 +117,7 @@ initialize()
 
   init_renderer(&m_config, p_window);
   init_gui();
+  create_rendering_scene();
 
   return;
 }
@@ -127,6 +130,7 @@ terminate()
     p_current_app->on_app_finish();
   }
 
+  destroy_rendering_scene();
   terminate_gui();
   terminate_renderer();
   
@@ -232,12 +236,19 @@ run(GameApp* game_app)
     start_time = current_time;
 
     glfwPollEvents();
-    begin_frame();
+    begin_frame(p_rendering_scene);
     p_current_app->on_frame_start(time);
-    furious::__furious_frame(time, p_database);
+    furious::__furious_frame(time, 
+                             p_database, 
+                             nullptr);
+
+    furious::__furious_post_frame(time,
+                                  p_database, 
+                                  nullptr);
+
     p_current_app->on_frame_end();
     draw_gui();
-    end_frame();
+    end_frame(p_rendering_scene);
   }
 
   p_current_app->on_app_finish();

@@ -17,12 +17,14 @@ struct Transform
   Vector3 m_local_rotation;
   Vector3 m_global_rotation;
   Vector3 m_scale;
+  bool    m_dirty;
 
   Transform() : 
   m_position(0.0f, 0.0f, 0.0f),
   m_local_rotation(0.0f, 0.0f, 0.0f),
   m_global_rotation(0.0f, 0.0f, 0.0f),
-  m_scale(1.0f, 1.0f, 1.0f)
+  m_scale(1.0f, 1.0f, 1.0f),
+  m_dirty(true)
   {
 
   }
@@ -31,7 +33,8 @@ struct Transform
   m_position(position),
   m_local_rotation(0.0f, 0.0f, 0.0f),
   m_global_rotation(0.0f, 0.0f, 0.0f),
-  m_scale(1.0f, 1.0f, 1.0f)
+  m_scale(1.0f, 1.0f, 1.0f),
+  m_dirty(true)
   {
   }
 
@@ -39,7 +42,8 @@ struct Transform
   m_position(position),
   m_local_rotation(rotation),
   m_global_rotation(0.0f, 0.0f, 0.0f),
-  m_scale(0.0f, 0.0f, 0.0f)
+  m_scale(0.0f, 0.0f, 0.0f),
+  m_dirty(true)
   {
   }
 
@@ -47,9 +51,11 @@ struct Transform
   m_position(position),
   m_local_rotation(rotation),
   m_global_rotation(rotation),
-  m_scale(scale)
+  m_scale(scale),
+  m_dirty(true)
   {
   }
+
 };
   
 } /* tna */ 

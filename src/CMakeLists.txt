@@ -48,31 +48,29 @@ message(STATUS ${FURIOUS_INCLUDE_DIR})
 message(STATUS ${FURIOUS_LIBRARIES_DIR})
 
 set(VK_RENDERER_SOURCE_FILES 
-  engine/rendering/vulkan/vkbuffer.h
+  engine/rendering/vulkan/gui/imgui_impl_vulkan.cpp
+  engine/rendering/vulkan/gui/imgui_impl_vulkan.h
+  engine/rendering/vulkan/gui/vkgui.cpp
+  engine/rendering/vulkan/gui/vkgui.h
   engine/rendering/vulkan/vkbuffer.cpp
-  engine/rendering/vulkan/vkrenderer_tools.cpp
-  engine/rendering/vulkan/vkrenderer_tools.h
-  engine/rendering/vulkan/vkswapchain.cpp
-  engine/rendering/vulkan/vkswapchain.h
-  engine/rendering/vulkan/vkdevice.cpp
-  engine/rendering/vulkan/vkdevice.h
+  engine/rendering/vulkan/vkbuffer.h
   engine/rendering/vulkan/vkbuffer_tools.cpp
   engine/rendering/vulkan/vkbuffer_tools.h
+  engine/rendering/vulkan/vkdevice.cpp
+  engine/rendering/vulkan/vkdevice.h
+  engine/rendering/vulkan/vkmem_alloc.h
   engine/rendering/vulkan/vkrenderer.cpp
   engine/rendering/vulkan/vkrenderer.h
+  engine/rendering/vulkan/vkrenderer_tools.cpp
+  engine/rendering/vulkan/vkrenderer_tools.h
   engine/rendering/vulkan/vkshader.cpp
   engine/rendering/vulkan/vkshader.h
   engine/rendering/vulkan/vkshader_tools.cpp
   engine/rendering/vulkan/vkshader_tools.h
+  engine/rendering/vulkan/vkswapchain.cpp
+  engine/rendering/vulkan/vkswapchain.h
   engine/rendering/vulkan/vkvertex_tools.cpp
   engine/rendering/vulkan/vkvertex_tools.h
-  engine/rendering/vulkan/vkmem_alloc.h
-  engine/rendering/vulkan/vkscene.h
-  engine/rendering/vulkan/vkscene.cpp
-  engine/rendering/vulkan/gui/vkgui.h
-  engine/rendering/vulkan/gui/vkgui.cpp
-  engine/rendering/vulkan/gui/imgui_impl_vulkan.h
-  engine/rendering/vulkan/gui/imgui_impl_vulkan.cpp
   )
 
 set(TNA_ENGINE_COMPONENTS
@@ -120,6 +118,9 @@ set(TNA_ENGINE_SOURCE_FILES
   engine/rendering/mesh_data.cpp
   engine/rendering/mesh_data.h
   engine/rendering/renderer.h
+  engine/rendering/renderer.cpp
+  engine/rendering/rendering_scene.h
+  engine/rendering/rendering_scene.cpp
   engine/rendering/shader.h
   engine/rendering/vertex.h
   engine/resources/directory_registry.cpp
@@ -128,9 +129,9 @@ set(TNA_ENGINE_SOURCE_FILES
   engine/resources/resource_registry.inl
   engine/resources/resources.cpp
   engine/resources/resources.h
+  engine/tools/colors.h
   engine/tools/files.cpp
   engine/tools/files.h
-  engine/tools/colors.h
   engine/types.h
 	)
 
@@ -153,7 +154,7 @@ set(TNA_ENGINE_SCRIPTS
   )
 
 set(TNA_SCRIPTS
-  #scripts/rotator.cpp
+  scripts/rotator.cpp
   scripts/test.cpp
   )
 

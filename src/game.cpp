@@ -13,6 +13,7 @@
 
 #include "engine/components/transform.h"
 #include "engine/components/fps_camera.h"
+#include "engine/components/render_mesh_data.h"
 
 #include <time.h>
 #include <stdlib.h>
@@ -60,7 +61,7 @@ void Game::on_app_start()
   m_mouse_current_pos_x = m_mouse_old_pos_x;
   m_mouse_current_pos_y = m_mouse_old_pos_y;
 
-  set_clear_color(TNA_COLOR_BLUE_SKY);
+  p_rendering_scene->set_clear_color(TNA_COLOR_BLUE_SKY);
 
 
   // CREATING SCENE
@@ -69,27 +70,29 @@ void Game::on_app_start()
   create_cars(&m_state);
   create_player(&m_state);
 
-  /*Entity entity1 = create_entity(&m_state);
-  FURIOUS_ADD_COMPONENT(&entity1, Mesh, "models/cube.obj");
-  entity1.get_component<Transform>()->m_position = {0.0f,0.0f,0.0f};
-  entity1.get_component<Mesh>()->m_color = {1.0f, 0.0f, 0.0f};
+  Entity entity1 = create_entity(&m_state);
+  FURIOUS_ADD_COMPONENT(&entity1, RenderMeshData);
+  entity1.get_component<RenderMeshData>()->p_mesh_data = mesh_registry->load("models/cube.obj");
+  entity1.get_component<Transform>()->m_position = {0.0f,50.0f,0.0f};
+  entity1.get_component<RenderMeshData>()->m_material.m_color = {1.0f, 0.0f, 0.0f};
 
   srand(time(NULL));
 
+  
   double factor = 3.1416f / 180.0f;
   for(uint32_t i = 0; i < 20; ++i)
   {
     Entity entity2 = create_entity(&m_state);
-    FURIOUS_ADD_COMPONENT(&entity2, Mesh, "models/cube.obj");
+    FURIOUS_ADD_COMPONENT(&entity2, RenderMeshData);
+    entity2.get_component<RenderMeshData>()->p_mesh_data = mesh_registry->load("models/cube.obj");
     int seed = rand() % 360;
     float posx = sin(seed*factor)*3.0;
     float posz = cos(seed*factor)*3.0;
     entity2.get_component<Transform>()->m_position = {posx,0.0f,posz};
     entity2.get_component<Transform>()->m_scale = {0.25f,0.25f,0.25f};
-    entity2.get_component<Mesh>()->m_color = {0.0f, 1.0f, 0.0f};
+    entity2.get_component<RenderMeshData>()->m_material.m_color = {0.0f, 1.0f, 0.0f};
     entity2.add_reference("parent", entity1);
   }
-  */
 
 }
 

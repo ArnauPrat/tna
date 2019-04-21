@@ -22,7 +22,7 @@ struct SetProjView
   {
     Matrix4 view_mat;
     fps_camera->to_view_matrix(&view_mat);
-    set_view_matrix(view_mat);
+    p_rendering_scene->set_view_matrix(view_mat);
 
     Matrix4 proj_mat = create_projection_matrix(viewport->m_field,
                          viewport->m_width/(float)viewport->m_height, 
@@ -30,7 +30,7 @@ struct SetProjView
                          viewport->m_far);
 
     proj_mat[1][1] *= -1;
-    set_proj_matrix(proj_mat);
+    p_rendering_scene->set_proj_matrix(proj_mat);
 
     proj_view->m_matrix = proj_mat*view_mat;
   }

@@ -55,7 +55,7 @@ struct RenderMesh
     desc.m_material = mesh->m_material;
     //desc.m_placement.m_frustrum_visible = true;
     desc.m_placement.m_frustrum_visible = visible;
-    render_mesh(desc);
+    p_rendering_scene->add_mesh(desc);
   }
 };
 

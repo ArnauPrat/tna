@@ -4,6 +4,8 @@
 #ifndef _TNA_VKRENDERER_H_
 #define _TNA_VKRENDERER_H_ value
 
+#define MAX_PRIMITIVE_COUNT 65536
+
 #include <vulkan/vulkan.h>
 #include "vkmem_alloc.h"
 #include "vkdevice.h"
@@ -14,6 +16,9 @@ struct GLFWwindow;
 
 namespace tna 
 {
+
+struct VulkanRenderer;
+extern VulkanRenderer*     p_renderer;
 
 struct VulkanRenderer 
 {
@@ -74,19 +79,6 @@ struct VulkanRenderer
   VmaAllocator                  m_vkallocator;    ///< The memory allocator used to create Vulkan buffers
 };
 
-extern VulkanRenderer*     p_renderer;
-//
-//extern VkInstance       m_vulkan_instance;
-//
-//extern VkDevice         m_logical_device;
-//
-//extern VkCommandPool    m_command_pool;
-//
-//extern VkQueue          m_graphics_queue;
-//
-//extern VkQueue          m_present_queue;
-//
-//extern VmaAllocator     m_vkallocator;
 
 } /* tna */ 
 

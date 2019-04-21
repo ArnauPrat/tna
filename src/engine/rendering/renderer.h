@@ -13,6 +13,9 @@ namespace tna
 
 class Config;
 struct MeshData;
+struct RenderingScene;
+
+extern RenderingScene* p_rendering_scene;
 
 struct MaterialDescriptor
 {
@@ -33,6 +36,18 @@ struct RenderMeshDescriptor
 };
 
 /**
+ * \brief Creates the rendering scene structure
+ */
+void
+create_rendering_scene();
+
+/**
+ * \brief Destroys the rendering scene structure
+ */
+void
+destroy_rendering_scene();
+
+/**
  * @brief Initializes the rendering subsystem
  *
  * @param config
@@ -51,47 +66,13 @@ terminate_renderer();
  * @brief Frees resources and starts the execution of a frame
  */
 void
-begin_frame();
+begin_frame(RenderingScene* scene);
 
 /**
  * @brief Draws a frame
  */
 void
-end_frame();
-
-/**
- * @brief Renders a mesh with tht given model matrix
- *
- * @param rmesh_desc The render mesh descriptor to render
- */
-void 
-render_mesh(const RenderMeshDescriptor& rdesc);
-
-
-/**
- * @brief Sets the camera of the scene at the given position represented the
- * given matrix.
- *
- * @param view_mat The view matrix
- */
-void 
-set_view_matrix(const Matrix4& view_mat);
-
-/**
- * \brief Sets the projection matrix of the renderer
- *
- * \param proj_mat The projection matrix
- */
-void
-set_proj_matrix(const Matrix4& proj_mat);
-
-/**
- * \brief Sets the clear color 
- *
- * \param color The color to set
- */
-void
-set_clear_color(const Vector3& color);
+end_frame(RenderingScene* scene);
 
 /**
  * \brief Initializes the gui subsystem
