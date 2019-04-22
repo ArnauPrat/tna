@@ -5,29 +5,29 @@
 namespace tna
 {
 
-struct VertexBuffer
+struct TnaVertexBuffer
 {
   void* p_data;
 };
 
-struct IndexBuffer
+struct TnaIndexBuffer
 {
   void* p_data;
 };
 
-VertexBuffer
+TnaVertexBuffer
 create_vertex_buffer(void* data,
                      size_t size);
 
 void
-destroy_vertex_buffer(VertexBuffer* buffer);
+destroy_vertex_buffer(TnaVertexBuffer* buffer);
 
-IndexBuffer
+TnaIndexBuffer
 create_index_buffer(void* data,
                     size_t size);
 
 void
-destroy_index_buffer(IndexBuffer* buffer);
+destroy_index_buffer(TnaIndexBuffer* buffer);
 
 } /* tna */ 
 

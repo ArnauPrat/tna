@@ -16,19 +16,19 @@ struct Database;
 namespace tna
 {
 
-struct GameState
+struct TnaGameState
 {
   furious::Database* p_database;
   GLFWwindow*        p_window;
 };
 
 /**
- * \brief Creates an entity in the this game app
+ * \brief Creates an entity in this game app
  *
  * \return The newly created entity
  */
-Entity 
-create_entity(GameState* game_state);
+TnaEntity 
+create_entity(TnaGameState* game_state);
 
 /**
  * \brief Removes an entity in this current game app
@@ -36,13 +36,22 @@ create_entity(GameState* game_state);
  * \param entity The entity to be removed
  */
 void 
-remove_entity(Entity entity);
+remove_entity(TnaEntity entity);
+
+/**
+ * \brief Sets the entity as an static entity. Changes to transform in static
+ * entities won't be propagated to the renderer
+ *
+ * \param entity The entity to set as static
+ */
+void
+set_static(TnaEntity entity);
 
 /**
  * \brief Creates the camera for the scene.
  */
 void
-create_camera(GameState* game_state);
+create_camera(TnaGameState* game_state);
   
 } /* tna */ 
 

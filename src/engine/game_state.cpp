@@ -15,42 +15,39 @@
 namespace tna
 {
 
-/**
- * \brief Creates an entity in the this game app
- *
- * \return The newly created entity
- */
-Entity 
-create_entity(GameState* state)
+TnaEntity 
+create_entity(TnaGameState* state)
 {
-  Entity entity = furious::create_entity(state->p_database);
-  FURIOUS_ADD_COMPONENT((&entity),Transform);
-  FURIOUS_ADD_COMPONENT((&entity),TransformMatrix);
+  TnaEntity entity = furious::create_entity(state->p_database);
+  FURIOUS_ADD_COMPONENT(entity,TnaTransform);
+  FURIOUS_ADD_COMPONENT(entity,TnaTransformMatrix);
   return entity;
 }
 
-/**
- * \brief Removes an entity in this current game app
- *
- * \param entity The entity to be removed
- */
 void 
-remove_entity(Entity entity)
+remove_entity(TnaEntity entity)
 {
   furious::destroy_entity(entity);
 }
 
-/**
- * \brief Creates the camera for the scene.
- */
 void
-create_camera(GameState* state)
+set_static(TnaEntity entity)
 {
-  FPSCamera* camera = FURIOUS_CREATE_GLOBAL((state->p_database),
-                                            FPSCamera,
-                                            Vector3(0.0f,0.0f,10.0f),
-                                            radians(0.0),
-                                            radians(0.0));
+  FURIOUS_ADD_TAG(entity, "__tna_static");
+  const TnaTransform* transform = FURIOUS_GET_COMPONENT(entity, TnaTransform);
+  TnaTransformMatrix* transform_matrix = FURIOUS_GET_COMPONENT(entity, TnaTransformMatrix);
+  transform_matrix->m_matrix = transform->to_matrix();
+  transform_matrix->m_dirty = false;
+}
+
+void
+create_camera(TnaGameState* state)
+{
+  TnaFPSCamera* camera = FURIOUS_CREATE_GLOBAL((state->p_database),
+                                               TnaFPSCamera,
+                                               TnaVector3(0.0f,0.0f,10.0f),
+                                               radians(0.0),
+                                               radians(0.0));
   camera->m_speed = 10.0f;
 }
 

@@ -6,7 +6,7 @@
 namespace tna
 {
   
-VertexBuffer
+TnaVertexBuffer
 create_vertex_buffer(void* data,
                      size_t size)
 {
@@ -19,11 +19,11 @@ create_vertex_buffer(void* data,
                        size,
                        &vertex_buffer->m_buffer,
                        &vertex_buffer->m_allocation);
-  return VertexBuffer{vertex_buffer};
+  return TnaVertexBuffer{vertex_buffer};
 }
 
 void
-destroy_vertex_buffer(VertexBuffer* buffer)
+destroy_vertex_buffer(TnaVertexBuffer* buffer)
 {
   VkVertexBuffer* vertex_buffer = (VkVertexBuffer*)(buffer->p_data);
   vmaDestroyBuffer(p_renderer->m_vkallocator,
@@ -32,7 +32,7 @@ destroy_vertex_buffer(VertexBuffer* buffer)
   delete vertex_buffer;
 }
 
-IndexBuffer
+TnaIndexBuffer
 create_index_buffer(void* data,
                     size_t size)
 {
@@ -45,12 +45,12 @@ create_index_buffer(void* data,
                       size,
                       &index_buffer->m_buffer,
                       &index_buffer->m_allocation);
-  return IndexBuffer{index_buffer};
+  return TnaIndexBuffer{index_buffer};
 
 }
 
 void
-destroy_index_buffer(IndexBuffer* buffer)
+destroy_index_buffer(TnaIndexBuffer* buffer)
 {
   VkIndexBuffer* index_buffer = (VkIndexBuffer*)(buffer->p_data);
   vmaDestroyBuffer(p_renderer->m_vkallocator,

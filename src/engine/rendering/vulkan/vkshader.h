@@ -10,9 +10,8 @@ namespace tna
 {
 
 
-struct VkShader : Shader 
+struct VkShader 
 {
-  VkShader();
   VkShaderModule m_shader_module;
 };
   

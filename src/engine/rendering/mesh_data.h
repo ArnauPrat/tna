@@ -11,21 +11,19 @@
 namespace tna 
 {
 
-struct AABB;
-  
-struct MeshData 
+struct TnaMeshData 
 {
-  VertexBuffer  m_vertex_buffer;
-  IndexBuffer   m_index_buffer;
-  uint32_t      m_num_vertices;
-  uint32_t      m_num_indices;
-  AABB          m_aabb;
+  TnaVertexBuffer  m_vertex_buffer;
+  TnaIndexBuffer   m_index_buffer;
+  uint32_t         m_num_vertices;
+  uint32_t         m_num_indices;
+  TnaAABB          m_aabb;
 
-  static MeshData* 
+  static TnaMeshData* 
   load(const std::string& path);
 
   static void 
-  unload(MeshData* mesh_data);
+  unload(TnaMeshData* mesh_data);
 };
 
   

@@ -6,17 +6,18 @@
 #include <furious/components.h>
 #include "../math/vector.h"
 #include "../rendering/renderer.h"
+#include "../rendering/rendering_scene.h"
 
 namespace tna 
 {
-struct MeshData;
+struct TnaMeshData;
 
-struct RenderMeshData
+struct TnaRenderMeshData
 {
-  FURIOUS_COMPONENT(RenderMeshData);
+  FURIOUS_COMPONENT(TnaRenderMeshData);
 
-  const MeshData*     p_mesh_data;
-  MaterialDescriptor  m_material;
+  const TnaMeshData*     p_mesh_data;
+  TnaMaterialDescriptor  m_material;
 };
   
 } /* tna */ 

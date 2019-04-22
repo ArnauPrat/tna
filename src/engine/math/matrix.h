@@ -9,8 +9,8 @@
 
 namespace tna
 {
-typedef glm::mat3 Matrix3;
-typedef glm::mat4 Matrix4;
+typedef glm::mat3 TnaMatrix3;
+typedef glm::mat4 TnaMatrix4;
 }
 
 #endif

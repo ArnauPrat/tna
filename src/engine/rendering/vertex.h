@@ -10,9 +10,9 @@ namespace tna
 
 struct Vertex 
 {
-  Vector3 m_position;
-  Vector3 m_color;
-  Vector2 m_tex_coord;
+  TnaVector3 m_position;
+  TnaVector3 m_color;
+  TnaVector2 m_tex_coord;
 
   bool operator==(const Vertex& other) const 
   {

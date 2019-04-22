@@ -11,11 +11,11 @@ namespace tna
 /**
  * @brief Structure used to store the engine's configuration
  */
-struct Config
+struct TnaConfig
 {
 
-  Config();
-  ~Config();
+  TnaConfig();
+  ~TnaConfig();
 
   /**
    * \brief Inserts a vulkan validation layer to the configuration
@@ -45,7 +45,8 @@ struct Config
  * \return E_NO_ERROR if successful.  
  */
 void 
-load_config(const std::string& configFileName, Config* config);
+load_config(const std::string& file_name, 
+            TnaConfig* config);
 
 }
 

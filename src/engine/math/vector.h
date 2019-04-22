@@ -9,9 +9,9 @@
 
 namespace tna
 {
-typedef glm::vec2 Vector2;
-typedef glm::vec3 Vector3;
-typedef glm::vec4 Vector4;
+typedef glm::vec2 TnaVector2;
+typedef glm::vec3 TnaVector3;
+typedef glm::vec4 TnaVector4;
 }
 
 #endif

@@ -7,13 +7,9 @@
 
 namespace tna {
 
-VkShader::VkShader() 
-{
-}
 
-
-Shader* 
-Shader::load(const std::string& path) 
+TnaShader* 
+TnaShader::load(const std::string& path) 
 {
 
   std::vector<char> shader_code = read_file(path);
@@ -21,19 +17,20 @@ Shader::load(const std::string& path)
   VkShader* vkshader = new VkShader();
   vkshader->m_shader_module = create_shader_module(p_renderer->m_logical_device, 
                                                    shader_code);
-  return vkshader;
+  return new TnaShader{vkshader};
 }
 
 void 
-Shader::unload(Shader* shader) 
+TnaShader::unload(TnaShader* shader) 
 {
 
-  VkShader* vkshader = static_cast<VkShader*>(shader);
+  VkShader* vkshader = static_cast<VkShader*>(shader->p_data);
 
   destroy_shader_module(p_renderer->m_logical_device, 
                         vkshader->m_shader_module);
 
   delete vkshader;
+  delete shader;
 }
   
 } /* tna */ 

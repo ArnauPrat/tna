@@ -15,18 +15,18 @@ BEGIN_FURIOUS_SCRIPT
 
 using namespace tna;
 
-struct RenderMesh 
+struct TnaRenderMesh 
 {
   void run(furious::Context* context, 
            uint32_t id, 
-           const RenderMeshData* mesh, 
-           const TransformMatrix* transform_matrix,
-           const ProjViewMatrix* proj_matrix) 
+           const TnaRenderMeshData* mesh, 
+           const TnaTransformMatrix* transform_matrix,
+           const TnaProjViewMatrix* proj_matrix) 
   {
-    const AABB* aabb = &mesh->p_mesh_data->m_aabb;
-    Vector4 min = transform_matrix->m_matrix*Vector4(aabb->m_min,1.0f);
-    Vector4 max = transform_matrix->m_matrix*Vector4(aabb->m_max,1.0f);
-    Vector4 points[8] = {
+    const TnaAABB* aabb = &mesh->p_mesh_data->m_aabb;
+    TnaVector4 min = transform_matrix->m_matrix*TnaVector4(aabb->m_min,1.0f);
+    TnaVector4 max = transform_matrix->m_matrix*TnaVector4(aabb->m_max,1.0f);
+    TnaVector4 points[8] = {
       {min.x, min.y, min.z, 1.0f},
       {min.x, min.y, max.z, 1.0f},
       {min.x, max.y, min.z, 1.0f},
@@ -39,7 +39,7 @@ struct RenderMesh
     bool visible = false;
     for(uint32_t i = 0; i < 8; ++i)
     {
-      Vector4 proj_point = proj_matrix->m_matrix*points[i];
+      TnaVector4 proj_point = proj_matrix->m_matrix*points[i];
       if((-proj_point.w <= proj_point.x) && (proj_point.x <= proj_point.w) &&
          (-proj_point.w <= proj_point.y) && (proj_point.y <= proj_point.w) &&
          (0 <= proj_point.z) && (proj_point.z <= proj_point.w))
@@ -49,7 +49,7 @@ struct RenderMesh
       }
     }
     
-    RenderMeshDescriptor desc;
+    TnaRenderMeshDescriptor desc;
     desc.p_mesh_data = mesh->p_mesh_data;
     desc.m_placement.m_model_mat = transform_matrix->m_matrix;
     desc.m_material = mesh->m_material;
@@ -59,7 +59,7 @@ struct RenderMesh
   }
 };
 
-furious::match<RenderMeshData,TransformMatrix,furious::Global<ProjViewMatrix>>().foreach<RenderMesh>();
+furious::match<TnaRenderMeshData,TnaTransformMatrix,furious::Global<TnaProjViewMatrix>>().foreach<TnaRenderMesh>();
 
 END_FURIOUS_SCRIPT
 

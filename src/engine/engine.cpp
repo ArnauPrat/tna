@@ -19,13 +19,13 @@
 namespace tna 
 {
 
-Log*               log     = nullptr;
+TnaLog*            p_log     = nullptr;
 
 bool               m_show_gui = true;
 bool               m_edit_mode = false;
 GLFWwindow*        p_window  = nullptr;
-GameApp*           p_current_app = nullptr;
-Config             m_config;
+TnaGameApp*        p_current_app = nullptr;
+TnaConfig          m_config;
 furious::Database* p_database = nullptr;;
 
 
@@ -77,7 +77,7 @@ void
 initialize() 
 {
   // Initializing loging system
-  log = new Log("./logfile.log");
+  p_log = new TnaLog("./logfile.log");
 
   // Reading engine's config
   if(file_exists("./config.ini")) 
@@ -99,7 +99,7 @@ initialize()
                               nullptr);
   if (!p_window) 
   {
-    log->error("Error creating window");
+    p_log->error("Error creating window");
     report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
 
@@ -142,7 +142,7 @@ terminate()
   glfwTerminate();
 
   terminate_resources();
-  delete log;
+  delete p_log;
   return;
 }
 
@@ -167,7 +167,7 @@ toggle_edit_mode()
                      GLFW_CURSOR,
                      GLFW_CURSOR_NORMAL);
 
-    Viewport* viewport = FURIOUS_FIND_GLOBAL(p_database, Viewport);
+    TnaViewport* viewport = FURIOUS_FIND_GLOBAL(p_database, TnaViewport);
     glfwSetCursorPos(p_window, 
                      viewport->m_width/2.0, 
                      viewport->m_height/2.0);
@@ -201,7 +201,7 @@ draw_gui()
 }
 
 void
-run(GameApp* game_app) 
+run(TnaGameApp* game_app) 
 {
   static auto start_time = std::chrono::high_resolution_clock::now();
 
@@ -210,10 +210,10 @@ run(GameApp* game_app)
 
   /// ADDING GLOBALS TO FURIOUS
   FURIOUS_CREATE_GLOBAL((p_database),
-                        ProjViewMatrix);
+                        TnaProjViewMatrix);
 
   FURIOUS_CREATE_GLOBAL((p_database),
-                        Viewport,
+                        TnaViewport,
                         m_config.m_viewport_width,
                         m_config.m_viewport_height,
                         0.1f,

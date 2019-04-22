@@ -8,12 +8,13 @@
 #include "engine/components/transform_matrix.h"
 #include "engine/resources/resources.h"
 #include "engine/tools/colors.h"
+#include "components/rotation_speed.h"
 
 namespace tna
 {
 
 void
-create_terrain(GameState* state)
+create_terrain(TnaGameState* state)
 {
   uint32_t NUM_TILES = 50;
   float TILE_HALF_EDGE = 5.0;
@@ -21,9 +22,9 @@ create_terrain(GameState* state)
   {
     for(uint32_t j = 0; j < NUM_TILES; ++j)
     {
-      Entity terrain = create_entity(state);
+      TnaEntity terrain = create_entity(state);
 
-      Transform* transform = terrain.get_component<Transform>();
+      TnaTransform* transform = FURIOUS_GET_COMPONENT(terrain, TnaTransform);
       transform->m_scale.x = TILE_HALF_EDGE;
       transform->m_scale.y = 5.0f;
       transform->m_scale.z = TILE_HALF_EDGE;
@@ -33,33 +34,56 @@ create_terrain(GameState* state)
       transform->m_position.z  = j*TILE_HALF_EDGE*2.0 - TILE_HALF_EDGE*NUM_TILES;
       transform->m_dirty = false;
 
-      TransformMatrix* transform_matrix = terrain.get_component<TransformMatrix>();
-      transform_matrix->m_matrix = transform->to_matrix();
-      transform_matrix->m_dirty = false;
+      set_static(terrain);
 
-      FURIOUS_ADD_COMPONENT(&terrain, RenderMeshData);
+      FURIOUS_ADD_COMPONENT(terrain, TnaRenderMeshData);
 
-      RenderMeshData* render_mesh_data = terrain.get_component<RenderMeshData>();
-      render_mesh_data->p_mesh_data = mesh_registry->load("models/cube.obj");
+      TnaRenderMeshData* render_mesh_data = terrain.get_component<TnaRenderMeshData>();
+      render_mesh_data->p_mesh_data = p_mesh_registry->load("models/cube.obj");
       render_mesh_data->m_material.m_color = TNA_COLOR_LIGHT_GREY_2;
-
-      terrain.add_tag("static");
     }
   }
 }
 
 void
-create_buildings(GameState* state)
+create_buildings(TnaGameState* state)
 {
 }
 
 void
-create_cars(GameState* state)
+create_cars(TnaGameState* state)
 {
+
+  TnaEntity entity1 = create_entity(state);
+  FURIOUS_ADD_COMPONENT(entity1, TnaRenderMeshData);
+  entity1.get_component<TnaRenderMeshData>()->p_mesh_data = p_mesh_registry->load("models/cube.obj");
+  entity1.get_component<TnaTransform>()->m_position = {0.0f,50.0f,0.0f};
+  entity1.get_component<TnaRenderMeshData>()->m_material.m_color = {1.0f, 0.0f, 0.0f};
+
+  srand(time(NULL));
+
+  
+  double factor = 3.1416f / 180.0f;
+  for(uint32_t i = 0; i < 1000; ++i)
+  {
+    TnaEntity entity2 = create_entity(state);
+    FURIOUS_ADD_COMPONENT(entity2, TnaRenderMeshData);
+    float speed_factor = rand() / (float)INT_MAX;
+    FURIOUS_ADD_COMPONENT(entity2, RotationSpeed, radians(speed_factor*360));
+    entity2.get_component<TnaRenderMeshData>()->p_mesh_data = p_mesh_registry->load("models/cube.obj");
+    int seed = rand() % 360;
+    float dist = (rand() / (float)INT_MAX)*30.0 + 5.0f;
+    float posx = sin(seed*factor)*dist;
+    float posz = cos(seed*factor)*dist;
+    entity2.get_component<TnaTransform>()->m_position = {posx,0.0f,posz};
+    entity2.get_component<TnaTransform>()->m_scale = {0.25f,0.25f,0.25f};
+    entity2.get_component<TnaRenderMeshData>()->m_material.m_color = {0.0f, 1.0f, 0.0f};
+    entity2.add_reference("parent", entity1);
+  }
 }
 
 void
-create_player(GameState* state)
+create_player(TnaGameState* state)
 {
 }
   

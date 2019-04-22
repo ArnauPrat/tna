@@ -26,19 +26,19 @@ check_device_extension_support(VkPhysicalDevice device,
                                          &extension_count, 
                                          available_extensions);
 
-    log->log("Checking physical device");
+    p_log->log("Checking physical device");
     bool all_found = true;
     for (uint32_t i = 0; i < num_device_extensions; ++i)
     {
       bool extension_found = false;
       const char* next_extension = device_extensions[i];
-      log->log("Looking for Vulkan device extension %s", next_extension);
+      p_log->log("Looking for Vulkan device extension %s", next_extension);
       for (uint32_t j = 0; j < extension_count; ++j)
       {
         const char* available_extension = available_extensions[j].extensionName;
         if(strcmp(next_extension, available_extension) == 0)
         {
-          log->log("Found Vulkan device extension %s", available_extension);
+          p_log->log("Found Vulkan device extension %s", available_extension);
           extension_found = true;
         }
       }

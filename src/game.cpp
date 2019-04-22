@@ -42,11 +42,11 @@ void Game::on_app_start()
 
   create_camera(&m_state);
 
-  Viewport* viewport = FURIOUS_FIND_GLOBAL(m_state.p_database, Viewport); 
+  TnaViewport* viewport = FURIOUS_FIND_GLOBAL(m_state.p_database, TnaViewport); 
   viewport->m_far = 10000.0f;
 
   // SETTING CAMERA POSITION
-  FPSCamera* fps_camera = FURIOUS_FIND_GLOBAL(m_state.p_database, FPSCamera);
+  TnaFPSCamera* fps_camera = FURIOUS_FIND_GLOBAL(m_state.p_database, TnaFPSCamera);
   fps_camera->m_eye = {0.0f, 100.0f, 100.0f};
   fps_camera->m_speed = 200.0f;
 
@@ -71,32 +71,6 @@ void Game::on_app_start()
   create_cars(&m_state);
   create_player(&m_state);
 
-  Entity entity1 = create_entity(&m_state);
-  FURIOUS_ADD_COMPONENT(&entity1, RenderMeshData);
-  entity1.get_component<RenderMeshData>()->p_mesh_data = mesh_registry->load("models/cube.obj");
-  entity1.get_component<Transform>()->m_position = {0.0f,50.0f,0.0f};
-  entity1.get_component<RenderMeshData>()->m_material.m_color = {1.0f, 0.0f, 0.0f};
-
-  srand(time(NULL));
-
-  
-  double factor = 3.1416f / 180.0f;
-  for(uint32_t i = 0; i < 5000; ++i)
-  {
-    Entity entity2 = create_entity(&m_state);
-    FURIOUS_ADD_COMPONENT(&entity2, RenderMeshData);
-    float speed_factor = rand() / (float)INT_MAX;
-    FURIOUS_ADD_COMPONENT(&entity2, RotationSpeed, radians(speed_factor*360));
-    entity2.get_component<RenderMeshData>()->p_mesh_data = mesh_registry->load("models/cube.obj");
-    int seed = rand() % 360;
-    int dist = (rand() % 30) + 5;
-    float posx = sin(seed*factor)*dist;
-    float posz = cos(seed*factor)*dist;
-    entity2.get_component<Transform>()->m_position = {posx,0.0f,posz};
-    entity2.get_component<Transform>()->m_scale = {0.25f,0.25f,0.25f};
-    entity2.get_component<RenderMeshData>()->m_material.m_color = {0.0f, 1.0f, 0.0f};
-    entity2.add_reference("parent", entity1);
-  }
 
 }
 
@@ -108,7 +82,7 @@ void Game::on_app_finish()
 
 void Game::on_frame_start(float delta) 
 {
-  FPSCamera* camera = m_state.p_database->find_global<FPSCamera>();
+  TnaFPSCamera* camera = m_state.p_database->find_global<TnaFPSCamera>();
   if(m_forwards_camera)
   {
     camera->forward(delta);

@@ -7,12 +7,12 @@
 namespace tna
 {
 
-RenderingScene* p_rendering_scene = nullptr;
+TnaRenderingScene* p_rendering_scene = nullptr;
 
 void
 create_rendering_scene()
 {
-  p_rendering_scene = new RenderingScene();
+  p_rendering_scene = new TnaRenderingScene();
 }
 
 void

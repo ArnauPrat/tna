@@ -6,7 +6,7 @@
 
 namespace tna
 {
-Matrix4
+TnaMatrix4
 create_projection_matrix(float field_of_view,
                          float aspect_ratio, 
                          float near_plane, 
@@ -18,30 +18,30 @@ create_projection_matrix(float field_of_view,
                           far_plane);
 }
 
-Matrix4 translate(const Matrix4& matrix,
-                  const Vector3& translation)
+TnaMatrix4 translate(const TnaMatrix4& matrix,
+                  const TnaVector3& translation)
 {
   return glm::translate(matrix, translation);
 }
 
-Matrix4 rotate(const Matrix4& matrix,
+TnaMatrix4 rotate(const TnaMatrix4& matrix,
                float angle,
-               const Vector3& axis)
+               const TnaVector3& axis)
 {
   return glm::rotate(matrix, angle, axis);
 }
 
-Matrix4
-scale(const Matrix4& matrix, 
-      const Vector3& scale)
+TnaMatrix4
+scale(const TnaMatrix4& matrix, 
+      const TnaVector3& scale)
 {
   return glm::scale(matrix, scale);
 }
 
-Matrix4
-look_at(const Vector3& eye,
-        const Vector3& center,
-        const Vector3& up)
+TnaMatrix4
+look_at(const TnaVector3& eye,
+        const TnaVector3& center,
+        const TnaVector3& up)
 {
   return glm::lookAt(eye, center, up);
 }
@@ -52,14 +52,14 @@ radians(float angle)
   return glm::radians(angle);
 }
 
-Matrix4
-inverse(const Matrix4 matrix)
+TnaMatrix4
+inverse(const TnaMatrix4 matrix)
 {
   return glm::inverse(matrix);
 }
 
 float 
-dot(const Vector3& a, const Vector3 b)
+dot(const TnaVector3& a, const TnaVector3 b)
 {
   return glm::dot(a,b);
 }

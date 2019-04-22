@@ -13,7 +13,7 @@ read_file(const std::string& filename)
 
   if (!file.is_open()) 
   {
-    log->error("failed to open file %s",filename.c_str());
+    p_log->error("failed to open file %s",filename.c_str());
     report_error(TNA_ERROR::E_IO_FILE_NOT_FOUND);
   }
 

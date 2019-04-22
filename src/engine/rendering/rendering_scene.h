@@ -11,33 +11,54 @@
 namespace tna 
 {
 
-struct RenderingScene 
+struct TnaMeshData;
+
+struct TnaMaterialDescriptor
+{
+  TnaVector3   m_color;
+};
+
+struct TnaPlacementDescriptor
+{
+  TnaMatrix4   m_model_mat;
+  bool      m_frustrum_visible;
+};
+
+struct TnaRenderMeshDescriptor
+{
+  const TnaMeshData*     p_mesh_data;
+  TnaMaterialDescriptor  m_material;
+  TnaPlacementDescriptor m_placement;
+};
+
+
+struct TnaRenderingScene 
 {
   void 
-  add_mesh(const RenderMeshDescriptor& rmesh_desc);
+  add_mesh(const TnaRenderMeshDescriptor& rmesh_desc);
 
   void 
-  set_view_matrix(const Matrix4& view_mat);
+  set_view_matrix(const TnaMatrix4& view_mat);
 
   void 
-  set_proj_matrix(const Matrix4& projection_mat);
+  set_proj_matrix(const TnaMatrix4& projection_mat);
 
   void
-  set_clear_color(const Vector3& color);
+  set_clear_color(const TnaVector3& color);
 
   void 
   clear();
 
   void
-  get_meshes(const RenderMeshDescriptor** meshes, 
+  get_meshes(const TnaRenderMeshDescriptor** meshes, 
              uint32_t* num_meshes) const;
 
 
-  furious::DynArray<RenderMeshDescriptor> m_meshes;
+  furious::DynArray<TnaRenderMeshDescriptor> m_meshes;
 
-  Matrix4                                 m_view_mat;
-  Matrix4                                 m_proj_mat;
-  Vector3                                 m_clear_color;
+  TnaMatrix4                                 m_view_mat;
+  TnaMatrix4                                 m_proj_mat;
+  TnaVector3                                 m_clear_color;
 };
   
 } /* tna */ 

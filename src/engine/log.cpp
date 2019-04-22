@@ -20,14 +20,14 @@
 namespace tna {
 
 
-Log::Log(const char* filename) : 
+TnaLog::TnaLog(const char* filename) : 
   m_log_file{filename},
   m_errors{0}
 {
       log("Started execution");
 }
 
-Log::~Log() {
+TnaLog::~TnaLog() {
   log("Finished execution");
   if(m_log_file) {
     m_log_file.close();
@@ -37,24 +37,24 @@ Log::~Log() {
   }
 }
 
-void Log::log(const char* message, ...) {
+void TnaLog::log(const char* message, ...) {
     char buffer[VARIADIC_BUFFER_SIZE]; 
     EXTRACT_VARIADIC(buffer, message)
         Message("LOG", buffer);
 }
-void Log::error(const char* message, ...) {
+void TnaLog::error(const char* message, ...) {
     char buffer[VARIADIC_BUFFER_SIZE]; 
     EXTRACT_VARIADIC(buffer, message)
       Message("ERROR", buffer);
 }
 
-void Log::warning(const char* message, ...) {
+void TnaLog::warning(const char* message, ...) {
     char buffer[VARIADIC_BUFFER_SIZE]; 
     EXTRACT_VARIADIC(buffer, message)
       Message("WARNING", buffer);
 }
 
-void Log::Message(const char* type, const char* message) {
+void TnaLog::Message(const char* type, const char* message) {
     char buffer[VARIADIC_BUFFER_SIZE];
     sprintf(buffer, ": %s: %s",type, message);
     TIMED_MESSAGE(buffer);

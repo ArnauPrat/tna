@@ -6,13 +6,13 @@
 
 namespace tna 
 {
-class Log;
-extern Log* log;
+class TnaLog;
+extern TnaLog* p_log;
 
-class Log {
+class TnaLog {
 public:
-  Log(const char* log_filename);
-  ~Log();
+  TnaLog(const char* log_filename);
+  ~TnaLog();
 
   void log( const char* message, ... );
   void error( const char* message, ... );

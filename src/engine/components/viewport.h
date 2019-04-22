@@ -9,9 +9,9 @@
 namespace tna 
 {
 
-struct Viewport 
+struct TnaViewport 
 {
-  FURIOUS_COMPONENT(Viewport);
+  FURIOUS_COMPONENT(TnaViewport);
 
   uint32_t  m_width;
   uint32_t  m_height;

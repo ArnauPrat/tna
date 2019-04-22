@@ -11,15 +11,15 @@ namespace tna
 {
 
 template<typename T>
-class ResourceRegistry 
+class TnaResourceRegistry 
 {
 public:
-  ResourceRegistry() = default;
-  ResourceRegistry(ResourceRegistry&) = delete;
+  TnaResourceRegistry() = default;
+  TnaResourceRegistry(TnaResourceRegistry&) = delete;
 
-  virtual ~ResourceRegistry();
+  virtual ~TnaResourceRegistry();
 
-  void operator=(ResourceRegistry&) = delete;
+  void operator=(TnaResourceRegistry&) = delete;
 
   ////////////////////////////////////////////////
   ////////////////////////////////////////////////

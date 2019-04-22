@@ -11,48 +11,54 @@ BEGIN_FURIOUS_SCRIPT
 
 using namespace tna;
 
-struct InitTransformMatrix 
+struct TnaInitTransformMatrix 
 {
   void run(furious::Context* context, 
            uint32_t id, 
-           TransformMatrix* model_matrix,
-           Transform* transform) 
+           TnaTransformMatrix* model_matrix,
+           TnaTransform* transform) 
   {
-    if(transform->m_dirty)
-    {
-      model_matrix->m_matrix = transform->to_matrix();
-      model_matrix->m_dirty = true;
-      transform->m_dirty = false;
-    }
+    model_matrix->m_matrix = transform->to_matrix();
+    model_matrix->m_dirty = true;
+    transform->m_dirty = false;
   }
 };
 
-furious::match<TransformMatrix, Transform>().has_not_tag("static")
-                                            .foreach<InitTransformMatrix>()
+furious::match<TnaTransformMatrix, TnaTransform>().has_not_tag("__tna_static")
+                                            .filter([](const TnaTransformMatrix* model_matrix,
+                                                       const TnaTransform* transform)
+                                                    {
+                                                      return transform->m_dirty;
+                                                    }
+                                                    )
+                                            .foreach<TnaInitTransformMatrix>()
                                             .set_priority(1000);
 
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 
-struct TransformMatrixHierarchy 
+struct TnaTransformMatrixHierarchy 
 {
   void run(furious::Context* context, 
            uint32_t id, 
-           TransformMatrix* model_matrix,
-           const TransformMatrix* parent_matrix) 
+           TnaTransformMatrix* model_matrix,
+           const TnaTransformMatrix* parent_matrix) 
   {
-    if(parent_matrix->m_dirty || model_matrix->m_dirty)
-    {
-      model_matrix->m_matrix = parent_matrix->m_matrix * model_matrix->m_matrix;
-      model_matrix->m_dirty = true;
-    }
+    model_matrix->m_matrix = parent_matrix->m_matrix * model_matrix->m_matrix;
+    model_matrix->m_dirty = true;
   }
 };
 
 
-furious::match<TransformMatrix>().expand<TransformMatrix>("parent")
-                                 .foreach<TransformMatrixHierarchy>()
+furious::match<TnaTransformMatrix>().expand<TnaTransformMatrix>("parent")
+                                 .filter([] (const TnaTransformMatrix* model_matrix,
+                                             const TnaTransformMatrix* parent_matrix)
+                                         {
+                                          return model_matrix->m_dirty || parent_matrix->m_dirty;
+                                         }
+                                         )
+                                 .foreach<TnaTransformMatrixHierarchy>()
                                  .set_priority(1001);
 
 
@@ -61,37 +67,18 @@ furious::match<TransformMatrix>().expand<TransformMatrix>("parent")
 ////////////////////////////////////////////////
 
 
-/*struct ResetTransform 
+struct TnaResetTransformMatrix
 {
   void run(furious::Context* context, 
            uint32_t id, 
-           Transform*  transform) 
-  {
-    transform->m_dirty = false;
-  }
-};
-
-furious::match<Transform>().foreach<ResetTransform>()
-                           .set_post_frame();
-                           */
-
-////////////////////////////////////////////////
-////////////////////////////////////////////////
-////////////////////////////////////////////////
-
-
-struct ResetTransformMatrix
-{
-  void run(furious::Context* context, 
-           uint32_t id, 
-           TransformMatrix*  matrix) 
+           TnaTransformMatrix*  matrix) 
   {
     matrix->m_dirty = false;
   }
 };
 
-furious::match<TransformMatrix>().has_not_tag("static")
-                                 .foreach<ResetTransformMatrix>()
+furious::match<TnaTransformMatrix>().has_not_tag("__tna_static")
+                                 .foreach<TnaResetTransformMatrix>()
                                  .set_post_frame();
 
 END_FURIOUS_SCRIPT

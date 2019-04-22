@@ -23,8 +23,8 @@ const char* error_messages[(uint32_t)(TNA_ERROR::E_NUM_ERRORS)] =
 void
 report_error(TNA_ERROR error_code)
 {
-  log->error("%s", error_messages[(uint32_t)error_code]);
-  delete log;
+  p_log->error("%s", error_messages[(uint32_t)error_code]);
+  delete p_log;
   abort();
 }
 }

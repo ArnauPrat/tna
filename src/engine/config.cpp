@@ -11,7 +11,7 @@
 namespace tna 
 {
 
-Config::Config() : 
+TnaConfig::TnaConfig() : 
 m_viewport_width(1440),
 m_viewport_height(900),
 m_fullscreen(false),
@@ -22,7 +22,7 @@ m_vk_vlayers(nullptr)
 
 }
 
-Config::~Config()
+TnaConfig::~TnaConfig()
 {
   if(m_vk_vlayers != NULL)
   {
@@ -39,9 +39,8 @@ Config::~Config()
 
 
 void
-Config::insert_vk_layer(const std::string& layer_name)
+TnaConfig::insert_vk_layer(const std::string& layer_name)
 {
-
   if(m_num_vk_vlayers == m_max_vk_vlayers)
   {
     m_max_vk_vlayers += TNA_VK_VALIDATION_LAYERS_GROWTH;
@@ -78,12 +77,12 @@ fread_line(FILE* fd, char** buffer, size_t* buffer_size)
 }
 
 void 
-load_config(const std::string& configFileName, Config* config) 
+load_config(const std::string& configFileName, TnaConfig* config) 
 {
   FILE* fd = fopen(configFileName.c_str(), "r");
   if(fd == NULL)
   {
-    log->error("Configuration file %s does not exist", configFileName.c_str());
+    p_log->error("Configuration file %s does not exist", configFileName.c_str());
     report_error(TNA_ERROR::E_SUCCESS);
   }
 
@@ -103,7 +102,7 @@ load_config(const std::string& configFileName, Config* config)
     char* tok = strtok(buffer," \t" );
     if(tok == NULL)
     {
-      log->error("Ill-formed configuration file entry at line %d", line_count);
+      p_log->error("Ill-formed configuration file entry at line %d", line_count);
       report_error(TNA_ERROR::E_IO_UNEXPECTED_INPUT_ERROR);
     }
 
@@ -119,7 +118,7 @@ load_config(const std::string& configFileName, Config* config)
     tok = strtok(NULL," \t");
     if(tok == NULL)
     {
-      log->error("Ill-formed configuration file entry at line %d", line_count);
+      p_log->error("Ill-formed configuration file entry at line %d", line_count);
       report_error(TNA_ERROR::E_IO_UNEXPECTED_INPUT_ERROR);
     }
 
@@ -159,7 +158,7 @@ load_config(const std::string& configFileName, Config* config)
       register_directory(value); 
     }
 
-    log->log("Parsed option %s with value %s", option, value);
+    p_log->log("Parsed option %s with value %s", option, value);
     line_count++;
   }
   fclose(fd);

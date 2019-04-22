@@ -15,7 +15,7 @@ static void check_vk_result(VkResult err)
 {
     if (err == 0) return;
 
-    log->error("GUI error");
+    p_log->error("GUI error");
     report_error(TNA_ERROR::E_RENDERER_GUI_ERROR);
 }
 

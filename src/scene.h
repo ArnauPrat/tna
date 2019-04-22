@@ -9,19 +9,19 @@
 namespace tna
 {
 
-struct GameState;
+struct TnaGameState;
 
 void
-create_terrain(GameState* state);
+create_terrain(TnaGameState* state);
 
 void
-create_buildings(GameState* state);
+create_buildings(TnaGameState* state);
 
 void
-create_cars(GameState* state);
+create_cars(TnaGameState* state);
 
 void
-create_player(GameState* state);
+create_player(TnaGameState* state);
   
 } /* tna */ 
 

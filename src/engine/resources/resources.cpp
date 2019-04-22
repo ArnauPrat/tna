@@ -4,21 +4,21 @@
 namespace tna 
 {
   
-ResourceRegistry<MeshData>* mesh_registry   = nullptr;
-ResourceRegistry<Shader>*   shader_registry = nullptr;
+TnaResourceRegistry<TnaMeshData>* p_mesh_registry   = nullptr;
+TnaResourceRegistry<TnaShader>*   p_shader_registry = nullptr;
 
 void 
 init_resources() 
 {
-  mesh_registry = new ResourceRegistry<MeshData>();
-  shader_registry = new ResourceRegistry<Shader>();
+  p_mesh_registry = new TnaResourceRegistry<TnaMeshData>();
+  p_shader_registry = new TnaResourceRegistry<TnaShader>();
 }
 
 void 
 terminate_resources() 
 {
-  delete shader_registry;
-  delete mesh_registry;
+  delete p_shader_registry;
+  delete p_mesh_registry;
 }
 
 } /* resources */ 

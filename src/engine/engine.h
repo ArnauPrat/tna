@@ -12,8 +12,8 @@
 namespace tna 
 {
 
-class Config;
-class GameApp;
+class TnaConfig;
+class TnaGameApp;
 
 /**
  * \brief Initializes the resources of the game engine
@@ -51,7 +51,7 @@ is_edit_mode();
  * \param game_app
  */
 void 
-run(GameApp* game_app);
+run(TnaGameApp* game_app);
 
 }
 #endif /* ifndef _TNA_ENGINE_H_ */

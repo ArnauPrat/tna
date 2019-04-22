@@ -146,7 +146,7 @@ transition_image_layout(VkDevice device,
     }
     else 
     {
-      log->error("unsupported layout transition!");
+      p_log->error("unsupported layout transition!");
       report_error(TNA_ERROR::E_RENDERER_RESOURCE_ALLOCATION_ERROR);
     }
 

@@ -10,7 +10,7 @@ class GLFWwindow;
 namespace tna 
 {
 
-class Game : public GameApp 
+class Game : public TnaGameApp 
 {
 public:
   Game(int32_t width, 
@@ -64,7 +64,7 @@ private:
   double m_mouse_current_pos_x;
   double m_mouse_current_pos_y;
   
-  Entity  m_camera;
+  TnaEntity  m_camera;
 };
 
 }

@@ -13,12 +13,12 @@ namespace tna
 
 struct GameState;
 
-class GameApp 
+class TnaGameApp 
 {
 public:
 
-  GameApp(){};
-  virtual ~GameApp(){};
+  TnaGameApp(){};
+  virtual ~TnaGameApp(){};
 
   virtual void 
   on_app_start() = 0;
@@ -50,7 +50,7 @@ public:
                   int32_t action, 
                   int32_t mods) = 0;
 
-  GameState m_state;
+  TnaGameState m_state;
 };
 
 }

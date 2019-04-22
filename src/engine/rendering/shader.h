@@ -7,14 +7,17 @@
 
 namespace tna 
 {
-struct Shader 
+
+struct TnaShader 
 {
 
-  static Shader* 
+  void* p_data;
+
+  static TnaShader* 
   load(const std::string& path);
 
   static void 
-  unload(Shader* shader);
+  unload(TnaShader* shader);
 
 };
 

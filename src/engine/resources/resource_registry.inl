@@ -8,7 +8,7 @@ namespace tna
 {
 
 template<typename T>
-ResourceRegistry<T>::~ResourceRegistry<T>() 
+TnaResourceRegistry<T>::~TnaResourceRegistry<T>() 
 {
   for(auto pair : m_resources) {
     T::unload(pair.second);
@@ -18,7 +18,7 @@ ResourceRegistry<T>::~ResourceRegistry<T>()
 
 
 template<typename T>
-T* ResourceRegistry<T>::load(const std::string& resource_name) 
+T* TnaResourceRegistry<T>::load(const std::string& resource_name) 
 {
   auto it = m_resources.find(resource_name);
   if(it == m_resources.end()) {
@@ -36,7 +36,7 @@ T* ResourceRegistry<T>::load(const std::string& resource_name)
 }
 
 template<typename T>
-void  ResourceRegistry<T>::unload(const std::string& resource_name) 
+void  TnaResourceRegistry<T>::unload(const std::string& resource_name) 
 {
   auto it = m_resources.find(resource_name);
   if(it != m_resources.end()) 
@@ -47,7 +47,7 @@ void  ResourceRegistry<T>::unload(const std::string& resource_name)
 }
 
 template<typename T>
-void  ResourceRegistry<T>::clear() 
+void  TnaResourceRegistry<T>::clear() 
 {
   for(auto pair : m_resources) {
     T::unload(pair.second);
