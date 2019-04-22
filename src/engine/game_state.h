@@ -39,15 +39,6 @@ void
 remove_entity(TnaEntity entity);
 
 /**
- * \brief Sets the entity as an static entity. Changes to transform in static
- * entities won't be propagated to the renderer
- *
- * \param entity The entity to set as static
- */
-void
-set_static(TnaEntity entity);
-
-/**
  * \brief Creates the camera for the scene.
  */
 void

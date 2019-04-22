@@ -5,6 +5,7 @@
 #include "components/look_at_camera.h"
 #include "components/transform.h"
 #include "components/transform_matrix.h"
+#include "components/render_mesh_data.h"
 #include "engine.h"
 #include "game_state.h"
 #include "math/math_tools.h"
@@ -28,16 +29,6 @@ void
 remove_entity(TnaEntity entity)
 {
   furious::destroy_entity(entity);
-}
-
-void
-set_static(TnaEntity entity)
-{
-  FURIOUS_ADD_TAG(entity, "__tna_static");
-  const TnaTransform* transform = FURIOUS_GET_COMPONENT(entity, TnaTransform);
-  TnaTransformMatrix* transform_matrix = FURIOUS_GET_COMPONENT(entity, TnaTransformMatrix);
-  transform_matrix->m_matrix = transform->to_matrix();
-  transform_matrix->m_dirty = false;
 }
 
 void

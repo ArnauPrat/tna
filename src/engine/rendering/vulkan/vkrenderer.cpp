@@ -622,6 +622,12 @@ create_swap_chain()
                           &p_renderer->m_num_swap_chain_images, 
                           nullptr);
 
+  if(p_renderer->m_num_swap_chain_images > MAX_FRAME_BUFFERS)
+  {
+    p_log->error("The number of swapchain images exceeds the limit");
+    report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
+  }
+
   p_renderer->m_swap_chain_images = new VkImage[p_renderer->m_num_swap_chain_images];
   vkGetSwapchainImagesKHR(p_renderer->m_logical_device, 
                           p_renderer->m_swap_chain, 
@@ -1130,6 +1136,31 @@ create_uniform_buffers()
                   &m_uniform_buffers[i], 
                   &m_uniform_allocations[i]);
 
+
+    VkDescriptorBufferInfo buffer_info = {};
+    buffer_info.buffer = m_uniform_buffers[i];
+    buffer_info.offset = 0;
+    buffer_info.range = dynamic_alignment*MAX_PRIMITIVE_COUNT;
+
+    VkWriteDescriptorSet descriptor_write = {};
+    descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptor_write.pNext = nullptr;
+    descriptor_write.dstSet = p_renderer->m_descriptor_sets[i];
+    descriptor_write.dstBinding = 0;
+    descriptor_write.dstArrayElement = 0;
+
+    descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+    descriptor_write.descriptorCount = 1;
+    descriptor_write.pBufferInfo = &buffer_info;
+    descriptor_write.pImageInfo = nullptr; // Optional
+    descriptor_write.pTexelBufferView = nullptr; // Optional
+
+    vkUpdateDescriptorSets(p_renderer->m_logical_device, 
+                           1, 
+                           &descriptor_write, 
+                           0, 
+                           nullptr);
+
   }
   return;
 }
@@ -1268,57 +1299,28 @@ build_command_buffer(uint32_t index, TnaRenderingScene* scene)
   size_t uniform_buffer_size = sizeof(UniformBufferObject);
   size_t dynamic_alignment = (uniform_buffer_size / device_alignment) * device_alignment + ((uniform_buffer_size % device_alignment) > 0 ? device_alignment : 0);
   
-  const TnaRenderMeshDescriptor* meshes;
-  uint32_t num_meshes;
-  scene->get_meshes(&meshes, &num_meshes);
 
-  if(num_meshes > 0)
+  uint32_t num_meshes = scene->m_static_meshes.size();
+  if( num_meshes > 0)
   {
     void* uniform_data = nullptr;
     vmaMapMemory(p_renderer->m_vkallocator, m_uniform_allocations[index], &uniform_data);
-    uint32_t count_visible = 0;
+    uint32_t count_changed = 0;
     for(size_t i = 0; i < num_meshes && i < MAX_PRIMITIVE_COUNT; ++i) 
     {
-      const TnaRenderMeshDescriptor* info = &meshes[i];
-      if(info->m_placement.m_frustrum_visible)
+      TnaRenderDescriptor* info = &scene->m_static_meshes[i];
+      if(info->m_active && 
+         info->p_mesh_data != nullptr)
       {
         UniformBufferObject ubo;
         ubo.m_projmodelview = scene->m_proj_mat * scene->m_view_mat * info->m_placement.m_model_mat;
         ubo.m_color = info->m_material.m_color;
 
-        memcpy(&(((char*)uniform_data)[count_visible*dynamic_alignment]), &ubo, sizeof(ubo)); 
-        count_visible++;
+        memcpy(&(((char*)uniform_data)[i*dynamic_alignment]), &ubo, sizeof(ubo)); 
+        count_changed++;
       }
     }
     vmaUnmapMemory(p_renderer->m_vkallocator, m_uniform_allocations[index]);
-
-    if(count_visible > 0)
-    {
-      /// Update descriptor set
-      VkDescriptorBufferInfo buffer_info = {};
-      buffer_info.buffer = m_uniform_buffers[index];
-      buffer_info.offset = 0;
-      buffer_info.range = dynamic_alignment*count_visible;
-
-      VkWriteDescriptorSet descriptor_write = {};
-      descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-      descriptor_write.pNext = nullptr;
-      descriptor_write.dstSet = p_renderer->m_descriptor_sets[index];
-      descriptor_write.dstBinding = 0;
-      descriptor_write.dstArrayElement = 0;
-
-      descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-      descriptor_write.descriptorCount = 1;
-      descriptor_write.pBufferInfo = &buffer_info;
-      descriptor_write.pImageInfo = nullptr; // Optional
-      descriptor_write.pTexelBufferView = nullptr; // Optional
-
-      vkUpdateDescriptorSets(p_renderer->m_logical_device, 
-                             1, 
-                             &descriptor_write, 
-                             0, 
-                             nullptr);
-    }
   }
 
   /// Setting up command buffer
@@ -1356,11 +1358,12 @@ build_command_buffer(uint32_t index, TnaRenderingScene* scene)
 
   vkCmdBeginRenderPass(p_renderer->m_command_buffers[index], &renderpass_info, VK_SUBPASS_CONTENTS_INLINE);
 
-  uint32_t count_visible = 0;
   for(size_t i = 0; i < num_meshes && i < MAX_PRIMITIVE_COUNT; ++i) 
   {
-    const TnaRenderMeshDescriptor* info = &meshes[i];
-    if(info->m_placement.m_frustrum_visible)
+    const TnaRenderDescriptor* info = &scene->m_static_meshes[i];
+    if(info->m_active &&
+       info->m_placement.m_frustrum_visible &&
+       info->p_mesh_data != nullptr)
     {
       const TnaMeshData* mesh_data = info->p_mesh_data;
       VkVertexBuffer* vkvertex_buffer = (VkVertexBuffer*)mesh_data->m_vertex_buffer.p_data;
@@ -1378,7 +1381,7 @@ build_command_buffer(uint32_t index, TnaRenderingScene* scene)
                            0, 
                            VK_INDEX_TYPE_UINT32);
 
-      uint32_t offset = dynamic_alignment*count_visible;
+      uint32_t offset = dynamic_alignment*i;
       vkCmdBindDescriptorSets(p_renderer->m_command_buffers[index], 
                               VK_PIPELINE_BIND_POINT_GRAPHICS, 
                               p_renderer->m_pipeline_layout, 
@@ -1394,7 +1397,6 @@ build_command_buffer(uint32_t index, TnaRenderingScene* scene)
                        0, 
                        0, 
                        0);
-      count_visible++;
     }
   }
 
@@ -1506,7 +1508,6 @@ terminate_renderer()
 void
 begin_frame(TnaRenderingScene* scene) 
 {
-  scene->clear();
   vkgui_begin_frame();
   return;
 }

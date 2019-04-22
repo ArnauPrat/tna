@@ -11,6 +11,8 @@ class GLFWwindow;
 namespace tna 
 {
 
+#define MAX_FRAME_BUFFERS 3
+
 class TnaConfig;
 struct TnaRenderingScene;
 

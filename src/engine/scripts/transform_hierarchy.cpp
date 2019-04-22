@@ -24,9 +24,8 @@ struct TnaInitTransformMatrix
   }
 };
 
-furious::match<TnaTransformMatrix, TnaTransform>().has_not_tag("__tna_static")
-                                            .filter([](const TnaTransformMatrix* model_matrix,
-                                                       const TnaTransform* transform)
+furious::match<TnaTransformMatrix, TnaTransform>().filter([](const TnaTransformMatrix* model_matrix,
+                                                   const TnaTransform* transform)
                                                     {
                                                       return transform->m_dirty;
                                                     }
@@ -51,7 +50,7 @@ struct TnaTransformMatrixHierarchy
 };
 
 
-furious::match<TnaTransformMatrix>().expand<TnaTransformMatrix>("parent")
+furious::match<TnaTransformMatrix>().expand<TnaTransformMatrix>("__tna_parent")
                                  .filter([] (const TnaTransformMatrix* model_matrix,
                                              const TnaTransformMatrix* parent_matrix)
                                          {
@@ -77,9 +76,8 @@ struct TnaResetTransformMatrix
   }
 };
 
-furious::match<TnaTransformMatrix>().has_not_tag("__tna_static")
-                                 .foreach<TnaResetTransformMatrix>()
-                                 .set_post_frame();
+furious::match<TnaTransformMatrix>().foreach<TnaResetTransformMatrix>()
+                                    .set_post_frame();
 
 END_FURIOUS_SCRIPT
 

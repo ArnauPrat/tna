@@ -71,7 +71,6 @@ void Game::on_app_start()
   create_cars(&m_state);
   create_player(&m_state);
 
-
 }
 
 void Game::on_app_finish() 
