@@ -4,7 +4,6 @@
 #ifndef _TNA_VKRENDERER_H_
 #define _TNA_VKRENDERER_H_ value
 
-#define MAX_PRIMITIVE_COUNT 65536
 
 #include <vulkan/vulkan.h>
 #include "vkmem_alloc.h"

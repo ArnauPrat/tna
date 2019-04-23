@@ -1,5 +1,6 @@
 
 #include "../engine/engine.h"
+#include "../engine/tools/references.h"
 #include "../engine/math/matrix.h"
 #include "../engine/math/math_tools.h"
 #include "../engine/components/transform.h"
@@ -30,7 +31,7 @@ struct RotatorAroundParent
   float m_speed;
 };
 
-furious::match<TnaTransform, RotationSpeed>().expand<>("__tna_parent")
+furious::match<TnaTransform, RotationSpeed>().expand<>(TNA_REF_PARENT)
                                              .foreach<RotatorAroundParent>();
 
 END_FURIOUS_SCRIPT

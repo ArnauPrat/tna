@@ -1,5 +1,6 @@
 
 #include "../engine.h"
+#include "../tools/references.h"
 #include "../math/matrix.h"
 #include "../math/math_tools.h"
 #include "../components/transform.h"
@@ -50,15 +51,15 @@ struct TnaTransformMatrixHierarchy
 };
 
 
-furious::match<TnaTransformMatrix>().expand<TnaTransformMatrix>("__tna_parent")
-                                 .filter([] (const TnaTransformMatrix* model_matrix,
+furious::match<TnaTransformMatrix>().expand<TnaTransformMatrix>(TNA_REF_PARENT)
+                                    .filter([] (const TnaTransformMatrix* model_matrix,
                                              const TnaTransformMatrix* parent_matrix)
                                          {
                                           return model_matrix->m_dirty || parent_matrix->m_dirty;
                                          }
                                          )
-                                 .foreach<TnaTransformMatrixHierarchy>()
-                                 .set_priority(1001);
+                                    .foreach<TnaTransformMatrixHierarchy>()
+                                    .set_priority(1001);
 
 
 ////////////////////////////////////////////////

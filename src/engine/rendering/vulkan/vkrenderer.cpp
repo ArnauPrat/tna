@@ -44,13 +44,6 @@ const bool enable_validation_layers = true;
 
 VulkanRenderer*                 p_renderer; ///<  This is the VulkanRenderer
 
-struct UniformBufferObject 
-{
-    TnaMatrix4 m_projmodelview;
-    TnaVector3 m_color;
-};
-
-
 uint32_t               m_num_uniform_buffers;
 VkBuffer*              m_uniform_buffers;
 VmaAllocation*         m_uniform_allocations;
@@ -1117,7 +1110,7 @@ void
 create_uniform_buffers() 
 {
   size_t device_alignment = p_renderer->m_mem_properties.limits.minUniformBufferOffsetAlignment;
-  size_t uniform_buffer_size = sizeof(UniformBufferObject);
+  size_t uniform_buffer_size = sizeof(TnaRenderMeshUniform);
   size_t dynamic_alignment = (uniform_buffer_size / device_alignment) * device_alignment + ((uniform_buffer_size % device_alignment) > 0 ? device_alignment : 0);
 
   size_t bufferSize = dynamic_alignment * MAX_PRIMITIVE_COUNT;
@@ -1295,31 +1288,19 @@ recreate_swap_chain()
 void 
 build_command_buffer(uint32_t index, TnaRenderingScene* scene) 
 {
-  size_t device_alignment = p_renderer->m_mem_properties.limits.minUniformBufferOffsetAlignment;
-  size_t uniform_buffer_size = sizeof(UniformBufferObject);
-  size_t dynamic_alignment = (uniform_buffer_size / device_alignment) * device_alignment + ((uniform_buffer_size % device_alignment) > 0 ? device_alignment : 0);
-  
 
   uint32_t num_meshes = scene->m_static_meshes.size();
   if( num_meshes > 0)
   {
     void* uniform_data = nullptr;
     vmaMapMemory(p_renderer->m_vkallocator, m_uniform_allocations[index], &uniform_data);
-    uint32_t count_changed = 0;
     for(size_t i = 0; i < num_meshes && i < MAX_PRIMITIVE_COUNT; ++i) 
     {
-      TnaRenderDescriptor* info = &scene->m_static_meshes[i];
-      if(info->m_active && 
-         info->p_mesh_data != nullptr)
-      {
-        UniformBufferObject ubo;
-        ubo.m_projmodelview = scene->m_proj_mat * scene->m_view_mat * info->m_placement.m_model_mat;
-        ubo.m_color = info->m_material.m_color;
-
-        memcpy(&(((char*)uniform_data)[i*dynamic_alignment]), &ubo, sizeof(ubo)); 
-        count_changed++;
-      }
+      TnaRenderMeshUniform* uniform = (TnaRenderMeshUniform*)(&scene->m_static_uniforms[scene->m_uniform_alignment*i]);
+      uniform->m_model_matrix =  scene->m_proj_mat * scene->m_view_mat * uniform->m_model_matrix;
     }
+
+    memcpy((char*)uniform_data, scene->m_static_uniforms, sizeof(scene->m_uniform_alignment)*MAX_PRIMITIVE_COUNT); 
     vmaUnmapMemory(p_renderer->m_vkallocator, m_uniform_allocations[index]);
   }
 
@@ -1360,12 +1341,13 @@ build_command_buffer(uint32_t index, TnaRenderingScene* scene)
 
   for(size_t i = 0; i < num_meshes && i < MAX_PRIMITIVE_COUNT; ++i) 
   {
-    const TnaRenderDescriptor* info = &scene->m_static_meshes[i];
-    if(info->m_active &&
-       info->m_placement.m_frustrum_visible &&
-       info->p_mesh_data != nullptr)
+    const TnaRenderHeader* header = &scene->m_headers[i];
+    if(header->m_active &&
+       header->m_frustrum_visible &&
+       header->m_mobility_type == TnaRenderMobilityType::E_STATIC &&
+       scene->m_static_meshes[header->m_offset] != nullptr)
     {
-      const TnaMeshData* mesh_data = info->p_mesh_data;
+      const TnaMeshData* mesh_data = scene->m_static_meshes[header->m_offset];
       VkVertexBuffer* vkvertex_buffer = (VkVertexBuffer*)mesh_data->m_vertex_buffer.p_data;
       VkBuffer vertex_buffers[] = {vkvertex_buffer->m_buffer};
       VkDeviceSize offsets[] = {0};
@@ -1381,7 +1363,7 @@ build_command_buffer(uint32_t index, TnaRenderingScene* scene)
                            0, 
                            VK_INDEX_TYPE_UINT32);
 
-      uint32_t offset = dynamic_alignment*i;
+      uint32_t offset = header->m_offset*scene->m_uniform_alignment;
       vkCmdBindDescriptorSets(p_renderer->m_command_buffers[index], 
                               VK_PIPELINE_BIND_POINT_GRAPHICS, 
                               p_renderer->m_pipeline_layout, 
@@ -1603,6 +1585,12 @@ void
 terminate_gui()
 {
   vkgui_terminate();
+}
+
+TnaDeviceProperties
+get_device_properties()
+{
+  return {p_renderer->m_mem_properties.limits.minUniformBufferOffsetAlignment};
 }
 
 }

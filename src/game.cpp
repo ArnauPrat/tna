@@ -2,6 +2,7 @@
 
 #include "game.h"
 #include "scene.h"
+#include "prefabs.h"
 #include "engine/engine.h"
 #include "engine/gui/imgui.h"
 #include "engine/components/fps_camera.h"
@@ -32,8 +33,8 @@ m_strafe_left_camera(false),
 m_strafe_right_camera(false),
 m_mouse_old_pos_x(0.0),
 m_mouse_old_pos_y(0.0),
-m_mouse_current_pos_x(0.0),
-m_mouse_current_pos_y(0.0)
+m_mouse_delta_pos_x(0.0),
+m_mouse_delta_pos_y(0.0)
 {
 }
 
@@ -59,18 +60,22 @@ void Game::on_app_start()
                    &m_mouse_old_pos_x, 
                    &m_mouse_old_pos_y);
 
-  m_mouse_current_pos_x = m_mouse_old_pos_x;
-  m_mouse_current_pos_y = m_mouse_old_pos_y;
+  m_mouse_delta_pos_x = 0.0;
+  m_mouse_delta_pos_y = 0.0;
 
   p_rendering_scene->set_clear_color(TNA_COLOR_BLUE_SKY);
 
 
   // CREATING SCENE
   create_terrain(&m_state);
-  create_buildings(&m_state);
-  create_cars(&m_state);
-  create_player(&m_state);
+  //create_buildings(&m_state);
+  //create_cars(&m_state);
+  //create_player(&m_state);
 
+  TnaEntity unit = create_unit(20,
+                               "models/cube.obj",
+                               &m_state);
+  m_units.append(unit);
 }
 
 void Game::on_app_finish() 
@@ -102,13 +107,10 @@ void Game::on_frame_start(float delta)
     camera->strafe(delta);
   }
 
-  int32_t delta_x = (m_mouse_current_pos_x - m_mouse_old_pos_x);
-  int32_t delta_y = (m_mouse_current_pos_y - m_mouse_old_pos_y);
-  m_mouse_old_pos_x = m_mouse_current_pos_x;
-  m_mouse_old_pos_y = m_mouse_current_pos_y;
-
-  camera->pitch(delta_y);
-  camera->yaw(delta_x);
+  camera->pitch(m_mouse_delta_pos_y);
+  camera->yaw(m_mouse_delta_pos_x);
+  m_mouse_delta_pos_x = 0;
+  m_mouse_delta_pos_y = 0;
 }
 
 void Game::on_frame_end()
@@ -191,8 +193,12 @@ void Game::on_key_event(GLFWwindow* window,
                          &m_mouse_old_pos_x, 
                          &m_mouse_old_pos_y);
 
-        m_mouse_current_pos_x = m_mouse_old_pos_x;
-        m_mouse_current_pos_y = m_mouse_old_pos_y;
+        m_mouse_delta_pos_x = 0;
+        m_mouse_delta_pos_y = 0;
+        m_forwards_camera = false;
+        m_backwards_camera = false;
+        m_strafe_left_camera = false;
+        m_strafe_right_camera = false;
       }
   }
 }
@@ -203,10 +209,10 @@ void Game::on_cursor_position(GLFWwindow* window,
 {
   if(!is_edit_mode())
   {
-    m_mouse_old_pos_x = m_mouse_current_pos_x;
-    m_mouse_old_pos_y = m_mouse_current_pos_y;
-    m_mouse_current_pos_x = xpos;
-    m_mouse_current_pos_y = ypos;
+    m_mouse_delta_pos_x += (xpos - m_mouse_old_pos_x);
+    m_mouse_delta_pos_y += (ypos - m_mouse_old_pos_y);
+    m_mouse_old_pos_x = xpos;
+    m_mouse_old_pos_y = ypos;
   }
 }
 

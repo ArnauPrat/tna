@@ -6,6 +6,7 @@
 #include "engine/components/render_mesh_data.h"
 #include "engine/components/transform.h"
 #include "engine/components/transform_matrix.h"
+#include "engine/tools/references.h"
 #include "engine/resources/resources.h"
 #include "engine/tools/colors.h"
 #include "components/rotation_speed.h"
@@ -103,7 +104,9 @@ create_cars(TnaGameState* state)
     mat_desc.m_color = TNA_COLOR_BLACK;
     p_rendering_scene->set_material(mesh_data->m_handler, mat_desc);
 
-    FURIOUS_ADD_REFERENCE(entity2, "__tna_parent", entity1);
+    FURIOUS_ADD_REFERENCE(entity2, 
+                          TNA_REF_PARENT, 
+                          entity1);
   }
 }
 

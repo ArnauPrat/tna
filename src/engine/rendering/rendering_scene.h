@@ -33,19 +33,10 @@ struct TnaMaterialDescriptor
   TnaVector3   m_color = TNA_COLOR_WHITE;
 };
 
-struct TnaPlaceDescriptor
+struct TnaRenderMeshUniform
 {
-  TnaMatrix4      m_model_mat         = TnaMatrix4(1.0f);
-  bool            m_frustrum_visible  = true;
-};
-
-struct TnaRenderDescriptor
-{
-  bool                    m_active             = false;
-  TnaRenderObjectType     m_render_object_type = TnaRenderObjectType::E_MESH;
-  const TnaMeshData*      p_mesh_data          = nullptr;
-  TnaMaterialDescriptor   m_material;
-  TnaPlaceDescriptor      m_placement;
+  TnaMatrix4            m_model_matrix;
+  TnaMaterialDescriptor m_material;
 };
 
 struct TnaRenderHandler
@@ -53,17 +44,19 @@ struct TnaRenderHandler
   uint32_t m_id;
 };
 
-struct TnaRenderIndex
+struct TnaRenderHeader
 {
-  uint32_t        m_offset = 0;
-  TnaRenderMobilityType m_mobility_type = TnaRenderMobilityType::E_DYNAMIC;
+  uint32_t                m_offset              = 0;
+  TnaRenderObjectType     m_render_object_type  = TnaRenderObjectType::E_MESH;
+  TnaRenderMobilityType   m_mobility_type       = TnaRenderMobilityType::E_DYNAMIC;
+  bool                    m_active              = false;
+  bool                    m_frustrum_visible    = true;
 };
-
-TnaRenderDescriptor*
-get_descriptor(TnaRenderingScene* scene, TnaRenderHandler);
 
 struct TnaRenderingScene 
 {
+  TnaRenderingScene();
+  ~TnaRenderingScene();
 
   TnaRenderHandler
   create_render_object(TnaRenderObjectType o_type,
@@ -79,7 +72,7 @@ struct TnaRenderingScene
 
   void
   set_material(TnaRenderHandler handler, 
-                  const TnaMaterialDescriptor& mat_desc);
+               const TnaMaterialDescriptor& mat_desc);
 
   void
   get_material(TnaRenderHandler handler,
@@ -107,18 +100,22 @@ struct TnaRenderingScene
   ////////////////////////////////////////////////
 
 
-  furious::DynArray<TnaRenderIndex>           m_id_to_position;
-  furious::DynArray<uint32_t>                 m_gaps_to_position;
+  furious::DynArray<TnaRenderHeader>          m_headers;
+  furious::DynArray<uint32_t>                 m_header_gaps;
 
-  furious::DynArray<TnaRenderDescriptor>      m_static_meshes;
+  char*                                       m_static_uniforms;
+  furious::DynArray<TnaMeshData*>             m_static_meshes;
   furious::DynArray<uint32_t>                 m_static_gaps;
 
-  furious::DynArray<TnaRenderDescriptor> m_dynamic_meshes;
+  char*                                       m_dynamic_uniforms;
+  furious::DynArray<TnaMeshData*>             m_dynamic_meshes;
   furious::DynArray<uint32_t>                 m_dynamic_gaps;
 
   TnaMatrix4                                  m_view_mat;
   TnaMatrix4                                  m_proj_mat;
   TnaVector3                                  m_clear_color;
+
+  size_t                                      m_uniform_alignment;
 };
   
 } /* tna */ 

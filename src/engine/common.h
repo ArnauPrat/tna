@@ -10,5 +10,15 @@
 #include "types.h"
 #include "error.h"
 
+#include <furious/common/dyn_array.h>
+
+namespace tna
+{
+
+template<typename T>
+using DynArray = furious::DynArray<T>;
+  
+} /* tna */ 
+
 
 #endif /* ifndef _TNA_COMMON_H_ */

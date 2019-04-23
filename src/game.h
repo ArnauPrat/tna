@@ -3,6 +3,7 @@
 #ifndef _TNA_SYSTEMS_H_
 #define _TNA_SYSTEMS_H_
 
+#include "engine/common.h"
 #include "engine/game_app.h"
 
 class GLFWwindow;
@@ -61,10 +62,11 @@ private:
   double m_mouse_old_pos_x;
   double m_mouse_old_pos_y;
 
-  double m_mouse_current_pos_x;
-  double m_mouse_current_pos_y;
+  double m_mouse_delta_pos_x;
+  double m_mouse_delta_pos_y;
   
-  TnaEntity  m_camera;
+  TnaEntity              m_camera;
+  DynArray<TnaEntity>    m_units;
 };
 
 }

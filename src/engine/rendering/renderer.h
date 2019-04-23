@@ -11,12 +11,19 @@ class GLFWwindow;
 namespace tna 
 {
 
+#define MAX_PRIMITIVE_COUNT 65536
 #define MAX_FRAME_BUFFERS 3
 
 class TnaConfig;
 struct TnaRenderingScene;
 
 extern TnaRenderingScene* p_rendering_scene;
+
+struct TnaDeviceProperties
+{
+  size_t m_uniform_offset_alignment;
+};
+
 
 /**
  * \brief Creates the rendering scene structure
@@ -68,6 +75,14 @@ init_gui();
  */
 void
 terminate_gui();
+
+/**
+ * \brief Gets the device properties of the particular renderer implementation
+ *
+ * \return Returns a TnaDeviceProperties structure with the property values
+ */
+TnaDeviceProperties
+get_device_properties();
 
 }
 

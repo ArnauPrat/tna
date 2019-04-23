@@ -132,6 +132,7 @@ set(TNA_ENGINE_SOURCE_FILES
   engine/tools/colors.h
   engine/tools/files.cpp
   engine/tools/files.h
+  engine/tools/references.h
   engine/types.h
 	)
 
@@ -143,6 +144,9 @@ set(TNA_SOURCE_FILES
   platform.h
   scene.h
   scene.cpp
+  prefabs.h
+  prefabs.cpp
+  game_references.h
   tnasdk/definitions.h
 	)
 
@@ -154,7 +158,8 @@ set(TNA_ENGINE_SCRIPTS
   )
 
 set(TNA_SCRIPTS
-  scripts/rotator.cpp
+  #scripts/rotator.cpp
+  scripts/follower.cpp
   scripts/test.cpp
   )
 
