@@ -71,6 +71,11 @@ TnaRenderingScene::create_render_object(TnaRenderObjectType o_type,
         else
         {
           header->m_offset = m_static_meshes.size();
+          if(header->m_offset >= MAX_PRIMITIVE_COUNT)
+          {
+            p_log->error("Exceeded max primitive count");
+            report_error(TNA_ERROR::E_RENDERER_RUNTIME_ERROR);
+          }
           m_static_meshes.append(nullptr);
           *((TnaRenderMeshUniform*)&m_static_uniforms[m_uniform_alignment*header->m_offset]) = TnaRenderMeshUniform();
         }
@@ -86,6 +91,11 @@ TnaRenderingScene::create_render_object(TnaRenderObjectType o_type,
         else
         {
           header->m_offset = m_dynamic_meshes.size();
+          if(header->m_offset >= MAX_PRIMITIVE_COUNT)
+          {
+            p_log->error("Exceeded max primitive count");
+            report_error(TNA_ERROR::E_RENDERER_RUNTIME_ERROR);
+          }
           *((TnaRenderMeshUniform*)&m_dynamic_uniforms[m_uniform_alignment*header->m_offset]) = TnaRenderMeshUniform();
           m_dynamic_meshes.append(nullptr);
         }

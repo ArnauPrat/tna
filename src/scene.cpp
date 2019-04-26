@@ -17,8 +17,8 @@ namespace tna
 void
 create_terrain(TnaGameState* state)
 {
-  uint32_t NUM_TILES = 50;
-  float TILE_HALF_EDGE = 5.0;
+  uint32_t NUM_TILES = 64;
+  float TILE_HALF_EDGE = 64.0;
   for(uint32_t i = 0; i < NUM_TILES; ++i)
   {
     for(uint32_t j = 0; j < NUM_TILES; ++j)

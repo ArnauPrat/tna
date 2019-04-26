@@ -1133,7 +1133,7 @@ create_uniform_buffers()
     VkDescriptorBufferInfo buffer_info = {};
     buffer_info.buffer = m_uniform_buffers[i];
     buffer_info.offset = 0;
-    buffer_info.range = dynamic_alignment*MAX_PRIMITIVE_COUNT;
+    buffer_info.range = dynamic_alignment;
 
     VkWriteDescriptorSet descriptor_write = {};
     descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
