@@ -159,7 +159,7 @@ set(TNA_ENGINE_SCRIPTS
 
 set(TNA_SCRIPTS
   scripts/rotator.cpp
-  #scripts/follower.cpp
+  scripts/laggy_follow.cpp
   scripts/test.cpp
   )
 

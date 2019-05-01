@@ -2,8 +2,6 @@
 
 #include "directory_registry.h"
 
-#include <iostream>
-
 namespace tna
 {
 
@@ -21,15 +19,18 @@ template<typename T>
 T* TnaResourceRegistry<T>::load(const std::string& resource_name) 
 {
   auto it = m_resources.find(resource_name);
-  if(it == m_resources.end()) {
+  if(it == m_resources.end()) 
+  {
     std::string path = get_path(resource_name);
-    if(!path.empty()) {
+    if(!path.empty()) 
+    {
       T* resource = T::load(path);
       m_resources.insert(std::make_pair(resource_name, resource));
       return resource;
     }
     return nullptr;
-  } else 
+  } 
+  else 
   {
     return it->second;
   }

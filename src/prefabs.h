@@ -15,6 +15,7 @@ struct TnaGameState;
 TnaEntity
 create_unit(uint32_t size,
             const std::string& mesh,
+            const TnaVector3& position,
             TnaGameState* state);
 
   

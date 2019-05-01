@@ -31,6 +31,7 @@ m_forwards_camera(false),
 m_backwards_camera(false),
 m_strafe_left_camera(false),
 m_strafe_right_camera(false),
+m_forwards_unit(false), 
 m_mouse_old_pos_x(0.0),
 m_mouse_old_pos_y(0.0),
 m_mouse_delta_pos_x(0.0),
@@ -66,16 +67,24 @@ void Game::on_app_start()
   p_rendering_scene->set_clear_color(TNA_COLOR_BLUE_SKY);
 
 
+
   // CREATING SCENE
   create_terrain(&m_state);
   //create_buildings(&m_state);
   //create_cars(&m_state);
   //create_player(&m_state);
 
-  TnaEntity unit = create_unit(20,
-                               "models/cube.obj",
-                               &m_state);
-  m_units.append(unit);
+  for(uint32_t i = 0; i < 20; ++i)
+  {
+    for(uint32_t j = 0; j < 20; ++j)
+    {
+      TnaEntity unit = create_unit(20,
+                                   "models/cube.obj",
+                                   {i*30.0f, 0.0f, j*30.0f},
+                                   &m_state);
+      m_units.append(unit);
+    }
+  }
 }
 
 void Game::on_app_finish() 
@@ -107,6 +116,16 @@ void Game::on_frame_start(float delta)
     camera->strafe(delta);
   }
 
+  if(m_forwards_unit)
+  {
+    for(uint32_t i = 0; i < m_units.size(); ++i)
+    {
+      TnaTransform* transform = FURIOUS_GET_COMPONENT(m_units[i],TnaTransform);
+      transform->m_position.z += delta*0.1;
+      transform->m_dirty = true;
+    }
+  }
+
   camera->pitch(m_mouse_delta_pos_y);
   camera->yaw(m_mouse_delta_pos_x);
   m_mouse_delta_pos_x = 0;
@@ -124,7 +143,6 @@ void Game::on_key_event(GLFWwindow* window,
                         int action, 
                         int mods) 
 {
-
   if(!is_edit_mode())
   {
     switch(key)
@@ -170,6 +188,16 @@ void Game::on_key_event(GLFWwindow* window,
         else if(action == GLFW_RELEASE)
         {
           m_strafe_right_camera = false;
+        }
+        break;
+      case GLFW_KEY_UP:
+        if (action == GLFW_PRESS)
+        {
+          m_forwards_unit = true;
+        }
+        else if(action == GLFW_RELEASE)
+        {
+          m_forwards_unit = false;
         }
         break;
     }

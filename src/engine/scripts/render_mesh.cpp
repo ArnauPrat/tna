@@ -20,7 +20,7 @@ struct TnaRenderMesh
   void run(furious::Context* context, 
            uint32_t id, 
            const TnaRenderMeshData* mesh, 
-           const TnaTransformMatrix* transform_matrix,
+           const TnaGlobalTransformMatrix* transform_matrix,
            const TnaProjViewMatrix* proj_matrix) 
   {
     p_rendering_scene->set_model_mat(mesh->m_handler, transform_matrix->m_matrix);
@@ -28,7 +28,7 @@ struct TnaRenderMesh
   }
 };
 
-furious::match<TnaRenderMeshData,TnaTransformMatrix,furious::Global<TnaProjViewMatrix>>().foreach<TnaRenderMesh>();
+furious::match<TnaRenderMeshData,TnaGlobalTransformMatrix,furious::Global<TnaProjViewMatrix>>().foreach<TnaRenderMesh>();
 
 END_FURIOUS_SCRIPT
 

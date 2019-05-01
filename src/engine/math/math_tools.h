@@ -48,6 +48,12 @@ inverse(const TnaMatrix4 matrix);
 float 
 dot(const TnaVector3& a, const TnaVector3 b);
 
+float
+length(const TnaVector3& vect);
+
+TnaVector3
+normalize(const TnaVector3& vect);
+
 }
 
 

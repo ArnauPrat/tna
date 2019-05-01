@@ -58,6 +58,7 @@ private:
   bool m_backwards_camera;
   bool m_strafe_left_camera;
   bool m_strafe_right_camera;
+  bool m_forwards_unit;
 
   double m_mouse_old_pos_x;
   double m_mouse_old_pos_y;

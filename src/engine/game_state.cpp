@@ -21,7 +21,8 @@ create_entity(TnaGameState* state)
 {
   TnaEntity entity = furious::create_entity(state->p_database);
   FURIOUS_ADD_COMPONENT(entity,TnaTransform);
-  FURIOUS_ADD_COMPONENT(entity,TnaTransformMatrix);
+  FURIOUS_ADD_COMPONENT(entity,TnaLocalTransformMatrix);
+  FURIOUS_ADD_COMPONENT(entity,TnaGlobalTransformMatrix);
   return entity;
 }
 

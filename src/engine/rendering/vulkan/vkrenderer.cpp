@@ -1292,15 +1292,17 @@ build_command_buffer(uint32_t index, TnaRenderingScene* scene)
   uint32_t num_meshes = scene->m_static_meshes.size();
   if( num_meshes > 0)
   {
-    void* uniform_data = nullptr;
-    vmaMapMemory(p_renderer->m_vkallocator, m_uniform_allocations[index], &uniform_data);
-    for(size_t i = 0; i < num_meshes && i < MAX_PRIMITIVE_COUNT; ++i) 
+    char* uniform_data = nullptr;
+    vmaMapMemory(p_renderer->m_vkallocator, m_uniform_allocations[index], (void**)&uniform_data);
+    for(size_t i = 0; (i < num_meshes) && (i < MAX_PRIMITIVE_COUNT); ++i) 
     {
       TnaRenderMeshUniform* uniform = (TnaRenderMeshUniform*)(&scene->m_static_uniforms[scene->m_uniform_alignment*i]);
-      uniform->m_model_matrix =  scene->m_proj_mat * scene->m_view_mat * uniform->m_model_matrix;
+      TnaRenderMeshUniform* dst_uniform = (TnaRenderMeshUniform*)(&uniform_data[scene->m_uniform_alignment*i]);
+      dst_uniform->m_model_matrix =  scene->m_proj_mat * scene->m_view_mat * uniform->m_model_matrix;
+      dst_uniform->m_material = uniform->m_material;
     }
 
-    memcpy((char*)uniform_data, scene->m_static_uniforms, sizeof(scene->m_uniform_alignment)*MAX_PRIMITIVE_COUNT); 
+    //memcpy((char*)uniform_data, scene->m_static_uniforms, sizeof(scene->m_uniform_alignment)*MAX_PRIMITIVE_COUNT); 
     vmaUnmapMemory(p_renderer->m_vkallocator, m_uniform_allocations[index]);
   }
 
@@ -1339,7 +1341,7 @@ build_command_buffer(uint32_t index, TnaRenderingScene* scene)
 
   vkCmdBeginRenderPass(p_renderer->m_command_buffers[index], &renderpass_info, VK_SUBPASS_CONTENTS_INLINE);
 
-  for(size_t i = 0; i < num_meshes && i < MAX_PRIMITIVE_COUNT; ++i) 
+  for(size_t i = 0; (i < num_meshes) && (i < MAX_PRIMITIVE_COUNT); ++i) 
   {
     const TnaRenderHeader* header = &scene->m_headers[i];
     if(header->m_active &&
@@ -1348,6 +1350,7 @@ build_command_buffer(uint32_t index, TnaRenderingScene* scene)
        scene->m_static_meshes[header->m_offset] != nullptr)
     {
       const TnaMeshData* mesh_data = scene->m_static_meshes[header->m_offset];
+
       VkVertexBuffer* vkvertex_buffer = (VkVertexBuffer*)mesh_data->m_vertex_buffer.p_data;
       VkBuffer vertex_buffers[] = {vkvertex_buffer->m_buffer};
       VkDeviceSize offsets[] = {0};

@@ -32,6 +32,7 @@ struct RotatorAroundParent
 };
 
 furious::match<TnaTransform, RotationSpeed>().expand<>(TNA_REF_PARENT)
-                                             .foreach<RotatorAroundParent>();
+                                             .foreach<RotatorAroundParent>()
+                                             .set_priority(10);
 
 END_FURIOUS_SCRIPT

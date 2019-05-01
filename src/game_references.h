@@ -7,7 +7,6 @@
 namespace game_references
 {
 
-#define TNA_GAME_REF_IS_LEAD_BY "is_lead_by"
   
 } /* game_references */ 
 

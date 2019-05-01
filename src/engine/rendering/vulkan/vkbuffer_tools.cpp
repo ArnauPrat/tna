@@ -133,7 +133,7 @@ create_vertex_buffer(VkDevice device,
                 &staging_buffer, 
                 &staging_buffer_allocation);
 
-  void* tmp_data;
+  void* tmp_data = nullptr;
   vmaMapMemory(allocator, staging_buffer_allocation, &tmp_data);
   memcpy(tmp_data, data, (size_t) buffer_size);
   vmaUnmapMemory(allocator, staging_buffer_allocation);

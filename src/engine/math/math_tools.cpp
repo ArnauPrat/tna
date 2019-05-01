@@ -64,4 +64,16 @@ dot(const TnaVector3& a, const TnaVector3 b)
   return glm::dot(a,b);
 }
 
+float
+length(const TnaVector3& vect)
+{
+  return glm::length(vect);
+}
+
+TnaVector3
+normalize(const TnaVector3& vect)
+{
+  return glm::normalize(vect);
+}
+
 }

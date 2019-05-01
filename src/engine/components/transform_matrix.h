@@ -8,11 +8,11 @@
 namespace tna 
 {
 
-struct TnaTransformMatrix 
+struct TnaLocalTransformMatrix 
 {
-  FURIOUS_COMPONENT(TnaTransformMatrix);
+  FURIOUS_COMPONENT(TnaLocalTransformMatrix);
 
-  TnaTransformMatrix() : 
+  TnaLocalTransformMatrix() : 
   m_matrix(1.0f),
   m_dirty(true)
   {
@@ -20,6 +20,18 @@ struct TnaTransformMatrix
 
   TnaMatrix4  m_matrix;
   bool        m_dirty;
+};
+
+struct TnaGlobalTransformMatrix 
+{
+  FURIOUS_COMPONENT(TnaGlobalTransformMatrix);
+
+  TnaGlobalTransformMatrix() : 
+  m_matrix(1.0f)
+  {
+  }
+
+  TnaMatrix4  m_matrix;
 };
   
 } /* tna */ 

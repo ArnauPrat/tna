@@ -16,17 +16,20 @@ struct TnaInitTransformMatrix
 {
   void run(furious::Context* context, 
            uint32_t id, 
-           TnaTransformMatrix* model_matrix,
+           TnaLocalTransformMatrix* local_matrix,
+           TnaGlobalTransformMatrix* global_matrix,
            TnaTransform* transform) 
   {
-    model_matrix->m_matrix = transform->to_matrix();
-    model_matrix->m_dirty = true;
+    local_matrix->m_matrix = transform->to_matrix();
+    local_matrix->m_dirty = true;
+    global_matrix->m_matrix = local_matrix->m_matrix;
     transform->m_dirty = false;
   }
 };
 
-furious::match<TnaTransformMatrix, TnaTransform>().filter([](const TnaTransformMatrix* model_matrix,
-                                                   const TnaTransform* transform)
+furious::match<TnaLocalTransformMatrix, TnaGlobalTransformMatrix, TnaTransform>().filter([](const TnaLocalTransformMatrix* local_matrix,
+                                                                                            const TnaGlobalTransformMatrix* global_matrix,
+                                                                                            const TnaTransform* transform)
                                                     {
                                                       return transform->m_dirty;
                                                     }
@@ -42,20 +45,21 @@ struct TnaTransformMatrixHierarchy
 {
   void run(furious::Context* context, 
            uint32_t id, 
-           TnaTransformMatrix* model_matrix,
-           const TnaTransformMatrix* parent_matrix) 
+           TnaGlobalTransformMatrix* global_matrix,
+           const TnaLocalTransformMatrix* local_matrix,
+           const TnaLocalTransformMatrix* parent_matrix) 
   {
-    model_matrix->m_matrix = parent_matrix->m_matrix * model_matrix->m_matrix;
-    model_matrix->m_dirty = true;
+    global_matrix->m_matrix = parent_matrix->m_matrix * local_matrix->m_matrix;
   }
 };
 
 
-furious::match<TnaTransformMatrix>().expand<TnaTransformMatrix>(TNA_REF_PARENT)
-                                    .filter([] (const TnaTransformMatrix* model_matrix,
-                                             const TnaTransformMatrix* parent_matrix)
+furious::match<TnaGlobalTransformMatrix, TnaLocalTransformMatrix>().expand<TnaLocalTransformMatrix>(TNA_REF_PARENT)
+                                    .filter([] (const TnaGlobalTransformMatrix* global_matrix,
+                                                const TnaLocalTransformMatrix* local_matrix,
+                                                const TnaLocalTransformMatrix* parent_matrix)
                                          {
-                                          return model_matrix->m_dirty || parent_matrix->m_dirty;
+                                          return local_matrix->m_dirty || parent_matrix->m_dirty;
                                          }
                                          )
                                     .foreach<TnaTransformMatrixHierarchy>()
@@ -67,18 +71,18 @@ furious::match<TnaTransformMatrix>().expand<TnaTransformMatrix>(TNA_REF_PARENT)
 ////////////////////////////////////////////////
 
 
-struct TnaResetTransformMatrix
+struct TnaResetLocalTransformMatrix
 {
   void run(furious::Context* context, 
            uint32_t id, 
-           TnaTransformMatrix*  matrix) 
+           TnaLocalTransformMatrix*  matrix) 
   {
     matrix->m_dirty = false;
   }
 };
 
-furious::match<TnaTransformMatrix>().foreach<TnaResetTransformMatrix>()
-                                    .set_post_frame();
+furious::match<TnaLocalTransformMatrix>().foreach<TnaResetLocalTransformMatrix>()
+                                         .set_post_frame();
 
 END_FURIOUS_SCRIPT
 
