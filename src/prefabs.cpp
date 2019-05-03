@@ -52,8 +52,8 @@ create_unit(uint32_t size,
 
       soldiers[count] = create_entity(state);
       FURIOUS_ADD_COMPONENT(soldiers[count], 
-                            TnaRenderMeshData, 
-                            TnaRenderMobilityType::E_STATIC, mesh);
+                            TnaRenderMeshData,
+                            "models/cube.obj");
 
       float factor =  0.5*(((uint32_t)rand()) / (double) UINT_MAX);
       FURIOUS_ADD_COMPONENT(soldiers[count], 

@@ -17,12 +17,6 @@ namespace tna
 
 struct TnaMeshData;
 
-enum class TnaRenderMobilityType
-{
-  E_STATIC,
-  E_DYNAMIC
-};
-
 enum class TnaRenderObjectType
 {
   E_MESH,
@@ -48,7 +42,6 @@ struct TnaRenderHeader
 {
   uint32_t                m_offset              = 0;
   TnaRenderObjectType     m_render_object_type  = TnaRenderObjectType::E_MESH;
-  TnaRenderMobilityType   m_mobility_type       = TnaRenderMobilityType::E_DYNAMIC;
   bool                    m_active              = false;
   bool                    m_frustrum_visible    = true;
 };
@@ -59,8 +52,7 @@ struct TnaRenderingScene
   ~TnaRenderingScene();
 
   TnaRenderHandler
-  create_render_object(TnaRenderObjectType o_type,
-                       TnaRenderMobilityType  m_type);
+  create_render_object(TnaRenderObjectType o_type);
 
   void
   destroy_render_object(TnaRenderHandler handler);
@@ -103,13 +95,9 @@ struct TnaRenderingScene
   furious::DynArray<TnaRenderHeader>          m_headers;
   furious::DynArray<uint32_t>                 m_header_gaps;
 
-  char*                                       m_static_uniforms;
-  furious::DynArray<TnaMeshData*>             m_static_meshes;
-  furious::DynArray<uint32_t>                 m_static_gaps;
-
-  char*                                       m_dynamic_uniforms;
-  furious::DynArray<TnaMeshData*>             m_dynamic_meshes;
-  furious::DynArray<uint32_t>                 m_dynamic_gaps;
+  char*                                       m_uniforms;
+  furious::DynArray<TnaMeshData*>             m_meshes;
+  furious::DynArray<uint32_t>                 m_gaps;
 
   TnaMatrix4                                  m_view_mat;
   TnaMatrix4                                  m_proj_mat;

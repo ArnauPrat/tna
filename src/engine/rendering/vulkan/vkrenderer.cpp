@@ -1289,14 +1289,14 @@ void
 build_command_buffer(uint32_t index, TnaRenderingScene* scene) 
 {
 
-  uint32_t num_meshes = scene->m_static_meshes.size();
+  uint32_t num_meshes = scene->m_meshes.size();
   if( num_meshes > 0)
   {
     char* uniform_data = nullptr;
     vmaMapMemory(p_renderer->m_vkallocator, m_uniform_allocations[index], (void**)&uniform_data);
     for(size_t i = 0; (i < num_meshes) && (i < MAX_PRIMITIVE_COUNT); ++i) 
     {
-      TnaRenderMeshUniform* uniform = (TnaRenderMeshUniform*)(&scene->m_static_uniforms[scene->m_uniform_alignment*i]);
+      TnaRenderMeshUniform* uniform = (TnaRenderMeshUniform*)(&scene->m_uniforms[scene->m_uniform_alignment*i]);
       TnaRenderMeshUniform* dst_uniform = (TnaRenderMeshUniform*)(&uniform_data[scene->m_uniform_alignment*i]);
       dst_uniform->m_model_matrix =  scene->m_proj_mat * scene->m_view_mat * uniform->m_model_matrix;
       dst_uniform->m_material = uniform->m_material;
@@ -1341,24 +1341,25 @@ build_command_buffer(uint32_t index, TnaRenderingScene* scene)
 
   vkCmdBeginRenderPass(p_renderer->m_command_buffers[index], &renderpass_info, VK_SUBPASS_CONTENTS_INLINE);
 
+  VkDeviceSize offsets[] = {0};
   for(size_t i = 0; (i < num_meshes) && (i < MAX_PRIMITIVE_COUNT); ++i) 
   {
     const TnaRenderHeader* header = &scene->m_headers[i];
     if(header->m_active &&
        header->m_frustrum_visible &&
-       header->m_mobility_type == TnaRenderMobilityType::E_STATIC &&
-       scene->m_static_meshes[header->m_offset] != nullptr)
+       //header->m_mobility_type == TnaRenderMobilityType::E_STATIC &&
+       scene->m_meshes[header->m_offset] != nullptr)
     {
-      const TnaMeshData* mesh_data = scene->m_static_meshes[header->m_offset];
+      const TnaMeshData* mesh_data = scene->m_meshes[header->m_offset];
 
       VkVertexBuffer* vkvertex_buffer = (VkVertexBuffer*)mesh_data->m_vertex_buffer.p_data;
-      VkBuffer vertex_buffers[] = {vkvertex_buffer->m_buffer};
-      VkDeviceSize offsets[] = {0};
+      //VkBuffer vertex_buffers[] = {vkvertex_buffer->m_buffer};
 
       vkCmdBindVertexBuffers(p_renderer->m_command_buffers[index], 
                              0, 
                              1, 
-                             vertex_buffers, offsets);
+                             &vkvertex_buffer->m_buffer, 
+                             offsets);
 
       VkIndexBuffer* vkindex_buffer = (VkIndexBuffer*)mesh_data->m_index_buffer.p_data;
       vkCmdBindIndexBuffer(p_renderer->m_command_buffers[index], 

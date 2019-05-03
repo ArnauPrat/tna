@@ -11,32 +11,24 @@ namespace tna
 {
 
 TnaRenderingScene::TnaRenderingScene() :
-m_static_uniforms(nullptr),
-m_dynamic_uniforms(nullptr)
+m_uniforms(nullptr)
 {
   TnaDeviceProperties device_properties = get_device_properties();
   size_t uniform_data_size = sizeof(TnaRenderMeshUniform);
   m_uniform_alignment = (uniform_data_size / device_properties.m_uniform_offset_alignment) * device_properties.m_uniform_offset_alignment + ((uniform_data_size % device_properties.m_uniform_offset_alignment) > 0 ? device_properties.m_uniform_offset_alignment : 0);
-  m_static_uniforms = new char[m_uniform_alignment*MAX_PRIMITIVE_COUNT];
-  m_dynamic_uniforms = new char[m_uniform_alignment*MAX_PRIMITIVE_COUNT];
+  m_uniforms = new char[m_uniform_alignment*MAX_PRIMITIVE_COUNT];
 }
 
 TnaRenderingScene::~TnaRenderingScene()
 {
-  if(m_static_uniforms != nullptr)
+  if(m_uniforms != nullptr)
   {
-    delete [] m_static_uniforms;
-  }
-
-  if(m_dynamic_uniforms != nullptr)
-  {
-    delete [] m_dynamic_uniforms;
+    delete [] m_uniforms;
   }
 }
 
 TnaRenderHandler
-TnaRenderingScene::create_render_object(TnaRenderObjectType o_type,
-                     TnaRenderMobilityType  mob_type)
+TnaRenderingScene::create_render_object(TnaRenderObjectType o_type)
 {
   TnaRenderHandler handler;
   TnaRenderHeader* header;
@@ -56,49 +48,25 @@ TnaRenderingScene::create_render_object(TnaRenderObjectType o_type,
   header->m_active = true;
   header->m_frustrum_visible = true;
   header->m_render_object_type = o_type;
-  header->m_mobility_type = mob_type;
   switch(header->m_render_object_type)
   {
     case TnaRenderObjectType::E_MESH:
-      if(header->m_mobility_type == TnaRenderMobilityType::E_STATIC)
+      if(m_gaps.size() > 0)
       {
-        if(m_static_gaps.size() > 0)
-        {
-          header->m_offset = m_static_gaps[m_static_gaps.size()-1];
-          m_static_gaps.pop();
-          m_static_meshes[header->m_offset] = nullptr;
-        }
-        else
-        {
-          header->m_offset = m_static_meshes.size();
-          if(header->m_offset >= MAX_PRIMITIVE_COUNT)
-          {
-            p_log->error("Exceeded max primitive count");
-            report_error(TNA_ERROR::E_RENDERER_RUNTIME_ERROR);
-          }
-          m_static_meshes.append(nullptr);
-          *((TnaRenderMeshUniform*)&m_static_uniforms[m_uniform_alignment*header->m_offset]) = TnaRenderMeshUniform();
-        }
+        header->m_offset = m_gaps[m_gaps.size()-1];
+        m_gaps.pop();
+        m_meshes[header->m_offset] = nullptr;
       }
       else
       {
-        if(m_dynamic_gaps.size() > 0)
+        header->m_offset = m_meshes.size();
+        if(header->m_offset >= MAX_PRIMITIVE_COUNT)
         {
-          header->m_offset = m_dynamic_gaps[m_dynamic_gaps.size()-1];
-          m_dynamic_gaps.pop();
-          m_dynamic_meshes[header->m_offset] = nullptr;
+          p_log->error("Exceeded max primitive count");
+          report_error(TNA_ERROR::E_RENDERER_RUNTIME_ERROR);
         }
-        else
-        {
-          header->m_offset = m_dynamic_meshes.size();
-          if(header->m_offset >= MAX_PRIMITIVE_COUNT)
-          {
-            p_log->error("Exceeded max primitive count");
-            report_error(TNA_ERROR::E_RENDERER_RUNTIME_ERROR);
-          }
-          *((TnaRenderMeshUniform*)&m_dynamic_uniforms[m_uniform_alignment*header->m_offset]) = TnaRenderMeshUniform();
-          m_dynamic_meshes.append(nullptr);
-        }
+        m_meshes.append(nullptr);
+        *((TnaRenderMeshUniform*)&m_uniforms[m_uniform_alignment*header->m_offset]) = TnaRenderMeshUniform();
       }
       break;
   }
@@ -110,14 +78,7 @@ TnaRenderingScene::destroy_render_object(TnaRenderHandler handler)
 {
   TnaRenderHeader* header = &m_headers[handler.m_id];
   uint32_t offset = header->m_offset;
-  if(header->m_mobility_type == TnaRenderMobilityType::E_STATIC)
-  {
-    m_static_gaps.append(offset);
-  }
-  else
-  {
-    m_dynamic_gaps.append(offset);
-  }
+  m_gaps.append(offset);
   header->m_active = false;
   m_header_gaps.append(handler.m_id);
 }
@@ -127,14 +88,7 @@ TnaRenderingScene::set_mesh(TnaRenderHandler handler,
                             const std::string& mesh)
 {
   TnaRenderHeader* header = &m_headers[handler.m_id];
-  if(header->m_mobility_type == TnaRenderMobilityType::E_STATIC)
-  {
-    m_static_meshes[header->m_offset] = p_mesh_registry->load(mesh);
-  }
-  else
-  {
-    m_dynamic_meshes[header->m_offset] = p_mesh_registry->load(mesh);
-  }
+  m_meshes[header->m_offset] = p_mesh_registry->load(mesh);
 }
 
 void
@@ -143,14 +97,7 @@ TnaRenderingScene::set_material(TnaRenderHandler handler,
 {
   TnaRenderHeader* header = &m_headers[handler.m_id];
   TnaRenderMeshUniform* uniform = nullptr;
-  if(header->m_mobility_type == TnaRenderMobilityType::E_STATIC)
-  {
-    uniform = ((TnaRenderMeshUniform*)&m_static_uniforms[m_uniform_alignment*header->m_offset]);
-  }
-  else
-  {
-    uniform = ((TnaRenderMeshUniform*)&m_dynamic_uniforms[m_uniform_alignment*header->m_offset]);
-  }
+  uniform = ((TnaRenderMeshUniform*)&m_uniforms[m_uniform_alignment*header->m_offset]);
   uniform->m_material = mat_desc;
 }
 
@@ -161,14 +108,7 @@ TnaRenderingScene::get_material(TnaRenderHandler handler,
 
   TnaRenderHeader* header = &m_headers[handler.m_id];
   TnaRenderMeshUniform* uniform = nullptr;
-  if(header->m_mobility_type == TnaRenderMobilityType::E_STATIC)
-  {
-    uniform = ((TnaRenderMeshUniform*)&m_static_uniforms[m_uniform_alignment*header->m_offset]);
-  }
-  else
-  {
-    uniform = ((TnaRenderMeshUniform*)&m_dynamic_uniforms[m_uniform_alignment*header->m_offset]);
-  }
+  uniform = ((TnaRenderMeshUniform*)&m_uniforms[m_uniform_alignment*header->m_offset]);
   *mat_desc = uniform->m_material;
 }
 
@@ -178,14 +118,7 @@ TnaRenderingScene::set_model_mat(TnaRenderHandler handler,
 {
   TnaRenderHeader* header = &m_headers[handler.m_id];
   TnaRenderMeshUniform* uniform = nullptr;
-  if(header->m_mobility_type == TnaRenderMobilityType::E_STATIC)
-  {
-    uniform = ((TnaRenderMeshUniform*)&m_static_uniforms[m_uniform_alignment*header->m_offset]);
-  }
-  else
-  {
-    uniform = ((TnaRenderMeshUniform*)&m_dynamic_uniforms[m_uniform_alignment*header->m_offset]);
-  }
+  uniform = ((TnaRenderMeshUniform*)&m_uniforms[m_uniform_alignment*header->m_offset]);
   uniform->m_model_matrix = mat;
 }
 
@@ -196,16 +129,8 @@ TnaRenderingScene::set_frustrum_culling(TnaRenderHandler handler,
   TnaRenderHeader* header = &m_headers[handler.m_id];
   TnaMeshData* mesh_data = nullptr;
   TnaRenderMeshUniform* uniform = nullptr;
-  if(header->m_mobility_type == TnaRenderMobilityType::E_STATIC)
-  {
-    mesh_data = m_static_meshes[header->m_offset];
-    uniform = ((TnaRenderMeshUniform*)&m_static_uniforms[m_uniform_alignment*header->m_offset]);
-  }
-  else
-  {
-    mesh_data = m_dynamic_meshes[header->m_offset];
-    uniform = ((TnaRenderMeshUniform*)&m_dynamic_uniforms[m_uniform_alignment*header->m_offset]);
-  }
+  mesh_data = m_meshes[header->m_offset];
+  uniform = ((TnaRenderMeshUniform*)&m_uniforms[m_uniform_alignment*header->m_offset]);
 
   if(mesh_data == nullptr)
   {

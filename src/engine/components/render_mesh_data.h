@@ -16,11 +16,9 @@ struct TnaRenderMeshData
 {
   FURIOUS_COMPONENT(TnaRenderMeshData);
 
-  TnaRenderMeshData(TnaRenderMobilityType mob_type,
-                    const std::string& mesh)
+  TnaRenderMeshData(const std::string& mesh)
   {
-    m_handler = p_rendering_scene->create_render_object(TnaRenderObjectType::E_MESH,
-                                                        mob_type);
+    m_handler = p_rendering_scene->create_render_object(TnaRenderObjectType::E_MESH);
 
     p_rendering_scene->set_mesh(m_handler, mesh);
   }

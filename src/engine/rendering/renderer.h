@@ -11,7 +11,7 @@ class GLFWwindow;
 namespace tna 
 {
 
-#define MAX_PRIMITIVE_COUNT 65536
+#define MAX_PRIMITIVE_COUNT 1000000
 #define MAX_FRAME_BUFFERS 3
 
 class TnaConfig;

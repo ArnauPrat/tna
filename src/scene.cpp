@@ -17,8 +17,8 @@ namespace tna
 void
 create_terrain(TnaGameState* state)
 {
-  uint32_t NUM_TILES = 16;
-  float TILE_HALF_EDGE = 64.0;
+  uint32_t NUM_TILES = 128;
+  float TILE_HALF_EDGE = 32.0;
   for(uint32_t i = 0; i < NUM_TILES; ++i)
   {
     for(uint32_t j = 0; j < NUM_TILES; ++j)
@@ -36,8 +36,7 @@ create_terrain(TnaGameState* state)
       transform->m_dirty = true;
 
       FURIOUS_ADD_COMPONENT(terrain, 
-                            TnaRenderMeshData, 
-                            TnaRenderMobilityType::E_STATIC,
+                            TnaRenderMeshData,
                             "models/cube.obj");
 
       TnaRenderMeshData* mesh_data = FURIOUS_GET_COMPONENT(terrain, TnaRenderMeshData);
@@ -61,7 +60,6 @@ create_cars(TnaGameState* state)
   TnaEntity entity1 = create_entity(state);
   FURIOUS_ADD_COMPONENT(entity1, 
                         TnaRenderMeshData,
-                        TnaRenderMobilityType::E_STATIC,
                         "models/cube.obj");
 
   TnaRenderMeshData* mesh_data = FURIOUS_GET_COMPONENT(entity1, TnaRenderMeshData);
@@ -83,7 +81,6 @@ create_cars(TnaGameState* state)
     TnaEntity entity2 = create_entity(state);
     FURIOUS_ADD_COMPONENT(entity2, 
                           TnaRenderMeshData,
-                          TnaRenderMobilityType::E_STATIC,
                           "models/cube.obj");
 
     TnaRenderMeshData* mesh_data = FURIOUS_GET_COMPONENT(entity2, TnaRenderMeshData);
