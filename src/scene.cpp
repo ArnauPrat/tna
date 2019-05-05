@@ -17,11 +17,12 @@ namespace tna
 void
 create_terrain(TnaGameState* state)
 {
-  uint32_t NUM_TILES = 128;
-  float TILE_HALF_EDGE = 32.0;
-  for(uint32_t i = 0; i < NUM_TILES; ++i)
+  uint32_t width = 18;
+  uint32_t height = 12;
+  float TILE_HALF_EDGE = 5;
+  for(uint32_t i = 0; i < width; ++i)
   {
-    for(uint32_t j = 0; j < NUM_TILES; ++j)
+    for(uint32_t j = 0; j < height; ++j)
     {
       TnaEntity terrain = create_entity(state);
 
@@ -30,9 +31,9 @@ create_terrain(TnaGameState* state)
       transform->m_scale.y = 5.0f;
       transform->m_scale.z = TILE_HALF_EDGE;
 
-      transform->m_position.x  = i*TILE_HALF_EDGE*2.0 - TILE_HALF_EDGE*NUM_TILES;
+      transform->m_position.x  = i*TILE_HALF_EDGE*2.0 - TILE_HALF_EDGE*width;
       transform->m_position.y -= 5.0f;
-      transform->m_position.z  = j*TILE_HALF_EDGE*2.0 - TILE_HALF_EDGE*NUM_TILES;
+      transform->m_position.z  = j*TILE_HALF_EDGE*2.0 - TILE_HALF_EDGE*height;
       transform->m_dirty = true;
 
       FURIOUS_ADD_COMPONENT(terrain, 

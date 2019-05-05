@@ -1,4 +1,5 @@
 
+#include "priorities.h"
 #include "../engine/engine.h"
 #include "../engine/tools/references.h"
 #include "../engine/math/matrix.h"
@@ -33,6 +34,6 @@ struct RotatorAroundParent
 
 furious::match<TnaTransform, RotationSpeed>().expand<>(TNA_REF_PARENT)
                                              .foreach<RotatorAroundParent>()
-                                             .set_priority(10);
+                                             .set_priority(PRIORITY_ROTATOR);
 
 END_FURIOUS_SCRIPT

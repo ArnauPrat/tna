@@ -5,6 +5,7 @@
 #include "../math/math_tools.h"
 #include "../components/transform.h"
 #include "../components/transform_matrix.h"
+#include "priorities.h"
 
 #include <furious/lang/lang.h>
 
@@ -35,7 +36,7 @@ furious::match<TnaLocalTransformMatrix, TnaGlobalTransformMatrix, TnaTransform>(
                                                     }
                                                     )
                                             .foreach<TnaInitTransformMatrix>()
-                                            .set_priority(1000);
+                                            .set_priority(PRIORITY_INIT_TRANSFORM_MATRIX);
 
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
@@ -63,7 +64,7 @@ furious::match<TnaGlobalTransformMatrix, TnaLocalTransformMatrix>().expand<TnaLo
                                          }
                                          )
                                     .foreach<TnaTransformMatrixHierarchy>()
-                                    .set_priority(1001);
+                                    .set_priority(PRIORITY_TRANSFORM_MATRIX_HIERARCHY);
 
 
 ////////////////////////////////////////////////
@@ -75,9 +76,9 @@ struct TnaResetLocalTransformMatrix
 {
   void run(furious::Context* context, 
            uint32_t id, 
-           TnaLocalTransformMatrix*  matrix) 
+           TnaLocalTransformMatrix*  local_matrix) 
   {
-    matrix->m_dirty = false;
+    local_matrix->m_dirty = false;
   }
 };
 

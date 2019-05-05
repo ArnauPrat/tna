@@ -5,7 +5,7 @@
 #include "prefabs.h"
 #include "game_references.h"
 #include "components/soldier.h"
-#include "components/laggy_follower.h"
+#include "components/unit_member.h"
 #include "engine/components/render_mesh_data.h"
 #include "engine/components/transform.h"
 #include "engine/components/transform_matrix.h"
@@ -26,11 +26,11 @@ create_unit(uint32_t size,
 
   TnaEntity unit = create_entity(state); 
 
-  TnaTransform* transform = FURIOUS_GET_COMPONENT(unit, TnaTransform);
-  transform->m_position.x = position.x;
-  transform->m_position.y = position.y;
-  transform->m_position.z = position.z;
-  transform->m_dirty = true;
+  TnaTransform* unit_transform = FURIOUS_GET_COMPONENT(unit, TnaTransform);
+  unit_transform->m_position.x = position.x;
+  unit_transform->m_position.y = position.y;
+  unit_transform->m_position.z = position.z;
+  unit_transform->m_dirty = true;
 
   TnaEntity* soldiers = new TnaEntity[size];
   constexpr int32_t MAX_RANKS = 5;
@@ -55,21 +55,21 @@ create_unit(uint32_t size,
                             TnaRenderMeshData,
                             "models/cube.obj");
 
-      float factor =  0.5*(((uint32_t)rand()) / (double) UINT_MAX);
       FURIOUS_ADD_COMPONENT(soldiers[count], 
-                            LaggyFollower,
-                            TnaVector3{0.0f,0.0f,0.0f},
+                            UnitMember,
                             TnaVector3{xpos, ypos, zpos},
-                            (factor+0.5f)*(next_row+1));
+                            1.0f,
+                            next_row,
+                            j);
 
       TnaTransform* transform = FURIOUS_GET_COMPONENT(soldiers[count], TnaTransform);
-      transform->m_position.x = xpos;
-      transform->m_position.y = ypos;
-      transform->m_position.z = zpos;
+      transform->m_position.x = unit_transform->m_position.x + xpos;
+      transform->m_position.y = unit_transform->m_position.y + ypos;
+      transform->m_position.z = unit_transform->m_position.z + zpos;
       transform->m_dirty = true;
 
       FURIOUS_ADD_REFERENCE(soldiers[count], 
-                            TNA_REF_PARENT, 
+                            TNA_GAME_REF_BELONGS_TO_UNIT, 
                             unit);
 
       if(champion_idx == count)
@@ -80,13 +80,11 @@ create_unit(uint32_t size,
                                         &mat_desc);
         mat_desc.m_color = {1.0, 0.0, 0.0};
         p_rendering_scene->set_material(champion_mesh->m_handler,
-
                                         mat_desc);
       }
     }
     ++next_row;
   }
-
 
   delete [] soldiers;
   return unit;

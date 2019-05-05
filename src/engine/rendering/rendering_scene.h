@@ -91,11 +91,10 @@ struct TnaRenderingScene
   ////////////////////////////////////////////////
   ////////////////////////////////////////////////
 
-
   furious::DynArray<TnaRenderHeader>          m_headers;
   furious::DynArray<uint32_t>                 m_header_gaps;
 
-  char*                                       m_uniforms;
+  TnaRenderMeshUniform*                       m_uniforms;
   furious::DynArray<TnaMeshData*>             m_meshes;
   furious::DynArray<uint32_t>                 m_gaps;
 
@@ -103,7 +102,7 @@ struct TnaRenderingScene
   TnaMatrix4                                  m_proj_mat;
   TnaVector3                                  m_clear_color;
 
-  size_t                                      m_uniform_alignment;
+  //size_t                                      m_uniform_alignment;
 };
   
 } /* tna */ 

@@ -1289,20 +1289,24 @@ void
 build_command_buffer(uint32_t index, TnaRenderingScene* scene) 
 {
 
+  size_t device_alignment = p_renderer->m_mem_properties.limits.minUniformBufferOffsetAlignment;
+  size_t uniform_buffer_size = sizeof(TnaRenderMeshUniform);
+  size_t dynamic_alignment = (uniform_buffer_size / device_alignment) * device_alignment + ((uniform_buffer_size % device_alignment) > 0 ? device_alignment : 0);
+
   uint32_t num_meshes = scene->m_meshes.size();
   if( num_meshes > 0)
   {
+    TnaMatrix4 proj_view_mat = scene->m_proj_mat * scene->m_view_mat;
     char* uniform_data = nullptr;
     vmaMapMemory(p_renderer->m_vkallocator, m_uniform_allocations[index], (void**)&uniform_data);
     for(size_t i = 0; (i < num_meshes) && (i < MAX_PRIMITIVE_COUNT); ++i) 
     {
-      TnaRenderMeshUniform* uniform = (TnaRenderMeshUniform*)(&scene->m_uniforms[scene->m_uniform_alignment*i]);
-      TnaRenderMeshUniform* dst_uniform = (TnaRenderMeshUniform*)(&uniform_data[scene->m_uniform_alignment*i]);
-      dst_uniform->m_model_matrix =  scene->m_proj_mat * scene->m_view_mat * uniform->m_model_matrix;
+      TnaRenderMeshUniform* uniform = (TnaRenderMeshUniform*)(&scene->m_uniforms[i]);
+      TnaRenderMeshUniform* dst_uniform = (TnaRenderMeshUniform*)(&uniform_data[dynamic_alignment*i]);
+      dst_uniform->m_model_matrix =  proj_view_mat * uniform->m_model_matrix;
       dst_uniform->m_material = uniform->m_material;
     }
 
-    //memcpy((char*)uniform_data, scene->m_static_uniforms, sizeof(scene->m_uniform_alignment)*MAX_PRIMITIVE_COUNT); 
     vmaUnmapMemory(p_renderer->m_vkallocator, m_uniform_allocations[index]);
   }
 
@@ -1341,6 +1345,7 @@ build_command_buffer(uint32_t index, TnaRenderingScene* scene)
 
   vkCmdBeginRenderPass(p_renderer->m_command_buffers[index], &renderpass_info, VK_SUBPASS_CONTENTS_INLINE);
 
+  TnaMeshData* last_mesh = nullptr;
   VkDeviceSize offsets[] = {0};
   for(size_t i = 0; (i < num_meshes) && (i < MAX_PRIMITIVE_COUNT); ++i) 
   {
@@ -1350,24 +1355,29 @@ build_command_buffer(uint32_t index, TnaRenderingScene* scene)
        //header->m_mobility_type == TnaRenderMobilityType::E_STATIC &&
        scene->m_meshes[header->m_offset] != nullptr)
     {
-      const TnaMeshData* mesh_data = scene->m_meshes[header->m_offset];
+      TnaMeshData* mesh_data = scene->m_meshes[header->m_offset];
 
-      VkVertexBuffer* vkvertex_buffer = (VkVertexBuffer*)mesh_data->m_vertex_buffer.p_data;
-      //VkBuffer vertex_buffers[] = {vkvertex_buffer->m_buffer};
 
-      vkCmdBindVertexBuffers(p_renderer->m_command_buffers[index], 
+      if(last_mesh != mesh_data)
+      {
+        VkVertexBuffer* vkvertex_buffer = (VkVertexBuffer*)mesh_data->m_vertex_buffer.p_data;
+        //VkBuffer vertex_buffers[] = {vkvertex_buffer->m_buffer};
+
+        vkCmdBindVertexBuffers(p_renderer->m_command_buffers[index], 
+                               0, 
+                               1, 
+                               &vkvertex_buffer->m_buffer, 
+                               offsets);
+
+        VkIndexBuffer* vkindex_buffer = (VkIndexBuffer*)mesh_data->m_index_buffer.p_data;
+        vkCmdBindIndexBuffer(p_renderer->m_command_buffers[index], 
+                             vkindex_buffer->m_buffer, 
                              0, 
-                             1, 
-                             &vkvertex_buffer->m_buffer, 
-                             offsets);
+                             VK_INDEX_TYPE_UINT32);
+        last_mesh = mesh_data;
+      }
 
-      VkIndexBuffer* vkindex_buffer = (VkIndexBuffer*)mesh_data->m_index_buffer.p_data;
-      vkCmdBindIndexBuffer(p_renderer->m_command_buffers[index], 
-                           vkindex_buffer->m_buffer, 
-                           0, 
-                           VK_INDEX_TYPE_UINT32);
-
-      uint32_t offset = header->m_offset*scene->m_uniform_alignment;
+      uint32_t offset = header->m_offset*dynamic_alignment;
       vkCmdBindDescriptorSets(p_renderer->m_command_buffers[index], 
                               VK_PIPELINE_BIND_POINT_GRAPHICS, 
                               p_renderer->m_pipeline_layout, 

@@ -13,10 +13,7 @@ namespace tna
 TnaRenderingScene::TnaRenderingScene() :
 m_uniforms(nullptr)
 {
-  TnaDeviceProperties device_properties = get_device_properties();
-  size_t uniform_data_size = sizeof(TnaRenderMeshUniform);
-  m_uniform_alignment = (uniform_data_size / device_properties.m_uniform_offset_alignment) * device_properties.m_uniform_offset_alignment + ((uniform_data_size % device_properties.m_uniform_offset_alignment) > 0 ? device_properties.m_uniform_offset_alignment : 0);
-  m_uniforms = new char[m_uniform_alignment*MAX_PRIMITIVE_COUNT];
+  m_uniforms = new TnaRenderMeshUniform[MAX_PRIMITIVE_COUNT];
 }
 
 TnaRenderingScene::~TnaRenderingScene()
@@ -66,7 +63,7 @@ TnaRenderingScene::create_render_object(TnaRenderObjectType o_type)
           report_error(TNA_ERROR::E_RENDERER_RUNTIME_ERROR);
         }
         m_meshes.append(nullptr);
-        *((TnaRenderMeshUniform*)&m_uniforms[m_uniform_alignment*header->m_offset]) = TnaRenderMeshUniform();
+        *((TnaRenderMeshUniform*)&m_uniforms[header->m_offset]) = TnaRenderMeshUniform();
       }
       break;
   }
@@ -97,7 +94,7 @@ TnaRenderingScene::set_material(TnaRenderHandler handler,
 {
   TnaRenderHeader* header = &m_headers[handler.m_id];
   TnaRenderMeshUniform* uniform = nullptr;
-  uniform = ((TnaRenderMeshUniform*)&m_uniforms[m_uniform_alignment*header->m_offset]);
+  uniform = ((TnaRenderMeshUniform*)&m_uniforms[header->m_offset]);
   uniform->m_material = mat_desc;
 }
 
@@ -108,7 +105,7 @@ TnaRenderingScene::get_material(TnaRenderHandler handler,
 
   TnaRenderHeader* header = &m_headers[handler.m_id];
   TnaRenderMeshUniform* uniform = nullptr;
-  uniform = ((TnaRenderMeshUniform*)&m_uniforms[m_uniform_alignment*header->m_offset]);
+  uniform = ((TnaRenderMeshUniform*)&m_uniforms[header->m_offset]);
   *mat_desc = uniform->m_material;
 }
 
@@ -118,7 +115,7 @@ TnaRenderingScene::set_model_mat(TnaRenderHandler handler,
 {
   TnaRenderHeader* header = &m_headers[handler.m_id];
   TnaRenderMeshUniform* uniform = nullptr;
-  uniform = ((TnaRenderMeshUniform*)&m_uniforms[m_uniform_alignment*header->m_offset]);
+  uniform = ((TnaRenderMeshUniform*)&m_uniforms[header->m_offset]);
   uniform->m_model_matrix = mat;
 }
 
@@ -130,7 +127,7 @@ TnaRenderingScene::set_frustrum_culling(TnaRenderHandler handler,
   TnaMeshData* mesh_data = nullptr;
   TnaRenderMeshUniform* uniform = nullptr;
   mesh_data = m_meshes[header->m_offset];
-  uniform = ((TnaRenderMeshUniform*)&m_uniforms[m_uniform_alignment*header->m_offset]);
+  uniform = ((TnaRenderMeshUniform*)&m_uniforms[header->m_offset]);
 
   if(mesh_data == nullptr)
   {

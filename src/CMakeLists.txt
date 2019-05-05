@@ -1,5 +1,5 @@
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wno-ignored-attributes -fno-exceptions -fno-rtti")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wno-ignored-attributes -fno-exceptions -fno-rtti -fno-omit-frame-pointer")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_DEBUG_FLAGS} -O0 -pg -g -ggdb -D_DEBUG")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_RELEASE_FLAGS} -O2 -g -ggdb")
 
@@ -159,7 +159,7 @@ set(TNA_ENGINE_SCRIPTS
 
 set(TNA_SCRIPTS
   scripts/rotator.cpp
-  scripts/laggy_follow.cpp
+  scripts/update_unit_members.cpp
   scripts/test.cpp
   )
 

@@ -7,6 +7,9 @@
 namespace game_references
 {
 
+
+#define TNA_GAME_REF_BELONGS_TO_UNIT "__tna_game_belongs_to_unit"
+
   
 } /* game_references */ 
 
