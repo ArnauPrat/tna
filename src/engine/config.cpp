@@ -111,7 +111,7 @@ config_init(config_t* config, const char* file_name)
 
     if (strcmp(option,"ResourceDirectory") == 0)
     {
-      register_directory(value); 
+      directory_registry_insert(value); 
     }
 
     TNA_LOG_ERROR("Parsed option %s with value %s", option, value);

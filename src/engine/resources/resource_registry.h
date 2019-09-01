@@ -34,7 +34,7 @@ public:
    * was successfully loaded.
    */
   T* 
-  load(const std::string& resource_name);
+  load(const char* resource_name);
 
   /**
    * \brief Unloads a resource
@@ -42,7 +42,7 @@ public:
    * \param resource_name The name of the resource to unload
    */
   void  
-  unload(const std::string& resource_name);
+  unload(const char* resource_name);
 
 
   /**
@@ -52,7 +52,7 @@ public:
   clear();
 private:
 
-  std::map<std::string, T*> m_resources; 
+  std::map<char*, T*> m_resources; 
 
 };
 

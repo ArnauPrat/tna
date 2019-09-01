@@ -76,7 +76,8 @@ void
 initialize() 
 {
   // Initializing loging system
-  log_create("./logfile.log");
+  log_init("./logfile.log");
+  directory_registry_init();
 
   // Reading engine's config
   if(file_exists("./config.ini")) 
@@ -85,7 +86,7 @@ initialize()
   } 
 
   init_resources();
-  register_directory("./");
+  directory_registry_insert("./");
 
   // Creating Window
   glfwInit();
@@ -142,7 +143,8 @@ terminate()
 
   terminate_resources();
   config_release(&m_config);
-  log_destroy();
+  directory_registry_release();
+  log_release();
   return;
 }
 

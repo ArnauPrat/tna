@@ -1,6 +1,8 @@
 
 
 #include "directory_registry.h"
+#include "../log.h"
+#include <string.h>
 
 namespace tna
 {
@@ -8,49 +10,72 @@ namespace tna
 template<typename T, T*(*CreateFunc)(const char*), void(*DestroyFunc)(T*)>
 TnaResourceRegistry<T,CreateFunc,DestroyFunc>::~TnaResourceRegistry<T,CreateFunc,DestroyFunc>() 
 {
-  for(auto pair : m_resources) {
+  /*for(auto pair : m_resources) {
+    delete [] pair.first;
     DestroyFunc(pair.second);
   }
   m_resources.clear();
+  */
+  clear();
 }
 
 
 template<typename T, T*(*CreateFunc)(const char*), void(*DestroyFunc)(T*)>
-T* TnaResourceRegistry<T,CreateFunc,DestroyFunc>::load(const std::string& resource_name) 
+T* TnaResourceRegistry<T,CreateFunc,DestroyFunc>::load(const char* resource_name) 
 {
-  auto it = m_resources.find(resource_name);
-  if(it == m_resources.end()) 
+  for(auto pair : m_resources) 
   {
-    std::string path = get_path(resource_name);
-    if(!path.empty()) 
+    if(strcmp(pair.first, resource_name) == 0 ) 
     {
-      T* resource = CreateFunc(path.c_str());
-      m_resources.insert(std::make_pair(resource_name, resource));
-      return resource;
+      return pair.second;
     }
-    return nullptr;
-  } 
-  else 
-  {
-    return it->second;
   }
+
+  char* path = new char[2048];
+  uint32_t length = directory_registry_get_path(resource_name,
+                                                path,
+                                                2048);
+  if(length >= 2048)
+  {
+    TNA_LOG_ERROR("Path buffer in registry is not large enough");
+  }
+
+  T* resource = nullptr;
+  if(strlen(path) > 0) 
+  {
+    resource = CreateFunc(path);
+    char* tmp = new char[strlen(resource_name)+1];
+    strcpy(tmp, resource_name);
+    m_resources.insert(std::make_pair(tmp, resource));
+  }
+
+  delete [] path;
+  return resource;
 }
 
 template<typename T, T*(*CreateFunc)(const char*), void(*DestroyFunc)(T*)>
-void  TnaResourceRegistry<T,CreateFunc,DestroyFunc>::unload(const std::string& resource_name) 
+void  TnaResourceRegistry<T,CreateFunc,DestroyFunc>::unload(const char* resource_name) 
 {
-  auto it = m_resources.find(resource_name);
-  if(it != m_resources.end()) 
+  for(auto pair : m_resources) 
   {
-    DestroyFunc(it->second);
-    m_resources.erase(it);
+    if(strcmp(pair.first, resource_name) == 0 ) 
+    {
+      char* name = pair.first;
+      T* resource = pair.second;
+      m_resources.erase(m_resources.find(pair.first));
+      delete [] name;
+      DestroyFunc(resource);
+      return;
+    }
   }
 }
 
 template<typename T, T*(*CreateFunc)(const char*), void(*DestroyFunc)(T*)>
 void  TnaResourceRegistry<T,CreateFunc,DestroyFunc>::clear() 
 {
-  for(auto pair : m_resources) {
+  for(auto pair : m_resources) 
+  {
+    delete [] pair.first;
     DestroyFunc(pair.second);
   }
   m_resources.clear();

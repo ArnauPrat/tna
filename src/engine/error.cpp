@@ -24,7 +24,7 @@ void
 report_error(TNA_ERROR error_code)
 {
   TNA_LOG_ERROR("%s", error_messages[(uint32_t)error_code]);
-  log_destroy();
+  log_release();
   abort();
 }
 }

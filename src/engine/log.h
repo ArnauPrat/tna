@@ -7,59 +7,30 @@
 
 namespace tna 
 {
-struct log_t;
-extern log_t*  p_log;
-
-  
-
-struct log_t 
-{
-  FILE*           p_log_file = nullptr;
-  int32_t         m_errors = 0;
-};
 
 void
-log_create(const char* filename);
+log_init(const char* filename);
 
 void
-log_destroy();
-
-void
-log_init(log_t* log, 
-         const char* filename);
-
-void
-log_release(log_t* log);
+log_release();
 
 void 
-log_message(log_t* log, 
-            const char* message, ... );
+log_message(const char* message, ... );
 
 void 
-log_error(log_t* log, 
-          const char* message, ... );
+log_error(const char* message, ... );
 
 void 
-log_warning(log_t* log, 
-            const char* message, ... );
+log_warning(const char* message, ... );
 
 #define TNA_LOG_INFO(message, ...) \
-              if(p_log)\
-              { \
-                log_message(p_log, message, ##__VA_ARGS__);\
-              }
+                log_message(message, ##__VA_ARGS__);\
 
 #define TNA_LOG_ERROR(message, ...)\
-              if(p_log)\
-              { \
-                log_error(p_log, message, ##__VA_ARGS__);\
-              }
+                log_error(message, ##__VA_ARGS__);\
 
 #define TNA_LOG_WARNING(message, ...)\
-              if(p_log)\
-              { \
-                log_warning(p_log, message, ##__VA_ARGS__);\
-              }
+                log_warning(message, ##__VA_ARGS__);\
 
 
 }
