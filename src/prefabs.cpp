@@ -58,6 +58,7 @@ create_unit(uint32_t size,
       FURIOUS_ADD_COMPONENT(soldiers[count], 
                             UnitMember,
                             TnaVector3{xpos, ypos, zpos},
+                            TnaVector3{xpos, ypos, zpos},
                             1.0f,
                             next_row,
                             j);

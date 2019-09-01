@@ -14,10 +14,12 @@ struct UnitMember
   FURIOUS_COMPONENT(UnitMember);
 
   UnitMember(const TnaVector3& unit_position,
+             const TnaVector3& target,
              float speed,
              int row,
              int column) :
   m_unit_position(unit_position),
+  m_target(target),
   m_speed(speed),
   m_row(row),
   m_column(column),
@@ -27,6 +29,7 @@ struct UnitMember
   }
 
   TnaVector3  m_unit_position;
+  TnaVector3  m_target;
   float       m_speed;
   float       m_row;
   float       m_column;

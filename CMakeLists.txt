@@ -24,6 +24,9 @@ ENDIF(WIN32)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D${PLATFORM}")
 
-enable_testing()
+add_subdirectory(libs/gtest)                                                    
+set(GTEST_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/libs/gtest/include" )               
+enable_testing()                                                                
+set(GTEST_LIBRARIES "gtest") 
 
 add_subdirectory(src)

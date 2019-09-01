@@ -21,14 +21,12 @@ struct UpdateUnitMember
   void run(furious::Context* context, 
            uint32_t id, 
            TnaTransform* transform,
-           UnitMember*   unit_member,
-           const TnaGlobalTransformMatrix* global_unit_matrix) 
+           UnitMember*   unit_member) 
   {
 
-    TnaVector4 target_position = global_unit_matrix->m_matrix*TnaVector4{unit_member->m_unit_position, 1.0};
-    TnaVector3 direction = {target_position.x - transform->m_position.x,
-                            target_position.y - transform->m_position.y,
-                            target_position.z - transform->m_position.z};
+    TnaVector3 direction = {unit_member->m_target.x - transform->m_position.x,
+                            unit_member->m_target.y - transform->m_position.y,
+                            unit_member->m_target.z - transform->m_position.z};
     if(direction.x != 0 ||
        direction.y != 0 ||
        direction.z != 0)
@@ -52,9 +50,9 @@ struct UpdateUnitMember
       }
       else 
       {
-        transform->m_position.x = target_position.x;
-        transform->m_position.y = target_position.y;
-        transform->m_position.z = target_position.z;
+        transform->m_position.x = unit_member->m_target.x;
+        transform->m_position.y = unit_member->m_target.y;
+        transform->m_position.z = unit_member->m_target.z;
       }
       transform->m_dirty = true;
     }
@@ -67,8 +65,27 @@ struct UpdateUnitMember
 };
 
 
-furious::match<TnaTransform, UnitMember>().expand<TnaGlobalTransformMatrix>(TNA_GAME_REF_BELONGS_TO_UNIT)
-                                          .foreach<UpdateUnitMember>()
+furious::match<TnaTransform, UnitMember>().foreach<UpdateUnitMember>()
                                           .set_priority(PRIORITY_UPDATE_UNIT_MEMBER);
+
+////////////////////////////////////////////////
+////////////////////////////////////////////////
+////////////////////////////////////////////////
+
+struct PrepareUnitMember 
+{
+  void run(furious::Context* context, 
+           uint32_t id, 
+           UnitMember*  unit_member,
+           const TnaGlobalTransformMatrix* global_unit_matrix) 
+  {
+    TnaVector4 target_position = global_unit_matrix->m_matrix*TnaVector4{unit_member->m_unit_position, 1.0};
+    unit_member->m_target = {target_position.x, target_position.y, target_position.z};
+  }
+};
+
+furious::match<UnitMember>().expand<TnaGlobalTransformMatrix>(TNA_GAME_REF_BELONGS_TO_UNIT)
+                                          .foreach<PrepareUnitMember>()
+                                          .set_post_frame();
 
 END_FURIOUS_SCRIPT

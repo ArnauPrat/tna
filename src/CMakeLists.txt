@@ -25,6 +25,17 @@ set(BULLET_LIBRARIES
 ### Setting up bgfx
 find_package(glfw3 3.2 REQUIRED)
 
+find_package(LibClang REQUIRED)
+if(NOT LIBCLANG_FOUND)
+    message(FATAL_ERROR "LibClang could not be found")
+endif()
+
+set(CLANG_INCLUDES_DIR "${LIBCLANG_LIBDIR}/clang/${LIBCLANG_VERSION_STRING}/include")
+
+message(STATUS "CLANG_INCLUDES_DIR: ${CLANG_INCLUDES_DIR}")
+
+add_subdirectory(engine/third_party/boost_context)
+
 ### Setting up GLM
 #find_package(glm REQUIRED)
 
@@ -38,6 +49,7 @@ include_directories(${CMAKE_SOURCE_DIR}/src)
 include_directories(${FURIOUS_INCLUDE_DIR})
 include_directories(${BULLET_INCLUDE_DIR})
 include_directories(${Vulkan_INCLUDE_DIR})
+include_directories("engine/third_party/boost_context/include")
 
 link_directories(${BULLET_LIBRARY_DIR})
 link_directories(${Vulkan_LIBRARIES_DIR})
@@ -46,6 +58,7 @@ link_directories(${FURIOUS_LIBRARIES_DIR})
 message(STATUS ${FURIOUS_ROOT})
 message(STATUS ${FURIOUS_INCLUDE_DIR})
 message(STATUS ${FURIOUS_LIBRARIES_DIR})
+
 
 set(VK_RENDERER_SOURCE_FILES 
   engine/rendering/vulkan/gui/imgui_impl_vulkan.cpp
@@ -94,7 +107,20 @@ set(TNA_ENGINE_GUI
   engine/gui/imgui_impl_glfw.cpp
   )
 
+set(TNA_ENGINE_TASKING
+  engine/tasking/atomic_counter.h
+  engine/tasking/atomic_counter.cpp
+  engine/tasking/task.h
+  engine/tasking/task_pool.h
+  engine/tasking/task_pool.cpp
+  engine/tasking/tasking.h
+  engine/tasking/tasking.cpp
+  engine/tasking/mutex.h
+  engine/tasking/mutex.cpp
+  )
+
 set(TNA_ENGINE_SOURCE_FILES 
+  ${TNA_ENGINE_TASKING}
   ${TNA_ENGINE_COMPONENTS}
   ${VK_RENDERER_SOURCE_FILES}
   ${TNA_ENGINE_GUI}
@@ -134,10 +160,17 @@ set(TNA_ENGINE_SOURCE_FILES
   engine/tools/files.h
   engine/tools/references.h
   engine/types.h
+  engine/data/bvh.h
+  engine/data/bvh.cpp
+  engine/data/queue.h
+  engine/data/queue.inl
 	)
 
-set(TNA_SOURCE_FILES 
+add_library(tnalib STATIC 
   ${TNA_ENGINE_SOURCE_FILES}
+  )
+
+set(TNA_SOURCE_FILES 
   game.cpp
   game.h
   main.cpp
@@ -164,7 +197,6 @@ set(TNA_SCRIPTS
   )
 
 message(STATUS ${CMAKE_CURRENT_BINARY_DIR})
-set(CLANG_INCLUDES_DIR "/usr/lib/clang/8.0.0/include")
 add_custom_command(
 	OUTPUT engine/furious_runtime.cpp
 	COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/engine/
@@ -182,13 +214,19 @@ add_custom_target(
   COMMENT "Regenerating furious code"
   )
 
+
 add_executable(tna
 	${TNA_SOURCE_FILES}
   )  
 
 target_link_libraries(tna 
+  boost_context
+  tnalib
   ${FURIOUS_LIBRARIES} 
   glfw
   ${Vulkan_LIBRARIES}
+  pthread
   )
+
+add_subdirectory(test)
 
