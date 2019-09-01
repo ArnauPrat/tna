@@ -18,7 +18,7 @@ mesh_data_create(const char* path)
   mesh_data->m_aabb.m_min = {FLT_MAX, FLT_MAX, FLT_MAX};
   mesh_data->m_aabb.m_max = {FLT_MIN, FLT_MIN, FLT_MIN};
 
-  furious::DynArray<Vertex> vertices;
+  furious::DynArray<vertex_t> vertices;
   furious::DynArray<uint32_t> indices;
 
   tinyobj::attrib_t attrib;
@@ -37,7 +37,7 @@ mesh_data_create(const char* path)
   {
     for (const tinyobj::index_t& index : shape.mesh.indices) 
     {
-      Vertex vertex;
+      vertex_t vertex;
 
       vertex.m_position = {
                             attrib.vertices[3 * index.vertex_index + 0],
@@ -81,7 +81,7 @@ mesh_data_create(const char* path)
 
 
   mesh_data->m_vertex_buffer = create_vertex_buffer(vertices.buffer(),
-                                                    vertices.size()*sizeof(Vertex));
+                                                    vertices.size()*sizeof(vertex_t));
 
   mesh_data->m_index_buffer = create_index_buffer(indices.buffer(), 
                                                   indices.size()*sizeof(uint32_t));
