@@ -16,14 +16,24 @@ namespace tna
 
 struct atomic_counter_t 
 {
-  std::atomic<int32_t>* p_impl;
+  std::atomic<int32_t>* p_impl = nullptr;
 };
 
+/**
+ * \brief Initializes the atomic counter
+ *
+ * \param counter
+ */
 void
-atomic_counter_init(atomic_counter_t* counte);
+atomic_counter_init(atomic_counter_t* counter);
 
+/**
+ * \brief Releases the atomic counter
+ *
+ * \param counter
+ */
 void
-atomic_counter_release(atomic_counter_t* counte);
+atomic_counter_release(atomic_counter_t* counter);
 
 /**
  * @brief Sets the value of the counter

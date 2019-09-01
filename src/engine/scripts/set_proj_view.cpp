@@ -16,26 +16,26 @@ struct TnaSetProjView
 {
   void run(furious::Context* context, 
            uint32_t id, 
-           TnaProjViewMatrix* proj_view,
-           const TnaFPSCamera* fps_camera,
-           const TnaViewport* viewport) 
+           projview_matrix_t* proj_view,
+           const fps_camera_t* fps_camera,
+           const viewport_t* viewport) 
   {
-    TnaMatrix4 view_mat;
-    fps_camera->to_view_matrix(&view_mat);
-    p_rendering_scene->set_view_matrix(view_mat);
+    matrix4_t view_mat;
+    fps_camera_to_view_matrix(fps_camera, &view_mat);
+    rendering_scene_set_view_matrix(p_rendering_scene, view_mat);
 
-    TnaMatrix4 proj_mat = create_projection_matrix(viewport->m_field,
+    matrix4_t proj_mat = create_projection_matrix(viewport->m_field,
                                                    viewport->m_width/(float)viewport->m_height, 
                                                    viewport->m_near, 
                                                    viewport->m_far);
 
     proj_mat[1][1] *= -1;
-    p_rendering_scene->set_proj_matrix(proj_mat);
+    rendering_scene_set_proj_matrix(p_rendering_scene, proj_mat);
 
     proj_view->m_matrix = proj_mat*view_mat;
   }
 };
 
-furious::match<furious::Global<TnaProjViewMatrix>, furious::Global<TnaFPSCamera>, furious::Global<TnaViewport>>().foreach<TnaSetProjView>();
+furious::match<furious::Global<projview_matrix_t>, furious::Global<fps_camera_t>, furious::Global<viewport_t>>().foreach<TnaSetProjView>();
 
 END_FURIOUS_SCRIPT

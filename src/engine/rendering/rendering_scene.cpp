@@ -6,40 +6,44 @@
 #include "../resources/resources.h"
 
 #include "stdio.h"
+#include "assert.h"
 
 namespace tna 
 {
 
-TnaRenderingScene::TnaRenderingScene() :
-m_uniforms(nullptr)
+void
+rendering_scene_init(rendering_scene_t* scene)
 {
-  m_uniforms = new TnaRenderMeshUniform[MAX_PRIMITIVE_COUNT];
+  scene->m_uniforms = new render_mesh_uniform_t[MAX_PRIMITIVE_COUNT];
 }
 
-TnaRenderingScene::~TnaRenderingScene()
+void
+rendering_scene_release(rendering_scene_t* scene)
 {
-  if(m_uniforms != nullptr)
+  if(scene->m_uniforms != nullptr)
   {
-    delete [] m_uniforms;
+    delete [] scene->m_uniforms;
+    scene->m_uniforms = nullptr;
   }
 }
 
-TnaRenderHandler
-TnaRenderingScene::create_render_object(TnaRenderObjectType o_type)
+render_handler_t
+rendering_scene_create_object(rendering_scene_t* scene,
+                              render_object_type_t o_type)
 {
-  TnaRenderHandler handler;
-  TnaRenderHeader* header;
-  if(m_header_gaps.size() > 0)
+  render_handler_t handler;
+  render_header_t* header;
+  if(scene->m_header_gaps.size() > 0)
   {
-    handler.m_id = m_header_gaps[m_header_gaps.size()-1];
-    m_header_gaps.pop();
-    header = &m_headers[handler.m_id];
+    handler = scene->m_header_gaps[scene->m_header_gaps.size()-1];
+    scene->m_header_gaps.pop();
+    header = &scene->m_headers[handler];
   }
   else
   {
-    handler.m_id = m_headers.size();
-    m_headers.append(TnaRenderHeader());
-    header = &m_headers[handler.m_id];
+    handler = scene->m_headers.size();
+    scene->m_headers.append(render_header_t());
+    header = &scene->m_headers[handler];
   }
 
   header->m_active = true;
@@ -47,23 +51,23 @@ TnaRenderingScene::create_render_object(TnaRenderObjectType o_type)
   header->m_render_object_type = o_type;
   switch(header->m_render_object_type)
   {
-    case TnaRenderObjectType::E_MESH:
-      if(m_gaps.size() > 0)
+    case render_object_type_t::E_MESH:
+      if(scene->m_gaps.size() > 0)
       {
-        header->m_offset = m_gaps[m_gaps.size()-1];
-        m_gaps.pop();
-        m_meshes[header->m_offset] = nullptr;
+        header->m_offset = scene->m_gaps[scene->m_gaps.size()-1];
+        scene->m_gaps.pop();
+        scene->m_meshes[header->m_offset] = nullptr;
       }
       else
       {
-        header->m_offset = m_meshes.size();
+        header->m_offset = scene->m_meshes.size();
         if(header->m_offset >= MAX_PRIMITIVE_COUNT)
         {
-          p_log->error("Exceeded max primitive count");
+          TNA_LOG_ERROR("Exceeded max primitive count");
           report_error(TNA_ERROR::E_RENDERER_RUNTIME_ERROR);
         }
-        m_meshes.append(nullptr);
-        *((TnaRenderMeshUniform*)&m_uniforms[header->m_offset]) = TnaRenderMeshUniform();
+        scene->m_meshes.append(nullptr);
+        *((render_mesh_uniform_t*)&scene->m_uniforms[header->m_offset]) = render_mesh_uniform_t();
       }
       break;
   }
@@ -71,73 +75,91 @@ TnaRenderingScene::create_render_object(TnaRenderObjectType o_type)
 }
 
 void
-TnaRenderingScene::destroy_render_object(TnaRenderHandler handler)
+rendering_scene_destroy_object(rendering_scene_t* scene,
+                               render_handler_t& handler)
 {
-  TnaRenderHeader* header = &m_headers[handler.m_id];
+  assert(handler != _TNA_RENDER_HANDLER_INVALID && "Invalid render handler");
+
+  render_header_t* header = &scene->m_headers[handler];
   uint32_t offset = header->m_offset;
-  m_gaps.append(offset);
+  scene->m_gaps.append(offset);
   header->m_active = false;
-  m_header_gaps.append(handler.m_id);
+  scene->m_header_gaps.append(handler);
+  handler = _TNA_RENDER_HANDLER_INVALID;
 }
 
 void
-TnaRenderingScene::set_mesh(TnaRenderHandler handler, 
-                            const std::string& mesh)
+rendering_scene_set_mesh(rendering_scene_t* scene,
+                         render_handler_t handler, 
+                         const char* mesh)
 {
-  TnaRenderHeader* header = &m_headers[handler.m_id];
-  m_meshes[header->m_offset] = p_mesh_registry->load(mesh);
+  assert(handler != _TNA_RENDER_HANDLER_INVALID && "Invalid render handler");
+
+  render_header_t* header = &scene->m_headers[handler];
+  scene->m_meshes[header->m_offset] = p_mesh_registry->load(mesh);
 }
 
 void
-TnaRenderingScene::set_material(TnaRenderHandler handler, 
-                                const TnaMaterialDescriptor& mat_desc)
+rendering_scene_set_material(rendering_scene_t* scene,
+                             render_handler_t handler, 
+                             const material_desc_t& mat_desc)
 {
-  TnaRenderHeader* header = &m_headers[handler.m_id];
-  TnaRenderMeshUniform* uniform = nullptr;
-  uniform = ((TnaRenderMeshUniform*)&m_uniforms[header->m_offset]);
+  assert(handler != _TNA_RENDER_HANDLER_INVALID && "Invalid render handler");
+
+  render_header_t* header = &scene->m_headers[handler];
+  render_mesh_uniform_t* uniform = nullptr;
+  uniform = ((render_mesh_uniform_t*)&scene->m_uniforms[header->m_offset]);
   uniform->m_material = mat_desc;
 }
 
 void
-TnaRenderingScene::get_material(TnaRenderHandler handler, 
-                                TnaMaterialDescriptor* mat_desc)
+rendering_scene_get_material(rendering_scene_t* scene, 
+                             render_handler_t handler, 
+                                material_desc_t* mat_desc)
 {
+  assert(handler != _TNA_RENDER_HANDLER_INVALID && "Invalid render handler");
 
-  TnaRenderHeader* header = &m_headers[handler.m_id];
-  TnaRenderMeshUniform* uniform = nullptr;
-  uniform = ((TnaRenderMeshUniform*)&m_uniforms[header->m_offset]);
+  render_header_t* header = &scene->m_headers[handler];
+  render_mesh_uniform_t* uniform = nullptr;
+  uniform = ((render_mesh_uniform_t*)&scene->m_uniforms[header->m_offset]);
   *mat_desc = uniform->m_material;
 }
 
 void
-TnaRenderingScene::set_model_mat(TnaRenderHandler handler, 
-                                 const TnaMatrix4& mat)
+rendering_scene_set_model_mat(rendering_scene_t* scene, 
+                              render_handler_t handler, 
+                              const matrix4_t& mat)
 {
-  TnaRenderHeader* header = &m_headers[handler.m_id];
-  TnaRenderMeshUniform* uniform = nullptr;
-  uniform = ((TnaRenderMeshUniform*)&m_uniforms[header->m_offset]);
+  assert(handler != _TNA_RENDER_HANDLER_INVALID && "Invalid render handler");
+
+  render_header_t* header = &scene->m_headers[handler];
+  render_mesh_uniform_t* uniform = nullptr;
+  uniform = ((render_mesh_uniform_t*)&scene->m_uniforms[header->m_offset]);
   uniform->m_model_matrix = mat;
 }
 
 void
-TnaRenderingScene::set_frustrum_culling(TnaRenderHandler handler,
-                                        const TnaMatrix4& proj_matrix)
+rendering_scene_set_frustrum_culling(rendering_scene_t* scene,
+                                     render_handler_t handler,
+                                     const matrix4_t& proj_matrix)
 {
-  TnaRenderHeader* header = &m_headers[handler.m_id];
-  TnaMeshData* mesh_data = nullptr;
-  TnaRenderMeshUniform* uniform = nullptr;
-  mesh_data = m_meshes[header->m_offset];
-  uniform = ((TnaRenderMeshUniform*)&m_uniforms[header->m_offset]);
+  assert(handler != _TNA_RENDER_HANDLER_INVALID && "Invalid render handler");
+
+  render_header_t* header = &scene->m_headers[handler];
+  mesh_data_t* mesh_data = nullptr;
+  render_mesh_uniform_t* uniform = nullptr;
+  mesh_data = scene->m_meshes[header->m_offset];
+  uniform = ((render_mesh_uniform_t*)&scene->m_uniforms[header->m_offset]);
 
   if(mesh_data == nullptr)
   {
     return;
   }
 
-  const TnaAABB* aabb = &mesh_data->m_aabb;
-  TnaVector4 min = uniform->m_model_matrix*TnaVector4(aabb->m_min,1.0f);
-  TnaVector4 max = uniform->m_model_matrix*TnaVector4(aabb->m_max,1.0f);
-  TnaVector4 points[8] = {
+  const aabb_t* aabb = &mesh_data->m_aabb;
+  vector4_t min = uniform->m_model_matrix*vector4_t(aabb->m_min,1.0f);
+  vector4_t max = uniform->m_model_matrix*vector4_t(aabb->m_max,1.0f);
+  vector4_t points[8] = {
     {min.x, min.y, min.z, 1.0f},
     {min.x, min.y, max.z, 1.0f},
     {min.x, max.y, min.z, 1.0f},
@@ -150,7 +172,7 @@ TnaRenderingScene::set_frustrum_culling(TnaRenderHandler handler,
   bool visible = false;
   for(uint32_t i = 0; i < 8; ++i)
   {
-    TnaVector4 proj_point = proj_matrix*points[i];
+    vector4_t proj_point = proj_matrix*points[i];
     if((-proj_point.w <= proj_point.x) && (proj_point.x <= proj_point.w) &&
        (-proj_point.w <= proj_point.y) && (proj_point.y <= proj_point.w) &&
        (0 <= proj_point.z) && (proj_point.z <= proj_point.w))
@@ -163,21 +185,24 @@ TnaRenderingScene::set_frustrum_culling(TnaRenderHandler handler,
 }
 
 void 
-TnaRenderingScene::set_view_matrix(const TnaMatrix4& view_mat) 
+rendering_scene_set_view_matrix(rendering_scene_t* scene, 
+                                const matrix4_t& view_mat) 
 {
-  m_view_mat = view_mat;
+  scene->m_view_mat = view_mat;
 }
 
 void 
-TnaRenderingScene::set_proj_matrix(const TnaMatrix4& proj_mat) 
+rendering_scene_set_proj_matrix(rendering_scene_t* scene,
+                                const matrix4_t& proj_mat) 
 {
-  m_proj_mat = proj_mat;
+  scene->m_proj_mat = proj_mat;
 }
 
 void
-TnaRenderingScene::set_clear_color(const TnaVector3& color)
+rendering_scene_set_clear_color(rendering_scene_t* scene,
+                                const vector3_t& color)
 {
-  m_clear_color = color;
+  scene->m_clear_color = color;
 }
 
 } /* tna */ 

@@ -22,7 +22,7 @@ struct RotatorAroundParent
   
   void run(furious::Context* context, 
            uint32_t id, 
-           TnaTransform* transform,
+           transform_t* transform,
            const RotationSpeed* rspeed) 
   {
     float angle = context->m_dt*rspeed->m_speed;
@@ -32,7 +32,7 @@ struct RotatorAroundParent
   float m_speed;
 };
 
-furious::match<TnaTransform, RotationSpeed>().expand<>(TNA_REF_PARENT)
+furious::match<transform_t, RotationSpeed>().expand<>(TNA_REF_PARENT)
                                              .foreach<RotatorAroundParent>()
                                              .set_priority(PRIORITY_ROTATOR);
 

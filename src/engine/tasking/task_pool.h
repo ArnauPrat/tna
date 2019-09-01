@@ -22,21 +22,22 @@ using task_context_queue_t = queue_t<task_context_t*>;
  * Typically, there will be one queue per thread, but we are not restricted to
  * this.
  */
-struct task_pool_t {
+struct task_pool_t 
+{
   /**
    * @brief Array of task queues. There is one per thread.
    */
-  task_context_queue_t*   m_queues;
+  task_context_queue_t*   m_queues = nullptr;
 
   /**
    * \brief Mutexes used to synchronize the access to the queues
    */
-  mutex_t*                m_mutexes;    
+  mutex_t*                m_mutexes = nullptr;    
 
   /**
    * @brief The number of queues
    */
-  uint32_t             m_numQueues;
+  uint32_t             m_numQueues = 0;
 
 };
 

@@ -14,45 +14,45 @@ namespace tna
 
 constexpr double PI=3.1415926535897932384626433;
 
-TnaMatrix4
+matrix4_t
 create_projection_matrix(float field_of_view,
                          float ratio, 
                          float near_plan, 
                          float far_plane);
 
-TnaMatrix4 
-translate(const TnaMatrix4& matrix,
-          const TnaVector3& translation);
+matrix4_t 
+translate(const matrix4_t& matrix,
+          const vector3_t& translation);
 
-TnaMatrix4 
-rotate(const TnaMatrix4& matrix,
+matrix4_t 
+rotate(const matrix4_t& matrix,
        float angle,
-       const TnaVector3& axis);
+       const vector3_t& axis);
 
-TnaMatrix4
-scale(const TnaMatrix4& matrix, 
-      const TnaVector3& scale);
+matrix4_t
+scale(const matrix4_t& matrix, 
+      const vector3_t& scale);
 
-TnaMatrix4
-look_at(const TnaVector3& eye,
-        const TnaVector3& center,
-        const TnaVector3& up);
+matrix4_t
+look_at(const vector3_t& eye,
+        const vector3_t& center,
+        const vector3_t& up);
 
 float 
 radians(float angle);
 
 
-TnaMatrix4
-inverse(const TnaMatrix4 matrix);
+matrix4_t
+inverse(const matrix4_t matrix);
 
 float 
-dot(const TnaVector3& a, const TnaVector3 b);
+dot(const vector3_t& a, const vector3_t b);
 
 float
-length(const TnaVector3& vect);
+length(const vector3_t& vect);
 
-TnaVector3
-normalize(const TnaVector3& vect);
+vector3_t
+normalize(const vector3_t& vect);
 
 }
 

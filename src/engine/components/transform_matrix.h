@@ -8,30 +8,19 @@
 namespace tna 
 {
 
-struct TnaLocalTransformMatrix 
+struct local_transform_matrix_t 
 {
-  FURIOUS_COMPONENT(TnaLocalTransformMatrix);
+  FURIOUS_COMPONENT(local_transform_matrix_t);
 
-  TnaLocalTransformMatrix() : 
-  m_matrix(1.0f),
-  m_dirty(true)
-  {
-  }
-
-  TnaMatrix4  m_matrix;
-  bool        m_dirty;
+  matrix4_t  m_matrix = matrix4_t(1.0f);
+  bool        m_dirty  = true;
 };
 
-struct TnaGlobalTransformMatrix 
+struct global_transform_matrix_t 
 {
-  FURIOUS_COMPONENT(TnaGlobalTransformMatrix);
+  FURIOUS_COMPONENT(global_transform_matrix_t);
 
-  TnaGlobalTransformMatrix() : 
-  m_matrix(1.0f)
-  {
-  }
-
-  TnaMatrix4  m_matrix;
+  matrix4_t  m_matrix = matrix4_t(1.0f);
 };
   
 } /* tna */ 

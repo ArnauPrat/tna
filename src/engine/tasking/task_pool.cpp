@@ -28,18 +28,25 @@ task_pool_init(task_pool_t* task_pool,
 void
 task_pool_release(task_pool_t* task_pool) 
 {
-  for(uint32_t i = 0; i < task_pool->m_numQueues; ++i) 
+  if(task_pool->m_queues)
   {
-    queue_release(&task_pool->m_queues[i]);
+    for(uint32_t i = 0; i < task_pool->m_numQueues; ++i) 
+    {
+      queue_release(&task_pool->m_queues[i]);
+    }
+    delete [] task_pool->m_queues;
+    task_pool->m_queues = nullptr;
   }
-  delete [] task_pool->m_queues;
 
-  for(uint32_t i = 0; i < task_pool->m_numQueues; ++i) 
+  if(task_pool->m_mutexes)
   {
-    mutex_release(&task_pool->m_mutexes[i]);
+    for(uint32_t i = 0; i < task_pool->m_numQueues; ++i) 
+    {
+      mutex_release(&task_pool->m_mutexes[i]);
+    }
+    delete [] task_pool->m_mutexes;
+    task_pool->m_mutexes = nullptr;
   }
-
-  delete [] task_pool->m_mutexes;
 }
 
 task_context_t* 

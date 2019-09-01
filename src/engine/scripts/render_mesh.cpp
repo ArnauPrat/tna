@@ -19,16 +19,21 @@ struct TnaRenderMesh
 {
   void run(furious::Context* context, 
            uint32_t id, 
-           const TnaRenderMeshData* mesh, 
-           const TnaGlobalTransformMatrix* transform_matrix,
-           const TnaProjViewMatrix* proj_matrix) 
+           const render_mesh_data_t* mesh, 
+           const global_transform_matrix_t* transform_matrix,
+           const projview_matrix_t* proj_matrix) 
   {
-    p_rendering_scene->set_model_mat(mesh->m_handler, transform_matrix->m_matrix);
-    p_rendering_scene->set_frustrum_culling(mesh->m_handler, proj_matrix->m_matrix);
+    rendering_scene_set_model_mat(p_rendering_scene, 
+                                   mesh->m_handler, 
+                                   transform_matrix->m_matrix);
+
+    rendering_scene_set_frustrum_culling(p_rendering_scene, 
+                                         mesh->m_handler, 
+                                         proj_matrix->m_matrix);
   }
 };
 
-furious::match<TnaRenderMeshData,TnaGlobalTransformMatrix,furious::Global<TnaProjViewMatrix>>().foreach<TnaRenderMesh>();
+furious::match<render_mesh_data_t,global_transform_matrix_t,furious::Global<projview_matrix_t>>().foreach<TnaRenderMesh>();
 
 END_FURIOUS_SCRIPT
 

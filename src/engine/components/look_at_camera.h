@@ -11,24 +11,22 @@
 namespace tna 
 {
 
-struct TnaLookAtCamera 
+struct look_at_camera_t 
 {
-  FURIOUS_COMPONENT(TnaLookAtCamera);
+  FURIOUS_COMPONENT(look_at_camera_t);
 
-  TnaLookAtCamera(const TnaVector3& eye,
-                  const TnaVector3& target,
-                  const TnaVector3& up) :
-  m_eye(eye),
-  m_target(target),
-  m_up(up)
-  {
-  }
-
-  TnaVector3 m_eye;
-  TnaVector3 m_target;
-  TnaVector3 m_up;
+  vector3_t m_eye    = vector3_t(1.0f, 1.0f, 1.0f);
+  vector3_t m_target = vector3_t(0.0f, 0.0f, 0.0f);
+  vector3_t m_up     = vector3_t(0.0f, 1.0f, 0.0f);
 
 };
+
+void
+look_at_camera_init(look_at_camera_t* camera, 
+                    const vector3_t& eye,
+                    const vector3_t& target,
+                    const vector3_t& up);
+
   
 } /* tna */ 
 

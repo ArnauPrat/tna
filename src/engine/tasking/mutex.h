@@ -14,7 +14,7 @@ namespace tna
 
 struct mutex_t
 {
-  std::mutex* p_mutex_impl;
+  std::mutex* p_mutex_impl = nullptr;
 };
   
 

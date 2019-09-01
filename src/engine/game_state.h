@@ -16,10 +16,10 @@ struct Database;
 namespace tna
 {
 
-struct TnaGameState
+struct game_state_t 
 {
-  furious::Database* p_database;
-  GLFWwindow*        p_window;
+  furious::Database* p_database = nullptr;
+  GLFWwindow*        p_window   = nullptr;
 };
 
 /**
@@ -28,7 +28,7 @@ struct TnaGameState
  * \return The newly created entity
  */
 TnaEntity 
-create_entity(TnaGameState* game_state);
+create_entity(game_state_t* game_state);
 
 /**
  * \brief Removes an entity in this current game app
@@ -42,7 +42,7 @@ remove_entity(TnaEntity entity);
  * \brief Creates the camera for the scene.
  */
 void
-create_camera(TnaGameState* game_state);
+create_camera(game_state_t* game_state);
   
 } /* tna */ 
 

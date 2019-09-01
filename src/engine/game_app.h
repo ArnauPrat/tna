@@ -50,7 +50,7 @@ public:
                   int32_t action, 
                   int32_t mods) = 0;
 
-  TnaGameState m_state;
+  game_state_t m_state;
 };
 
 }

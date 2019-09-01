@@ -12,19 +12,19 @@ namespace tna
 {
 struct TnaMeshData;
 
-struct TnaRenderMeshData
+struct render_mesh_data_t
 {
-  FURIOUS_COMPONENT(TnaRenderMeshData);
+  FURIOUS_COMPONENT(render_mesh_data_t);
 
-  TnaRenderMeshData(const std::string& mesh)
-  {
-    m_handler = p_rendering_scene->create_render_object(TnaRenderObjectType::E_MESH);
-
-    p_rendering_scene->set_mesh(m_handler, mesh);
-  }
-
-  TnaRenderHandler m_handler;
+  render_handler_t m_handler = _TNA_RENDER_HANDLER_INVALID;
 };
+
+void
+render_mesh_data_init(render_mesh_data_t* render_mesh,
+                 const char* mesh);
+
+void
+render_mesh_data_release(render_mesh_data_t* render_mesh);
   
 } /* tna */ 
 

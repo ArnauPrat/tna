@@ -17,12 +17,13 @@ namespace tna
 {
 
 TnaEntity 
-create_entity(TnaGameState* state)
+create_entity(game_state_t* state)
 {
   TnaEntity entity = furious::create_entity(state->p_database);
-  FURIOUS_ADD_COMPONENT(entity,TnaTransform);
-  FURIOUS_ADD_COMPONENT(entity,TnaLocalTransformMatrix);
-  FURIOUS_ADD_COMPONENT(entity,TnaGlobalTransformMatrix);
+  FURIOUS_ADD_COMPONENT(entity,transform_t);
+  FURIOUS_ADD_COMPONENT(entity,local_transform_matrix_t);
+  FURIOUS_ADD_COMPONENT(entity,global_transform_matrix_t);
+
   return entity;
 }
 
@@ -33,13 +34,16 @@ remove_entity(TnaEntity entity)
 }
 
 void
-create_camera(TnaGameState* state)
+create_camera(game_state_t* state)
 {
-  TnaFPSCamera* camera = FURIOUS_CREATE_GLOBAL((state->p_database),
-                                               TnaFPSCamera,
-                                               TnaVector3(0.0f,0.0f,10.0f),
-                                               radians(0.0),
-                                               radians(0.0));
+  fps_camera_t* camera = FURIOUS_CREATE_GLOBAL((state->p_database),
+                                               fps_camera_t);
+
+  fps_camera_init(camera, 
+                  vector3_t(0.0f,0.0f,10.0f),
+                  radians(0.0),
+                  radians(0.0));
+
   camera->m_speed = 10.0f;
 }
 

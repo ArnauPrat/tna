@@ -14,19 +14,18 @@
 #include "components/viewport.h"
 #include "components/transform.h"
 #include "components/transform_matrix.h"
+#include "components/render_mesh_data.h"
 
 
 namespace tna 
 {
 
-TnaLog*            p_log     = nullptr;
-
-bool               m_show_gui = true;
-bool               m_edit_mode = false;
-GLFWwindow*        p_window  = nullptr;
-TnaGameApp*        p_current_app = nullptr;
-TnaConfig          m_config;
-furious::Database* p_database = nullptr;;
+bool                m_show_gui = true;
+bool                m_edit_mode = false;
+GLFWwindow*         p_window  = nullptr;
+TnaGameApp*         p_current_app = nullptr;
+config_t            m_config;
+furious::Database*  p_database = nullptr;;
 
 
 static void 
@@ -77,12 +76,12 @@ void
 initialize() 
 {
   // Initializing loging system
-  p_log = new TnaLog("./logfile.log");
+  log_create("./logfile.log");
 
   // Reading engine's config
   if(file_exists("./config.ini")) 
   {
-    load_config("./config.ini", &m_config);
+    config_init(&m_config, "./config.ini");
   } 
 
   init_resources();
@@ -99,7 +98,7 @@ initialize()
                               nullptr);
   if (!p_window) 
   {
-    p_log->error("Error creating window");
+    TNA_LOG_ERROR("Error creating window");
     report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
 
@@ -117,7 +116,7 @@ initialize()
 
   init_renderer(&m_config, p_window);
   init_gui();
-  create_rendering_scene();
+  rendering_scene_create();
 
   return;
 }
@@ -130,7 +129,7 @@ terminate()
     p_current_app->on_app_finish();
   }
 
-  destroy_rendering_scene();
+  rendering_scene_destroy();
   terminate_gui();
   terminate_renderer();
   
@@ -142,7 +141,8 @@ terminate()
   glfwTerminate();
 
   terminate_resources();
-  delete p_log;
+  config_release(&m_config);
+  log_destroy();
   return;
 }
 
@@ -167,7 +167,7 @@ toggle_edit_mode()
                      GLFW_CURSOR,
                      GLFW_CURSOR_NORMAL);
 
-    TnaViewport* viewport = FURIOUS_FIND_GLOBAL(p_database, TnaViewport);
+    viewport_t* viewport = FURIOUS_FIND_GLOBAL(p_database, viewport_t);
     glfwSetCursorPos(p_window, 
                      viewport->m_width/2.0, 
                      viewport->m_height/2.0);
@@ -208,17 +208,19 @@ run(TnaGameApp* game_app)
   p_database = new furious::Database();
   p_database->start_webserver("localhost", "8080");
 
+  /// MANUALLY CREATING TABLES WITH REQUIRED MANUAL DESTRUCTORS
+  FURIOUS_CREATE_TABLE_DESTRUCTOR((p_database), 
+                                  render_mesh_data_t,
+                                  render_mesh_data_release);
+
   /// ADDING GLOBALS TO FURIOUS
   FURIOUS_CREATE_GLOBAL((p_database),
-                        TnaProjViewMatrix);
+                        projview_matrix_t);
 
-  FURIOUS_CREATE_GLOBAL((p_database),
-                        TnaViewport,
-                        m_config.m_viewport_width,
-                        m_config.m_viewport_height,
-                        0.1f,
-                        1000.0f,
-                        60.0f);
+  viewport_t* viewport = FURIOUS_CREATE_GLOBAL((p_database),
+                                                viewport_t);
+  viewport->m_width = m_config.m_viewport_width;
+  viewport->m_height = m_config.m_viewport_height;
 
   // Initializing Furious
   furious::__furious_init(p_database);

@@ -43,11 +43,11 @@ void Game::on_app_start()
 
   create_camera(&m_state);
 
-  TnaViewport* viewport = FURIOUS_FIND_GLOBAL(m_state.p_database, TnaViewport); 
+  viewport_t* viewport = FURIOUS_FIND_GLOBAL(m_state.p_database, viewport_t); 
   viewport->m_far = 10000.0f;
 
   // SETTING CAMERA POSITION
-  TnaFPSCamera* fps_camera = FURIOUS_FIND_GLOBAL(m_state.p_database, TnaFPSCamera);
+  fps_camera_t* fps_camera = FURIOUS_FIND_GLOBAL(m_state.p_database, fps_camera_t);
   fps_camera->m_eye = {0.0f, 100.0f, 100.0f};
   fps_camera->m_speed = 200.0f;
 
@@ -63,7 +63,8 @@ void Game::on_app_start()
   m_mouse_delta_pos_x = 0.0;
   m_mouse_delta_pos_y = 0.0;
 
-  p_rendering_scene->set_clear_color(TNA_COLOR_BLUE_SKY);
+  rendering_scene_set_clear_color(p_rendering_scene,
+                                  TNA_COLOR_BLUE_SKY);
 
 
 
@@ -95,29 +96,30 @@ void Game::on_app_finish()
 
 void Game::on_frame_start(float delta) 
 {
-  TnaFPSCamera* camera = m_state.p_database->find_global<TnaFPSCamera>();
+  fps_camera_t* camera = m_state.p_database->find_global<fps_camera_t>();
   if(m_forwards_camera)
   {
-    camera->forward(delta);
+    fps_camera_forward(camera,delta);
   }
 
   if(m_backwards_camera)
   {
-    camera->forward(-delta);
+    fps_camera_forward(camera, -delta);
   }
 
   if(m_strafe_left_camera)
   {
-    camera->strafe(-delta);
+    fps_camera_strafe(camera,-delta);
   }
 
   if(m_strafe_right_camera)
   {
-    camera->strafe(delta);
+    fps_camera_strafe(camera, delta);
   }
 
-  camera->pitch(m_mouse_delta_pos_y);
-  camera->yaw(m_mouse_delta_pos_x);
+  fps_camera_pitch(camera, m_mouse_delta_pos_y);
+  fps_camera_yaw(camera, m_mouse_delta_pos_x);
+
   m_mouse_delta_pos_x = 0;
   m_mouse_delta_pos_y = 0;
 }

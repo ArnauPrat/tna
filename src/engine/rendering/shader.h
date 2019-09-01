@@ -8,18 +8,13 @@
 namespace tna 
 {
 
-struct TnaShader 
-{
+using shader_t = void*;
 
-  void* p_data;
+shader_t* 
+shader_create(const char* path);
 
-  static TnaShader* 
-  load(const std::string& path);
-
-  static void 
-  unload(TnaShader* shader);
-
-};
+void 
+shader_destroy(shader_t* shader);
 
 } /* tna */ 
 #endif /* ifndef _TNA_SHADER_H_ */

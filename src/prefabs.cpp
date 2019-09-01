@@ -20,13 +20,13 @@ namespace  tna
 TnaEntity
 create_unit(uint32_t size,
             const std::string& mesh,
-            const TnaVector3& position,
-            TnaGameState* state)
+            const vector3_t& position,
+            game_state_t* state)
 {
 
   TnaEntity unit = create_entity(state); 
 
-  TnaTransform* unit_transform = FURIOUS_GET_COMPONENT(unit, TnaTransform);
+  transform_t* unit_transform = FURIOUS_GET_COMPONENT(unit, transform_t);
   unit_transform->m_position.x = position.x;
   unit_transform->m_position.y = position.y;
   unit_transform->m_position.z = position.z;
@@ -51,19 +51,19 @@ create_unit(uint32_t size,
       float zpos = -next_row*SEPARATION;
 
       soldiers[count] = create_entity(state);
-      FURIOUS_ADD_COMPONENT(soldiers[count], 
-                            TnaRenderMeshData,
-                            "models/cube.obj");
+      render_mesh_data_t* component = FURIOUS_ADD_COMPONENT(soldiers[count], 
+                                                            render_mesh_data_t);
+      render_mesh_data_init(component, "models/cube.obj");
 
       FURIOUS_ADD_COMPONENT(soldiers[count], 
                             UnitMember,
-                            TnaVector3{xpos, ypos, zpos},
-                            TnaVector3{xpos, ypos, zpos},
+                            vector3_t{xpos, ypos, zpos},
+                            vector3_t{xpos, ypos, zpos},
                             1.0f,
                             next_row,
                             j);
 
-      TnaTransform* transform = FURIOUS_GET_COMPONENT(soldiers[count], TnaTransform);
+      transform_t* transform = FURIOUS_GET_COMPONENT(soldiers[count], transform_t);
       transform->m_position.x = unit_transform->m_position.x + xpos;
       transform->m_position.y = unit_transform->m_position.y + ypos;
       transform->m_position.z = unit_transform->m_position.z + zpos;
@@ -75,13 +75,16 @@ create_unit(uint32_t size,
 
       if(champion_idx == count)
       {
-        TnaRenderMeshData* champion_mesh = FURIOUS_GET_COMPONENT(soldiers[count], TnaRenderMeshData);
-        TnaMaterialDescriptor mat_desc;
-        p_rendering_scene->get_material(champion_mesh->m_handler,
-                                        &mat_desc);
+        render_mesh_data_t* champion_mesh = FURIOUS_GET_COMPONENT(soldiers[count], render_mesh_data_t);
+        material_desc_t mat_desc;
+        rendering_scene_get_material(p_rendering_scene,
+                                     champion_mesh->m_handler,
+                                     &mat_desc);
+
         mat_desc.m_color = {1.0, 0.0, 0.0};
-        p_rendering_scene->set_material(champion_mesh->m_handler,
-                                        mat_desc);
+        rendering_scene_set_material(p_rendering_scene,
+                                     champion_mesh->m_handler,
+                                     mat_desc);
       }
     }
     ++next_row;

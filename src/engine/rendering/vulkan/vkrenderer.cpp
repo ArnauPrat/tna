@@ -16,6 +16,7 @@
 
 #include "../mesh_data.h"
 #include "../renderer.h"
+#include "../rendering_scene.h"
 #include "vkbuffer.h"
 #include "vkbuffer_tools.h"
 #include "vkdevice.h"
@@ -25,8 +26,7 @@
 #include "vkshader_tools.h"
 #include "vkswapchain.h"
 #include "vkvertex_tools.h"
-#include "string.h"
-#include "../rendering_scene.h"
+#include <string.h>
 
 namespace tna 
 {
@@ -235,7 +235,7 @@ debug_callback(VkDebugReportFlagsEXT flags,
                const char* msg,
                void* userData) 
 {
-  p_log->warning("validation layer: %s", msg);
+  TNA_LOG_WARNING("validation layer: %s", msg);
   report_error(TNA_ERROR::E_RENDERER_VULKAN_ERROR);
   return VK_FALSE;
 }
@@ -253,7 +253,7 @@ create_vulkan_instance()
 
   if(enable_validation_layers && layer_count == 0)
   {
-    p_log->warning("Can't find validation layers. Is VK_LAYER_PATH variable set?");
+    TNA_LOG_WARNING("Can't find validation layers. Is VK_LAYER_PATH variable set?");
   }
 
   for (uint32_t i = 0; i < p_renderer->m_num_validation_layers; ++i) 
@@ -265,7 +265,7 @@ create_vulkan_instance()
       VkLayerProperties* next_layer = &available_layers[j];
       if (strcmp(layer, next_layer->layerName) == 0) 
       {
-        p_log->log("Found validation layer %s", layer);
+        TNA_LOG_INFO("Found validation layer %s", layer);
         layer_found = true;
         break;
       }
@@ -273,7 +273,7 @@ create_vulkan_instance()
 
     if (!layer_found) 
     {
-      p_log->error("Validation layer %s not found", layer);
+      TNA_LOG_ERROR("Validation layer %s not found", layer);
       report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
     }
   }
@@ -327,7 +327,7 @@ create_vulkan_instance()
                       nullptr, 
                       &p_renderer->m_vulkan_instance) != VK_SUCCESS) 
   {
-    p_log->error("failed to create instance!");
+    TNA_LOG_ERROR("failed to create instance!");
     report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
   delete [] extensions;
@@ -342,7 +342,7 @@ create_surface(GLFWwindow* window)
                               nullptr, 
                               &p_renderer->m_window_surface) != VK_SUCCESS) 
   {
-    p_log->error("failed to create window surface!");
+    TNA_LOG_ERROR("failed to create window surface!");
     report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
   return;
@@ -364,7 +364,7 @@ add_debug_handler()
             nullptr, 
             &p_renderer->m_report_callback) != VK_SUCCESS) 
     {
-      p_log->error("Failed to create debug callback!");
+      TNA_LOG_ERROR("Failed to create debug callback!");
       report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
     }
   }
@@ -444,7 +444,7 @@ create_physical_device()
 
   if (p_renderer->m_physical_device == VK_NULL_HANDLE) 
   {
-    p_log->error("failed to find a suitable GPU!");
+    TNA_LOG_ERROR("failed to find a suitable GPU!");
     report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
 
@@ -517,7 +517,7 @@ create_logical_device()
                      nullptr, 
                      &p_renderer->m_logical_device) != VK_SUCCESS) 
   {
-    p_log->error("failed to create logical device!");
+    TNA_LOG_ERROR("failed to create logical device!");
     report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
 
@@ -606,7 +606,7 @@ create_swap_chain()
                            nullptr, 
                            &p_renderer->m_swap_chain) != VK_SUCCESS) 
   {
-    p_log->error("failed to create swap chain!");
+    TNA_LOG_ERROR("failed to create swap chain!");
     report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
 
@@ -617,7 +617,7 @@ create_swap_chain()
 
   if(p_renderer->m_num_swap_chain_images > MAX_FRAME_BUFFERS)
   {
-    p_log->error("The number of swapchain images exceeds the limit");
+    TNA_LOG_ERROR("The number of swapchain images exceeds the limit");
     report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
 
@@ -637,7 +637,7 @@ create_swap_chain()
 
   if (p_renderer->m_depth_format == VK_FORMAT_UNDEFINED) 
   {
-    p_log->error("failed to obtain the depth buffer format!");
+    TNA_LOG_ERROR("failed to obtain the depth buffer format!");
     report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
 
@@ -681,7 +681,7 @@ create_image_views()
                           nullptr, 
                           &p_renderer->m_swap_chain_image_views[i]) != VK_SUCCESS) 
     {
-      p_log->error("failed to create image views!");
+      TNA_LOG_ERROR("failed to create image views!");
       report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
     }
   }
@@ -707,7 +707,7 @@ create_image_views()
                           nullptr, 
                           &p_renderer->m_depth_image_view) != VK_SUCCESS) 
     {
-      p_log->error("failed to create depth image view!");
+      TNA_LOG_ERROR("failed to create depth image view!");
       report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
     }
 
@@ -726,23 +726,23 @@ create_image_views()
 void
 create_graphics_pipeline() 
 {
-  TnaShader* vertex_shader = p_shader_registry->load("shaders/shader.vert.spv");
-  TnaShader* fragment_shader = p_shader_registry->load("shaders/shader.frag.spv");
+  shader_t* vertex_shader = p_shader_registry->load("shaders/shader.vert.spv");
+  shader_t* fragment_shader = p_shader_registry->load("shaders/shader.frag.spv");
   
   if(!vertex_shader) 
   {
-    p_log->error("Vertex shader not found");
+    TNA_LOG_ERROR("Vertex shader not found");
     report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
 
   if(!fragment_shader) 
   {
-    p_log->error("Fragment shader not found");
+    TNA_LOG_ERROR("Fragment shader not found");
     report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
 
-  VkShader* vkvertex_shader = static_cast<VkShader*>(vertex_shader->p_data);
-  VkShader* vkfragment_shader = static_cast<VkShader*>(fragment_shader->p_data);
+  VkShader* vkvertex_shader = static_cast<VkShader*>(*vertex_shader);
+  VkShader* vkfragment_shader = static_cast<VkShader*>(*fragment_shader);
 
   VkPipelineShaderStageCreateInfo vertex_shader_stage = build_vertex_shader_stage(vkvertex_shader->m_shader_module);
 
@@ -858,7 +858,7 @@ create_graphics_pipeline()
                              nullptr, 
                              &p_renderer->m_pipeline_layout) != VK_SUCCESS) 
   {
-    p_log->error("failed to create pipeline layout!");
+    TNA_LOG_ERROR("failed to create pipeline layout!");
     report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
 
@@ -921,7 +921,7 @@ create_graphics_pipeline()
                          nullptr, 
                          &p_renderer->m_render_pass) != VK_SUCCESS) 
   {
-    p_log->error("failed to create render pass!");
+    TNA_LOG_ERROR("failed to create render pass!");
     report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
 
@@ -951,7 +951,7 @@ create_graphics_pipeline()
                                 nullptr, 
                                 &p_renderer->m_pipeline) != VK_SUCCESS) 
   {
-    p_log->error("failed to create graphics pipeline!");
+    TNA_LOG_ERROR("failed to create graphics pipeline!");
     report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
 
@@ -980,7 +980,7 @@ create_graphics_pipeline()
                             nullptr, 
                             &p_renderer->m_frame_buffers[i]) != VK_SUCCESS) 
     {
-      p_log->error("failed to create framebuffer!");
+      TNA_LOG_ERROR("failed to create framebuffer!");
       report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
     }
   }
@@ -1004,7 +1004,7 @@ create_command_pool()
                           nullptr, 
                           &p_renderer->m_command_pool) != VK_SUCCESS) 
   {
-    p_log->error("failed to create command pool!");
+    TNA_LOG_ERROR("failed to create command pool!");
     report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
   return;
@@ -1048,7 +1048,7 @@ create_descriptor_pool()
                              nullptr, 
                              &p_renderer->m_descriptor_pool) != VK_SUCCESS) 
   {
-    p_log->error("failed to create descriptor pool!");
+    TNA_LOG_ERROR("failed to create descriptor pool!");
     report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
   return;
@@ -1074,7 +1074,7 @@ create_descriptor_set()
                                   nullptr, 
                                   &p_renderer->m_descriptor_set_layout) != VK_SUCCESS) 
   {
-    p_log->error("failed to create descriptor set layout!");
+    TNA_LOG_ERROR("failed to create descriptor set layout!");
     report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
 
@@ -1097,7 +1097,7 @@ create_descriptor_set()
                                &allocInfo, 
                                &p_renderer->m_descriptor_sets[0]) != VK_SUCCESS) 
   {
-    p_log->error("failed to allocate descriptor set!");
+    TNA_LOG_ERROR("failed to allocate descriptor set!");
     report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
 
@@ -1110,7 +1110,7 @@ void
 create_uniform_buffers() 
 {
   size_t device_alignment = p_renderer->m_mem_properties.limits.minUniformBufferOffsetAlignment;
-  size_t uniform_buffer_size = sizeof(TnaRenderMeshUniform);
+  size_t uniform_buffer_size = sizeof(render_mesh_uniform_t);
   size_t dynamic_alignment = (uniform_buffer_size / device_alignment) * device_alignment + ((uniform_buffer_size % device_alignment) > 0 ? device_alignment : 0);
 
   size_t bufferSize = dynamic_alignment * MAX_PRIMITIVE_COUNT;
@@ -1174,7 +1174,7 @@ create_command_buffers()
                                &allocInfo, 
                                p_renderer->m_command_buffers) != VK_SUCCESS) 
   {
-    p_log->error("failed to allocate command buffers!");
+    TNA_LOG_ERROR("failed to allocate command buffers!");
     report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
   }
   return;
@@ -1195,7 +1195,7 @@ create_semaphores()
                         nullptr, 
                         &p_renderer->m_render_finished_semaphore) != VK_SUCCESS) 
   {
-		p_log->error("failed to create semaphores!");
+		TNA_LOG_ERROR("failed to create semaphores!");
     report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
 	}
   return;
@@ -1286,23 +1286,23 @@ recreate_swap_chain()
 }
 
 void 
-build_command_buffer(uint32_t index, TnaRenderingScene* scene) 
+build_command_buffer(uint32_t index, rendering_scene_t* scene) 
 {
 
   size_t device_alignment = p_renderer->m_mem_properties.limits.minUniformBufferOffsetAlignment;
-  size_t uniform_buffer_size = sizeof(TnaRenderMeshUniform);
+  size_t uniform_buffer_size = sizeof(render_mesh_uniform_t);
   size_t dynamic_alignment = (uniform_buffer_size / device_alignment) * device_alignment + ((uniform_buffer_size % device_alignment) > 0 ? device_alignment : 0);
 
   uint32_t num_meshes = scene->m_meshes.size();
   if( num_meshes > 0)
   {
-    TnaMatrix4 proj_view_mat = scene->m_proj_mat * scene->m_view_mat;
+    matrix4_t proj_view_mat = scene->m_proj_mat * scene->m_view_mat;
     char* uniform_data = nullptr;
     vmaMapMemory(p_renderer->m_vkallocator, m_uniform_allocations[index], (void**)&uniform_data);
     for(size_t i = 0; (i < num_meshes) && (i < MAX_PRIMITIVE_COUNT); ++i) 
     {
-      TnaRenderMeshUniform* uniform = (TnaRenderMeshUniform*)(&scene->m_uniforms[i]);
-      TnaRenderMeshUniform* dst_uniform = (TnaRenderMeshUniform*)(&uniform_data[dynamic_alignment*i]);
+      render_mesh_uniform_t* uniform = (render_mesh_uniform_t*)(&scene->m_uniforms[i]);
+      render_mesh_uniform_t* dst_uniform = (render_mesh_uniform_t*)(&uniform_data[dynamic_alignment*i]);
       dst_uniform->m_model_matrix =  proj_view_mat * uniform->m_model_matrix;
       dst_uniform->m_material = uniform->m_material;
     }
@@ -1318,7 +1318,7 @@ build_command_buffer(uint32_t index, TnaRenderingScene* scene)
 
   if (vkBeginCommandBuffer(p_renderer->m_command_buffers[index], &begin_info) != VK_SUCCESS) 
   {
-    p_log->error("failed to begin recording command buffer!");
+    TNA_LOG_ERROR("failed to begin recording command buffer!");
     report_error(TNA_ERROR::E_RENDERER_RUNTIME_ERROR);
   }
 
@@ -1345,22 +1345,22 @@ build_command_buffer(uint32_t index, TnaRenderingScene* scene)
 
   vkCmdBeginRenderPass(p_renderer->m_command_buffers[index], &renderpass_info, VK_SUBPASS_CONTENTS_INLINE);
 
-  TnaMeshData* last_mesh = nullptr;
+  mesh_data_t* last_mesh = nullptr;
   VkDeviceSize offsets[] = {0};
   for(size_t i = 0; (i < num_meshes) && (i < MAX_PRIMITIVE_COUNT); ++i) 
   {
-    const TnaRenderHeader* header = &scene->m_headers[i];
+    const render_header_t* header = &scene->m_headers[i];
     if(header->m_active &&
        header->m_frustrum_visible &&
        //header->m_mobility_type == TnaRenderMobilityType::E_STATIC &&
        scene->m_meshes[header->m_offset] != nullptr)
     {
-      TnaMeshData* mesh_data = scene->m_meshes[header->m_offset];
+      mesh_data_t* mesh_data = scene->m_meshes[header->m_offset];
 
 
       if(last_mesh != mesh_data)
       {
-        VkVertexBuffer* vkvertex_buffer = (VkVertexBuffer*)mesh_data->m_vertex_buffer.p_data;
+        VkVertexBuffer* vkvertex_buffer = (VkVertexBuffer*)*mesh_data->m_vertex_buffer;
         //VkBuffer vertex_buffers[] = {vkvertex_buffer->m_buffer};
 
         vkCmdBindVertexBuffers(p_renderer->m_command_buffers[index], 
@@ -1369,7 +1369,7 @@ build_command_buffer(uint32_t index, TnaRenderingScene* scene)
                                &vkvertex_buffer->m_buffer, 
                                offsets);
 
-        VkIndexBuffer* vkindex_buffer = (VkIndexBuffer*)mesh_data->m_index_buffer.p_data;
+        VkIndexBuffer* vkindex_buffer = (VkIndexBuffer*)*mesh_data->m_index_buffer;
         vkCmdBindIndexBuffer(p_renderer->m_command_buffers[index], 
                              vkindex_buffer->m_buffer, 
                              0, 
@@ -1403,7 +1403,7 @@ build_command_buffer(uint32_t index, TnaRenderingScene* scene)
 
   if (vkEndCommandBuffer(p_renderer->m_command_buffers[index]) != VK_SUCCESS) 
   {
-    p_log->error("failed to record command buffer!");
+    TNA_LOG_ERROR("failed to record command buffer!");
     report_error(TNA_ERROR::E_RENDERER_RUNTIME_ERROR);
   }
   return;
@@ -1416,7 +1416,7 @@ build_command_buffer(uint32_t index, TnaRenderingScene* scene)
 ////////////////////////////////////////////////
 
 void 
-init_renderer(const TnaConfig* config, 
+init_renderer(const config_t* config, 
               GLFWwindow* window) 
 {
   p_renderer = new VulkanRenderer();
@@ -1427,7 +1427,7 @@ init_renderer(const TnaConfig* config,
   p_renderer->m_validation_layers = new const char*[p_renderer->m_num_validation_layers];
   for(uint32_t i = 0; i < p_renderer->m_num_validation_layers; ++i) 
   {
-    const char* layer = (config->m_vk_vlayers[i])->c_str();
+    const char* layer = config->m_vk_vlayers[i];
     p_renderer->m_validation_layers[i] = new char[strlen(layer)+1];
     strcpy((char*)p_renderer->m_validation_layers[i], layer);
   }
@@ -1439,7 +1439,7 @@ init_renderer(const TnaConfig* config,
 
   if(enable_validation_layers)
   {
-    p_log->warning("Vulkan validation layers enabled");
+    TNA_LOG_WARNING("Vulkan validation layers enabled");
   }
 
   create_vulkan_instance();
@@ -1502,14 +1502,14 @@ terminate_renderer()
 
 
 void
-begin_frame(TnaRenderingScene* scene) 
+begin_frame(rendering_scene_t* scene) 
 {
   vkgui_begin_frame();
   return;
 }
 
 void 
-end_frame(TnaRenderingScene* scene) 
+end_frame(rendering_scene_t* scene) 
 {
 	uint32_t image_index;
 	VkResult result = vkAcquireNextImageKHR(p_renderer->m_logical_device, 
@@ -1527,7 +1527,7 @@ end_frame(TnaRenderingScene* scene)
   } 
   else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) 
   {
-    p_log->error("failed to acquire swap chain image!");
+    TNA_LOG_ERROR("failed to acquire swap chain image!");
     report_error(TNA_ERROR::E_RENDERER_RUNTIME_ERROR);
   }
 
@@ -1555,7 +1555,7 @@ end_frame(TnaRenderingScene* scene)
                     &submit_info, 
                     VK_NULL_HANDLE) != VK_SUCCESS) 
   {
-    p_log->error("failed to submit draw command buffer!");
+    TNA_LOG_ERROR("failed to submit draw command buffer!");
     report_error(TNA_ERROR::E_RENDERER_RUNTIME_ERROR);
   }
 
@@ -1581,7 +1581,7 @@ end_frame(TnaRenderingScene* scene)
   } 
   else if (result != VK_SUCCESS) 
   {
-    p_log->error("failed to present swap chain image!");
+    TNA_LOG_ERROR("failed to present swap chain image!");
     report_error(TNA_ERROR::E_RENDERER_RUNTIME_ERROR);
   }
 
@@ -1601,7 +1601,7 @@ terminate_gui()
   vkgui_terminate();
 }
 
-TnaDeviceProperties
+device_properties_t
 get_device_properties()
 {
   return {p_renderer->m_mem_properties.limits.minUniformBufferOffsetAlignment};

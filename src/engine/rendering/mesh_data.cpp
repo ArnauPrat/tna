@@ -11,10 +11,10 @@
 namespace tna 
 {
 
-TnaMeshData*
-TnaMeshData::load(const std::string& path)
+mesh_data_t*
+mesh_data_create(const char* path)
 {
-  TnaMeshData* mesh_data = new TnaMeshData();
+  mesh_data_t* mesh_data = new mesh_data_t();
   mesh_data->m_aabb.m_min = {FLT_MAX, FLT_MAX, FLT_MAX};
   mesh_data->m_aabb.m_max = {FLT_MIN, FLT_MIN, FLT_MIN};
 
@@ -26,9 +26,9 @@ TnaMeshData::load(const std::string& path)
   std::vector<tinyobj::material_t> materials;
   std::string err;
 
-  if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err, path.c_str())) 
+  if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err, path)) 
   {
-    p_log->error("Unable to load mesh %s: %s", path.c_str(), err.c_str());
+    TNA_LOG_ERROR("Unable to load mesh %s: %s", path, err.c_str());
     report_error(TNA_ERROR::E_RENDERER_RESOURCE_ALLOCATION_ERROR);
   }
 
@@ -93,10 +93,10 @@ TnaMeshData::load(const std::string& path)
 }
 
 void
-TnaMeshData::unload(TnaMeshData* mesh_data) 
+mesh_data_destroy(mesh_data_t* mesh_data) 
 {
-  destroy_vertex_buffer(&mesh_data->m_vertex_buffer);
-  destroy_index_buffer(&mesh_data->m_index_buffer);
+  destroy_vertex_buffer(mesh_data->m_vertex_buffer);
+  destroy_index_buffer(mesh_data->m_index_buffer);
   delete mesh_data;
   return;
 }

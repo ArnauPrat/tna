@@ -19,7 +19,11 @@ atomic_counter_init(atomic_counter_t* counter)
 void
 atomic_counter_release(atomic_counter_t* counter)
 {
-  delete counter->p_impl;
+  if(counter->p_impl)
+  {
+    delete counter->p_impl;
+    counter->p_impl = nullptr;
+  }
 }
 
 void 

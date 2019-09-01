@@ -5,29 +5,25 @@
 namespace tna
 {
 
-struct TnaVertexBuffer
-{
-  void* p_data;
-};
+#define _TNA_RENDERING_INVALID_BUFFER nullptr
 
-struct TnaIndexBuffer
-{
-  void* p_data;
-};
+using vertex_buffer_t = void*;
+using index_buffer_t = void*;
 
-TnaVertexBuffer
+
+vertex_buffer_t*
 create_vertex_buffer(void* data,
                      size_t size);
 
 void
-destroy_vertex_buffer(TnaVertexBuffer* buffer);
+destroy_vertex_buffer(vertex_buffer_t* buffer);
 
-TnaIndexBuffer
+index_buffer_t*
 create_index_buffer(void* data,
                     size_t size);
 
 void
-destroy_index_buffer(TnaIndexBuffer* buffer);
+destroy_index_buffer(index_buffer_t* buffer);
 
 } /* tna */ 
 

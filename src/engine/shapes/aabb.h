@@ -10,10 +10,10 @@
 namespace  tna
 {
 
-struct TnaAABB
+struct aabb_t 
 {
-  TnaVector3 m_min;
-  TnaVector3 m_max;
+  vector3_t m_min = vector3_t(0.0f, 0.0f, 0.0f);
+  vector3_t m_max = vector3_t(1.0f, 1.0f, 1.0f);
 };
   
 } /*  tna */ 

@@ -14,12 +14,11 @@ namespace tna
 #define MAX_PRIMITIVE_COUNT 1000000
 #define MAX_FRAME_BUFFERS 3
 
-class TnaConfig;
-struct TnaRenderingScene;
+struct config_t;
+struct rendering_scene_t;
+extern rendering_scene_t* p_rendering_scene;
 
-extern TnaRenderingScene* p_rendering_scene;
-
-struct TnaDeviceProperties
+struct device_properties_t 
 {
   size_t m_uniform_offset_alignment;
 };
@@ -29,13 +28,13 @@ struct TnaDeviceProperties
  * \brief Creates the rendering scene structure
  */
 void
-create_rendering_scene();
+rendering_scene_create();
 
 /**
  * \brief Destroys the rendering scene structure
  */
 void
-destroy_rendering_scene();
+rendering_scene_destroy();
 
 /**
  * @brief Initializes the rendering subsystem
@@ -43,7 +42,7 @@ destroy_rendering_scene();
  * @param config
  */
 void
-init_renderer(const TnaConfig* config, 
+init_renderer(const config_t* config, 
               GLFWwindow* window);
 
 /**
@@ -56,13 +55,13 @@ terminate_renderer();
  * @brief Frees resources and starts the execution of a frame
  */
 void
-begin_frame(TnaRenderingScene* scene);
+begin_frame(rendering_scene_t* scene);
 
 /**
  * @brief Draws a frame
  */
 void
-end_frame(TnaRenderingScene* scene);
+end_frame(rendering_scene_t* scene);
 
 /**
  * \brief Initializes the gui subsystem
@@ -81,7 +80,7 @@ terminate_gui();
  *
  * \return Returns a TnaDeviceProperties structure with the property values
  */
-TnaDeviceProperties
+device_properties_t
 get_device_properties();
 
 }

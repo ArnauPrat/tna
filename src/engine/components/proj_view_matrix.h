@@ -9,11 +9,11 @@
 namespace tna 
 {
 
-struct TnaProjViewMatrix 
+struct projview_matrix_t 
 {
-  FURIOUS_COMPONENT(TnaProjViewMatrix);
+  FURIOUS_COMPONENT(projview_matrix_t);
   
-  TnaMatrix4 m_matrix;
+  matrix4_t m_matrix = matrix4_t(1.0f);
 };
 } /* tna */ 
 

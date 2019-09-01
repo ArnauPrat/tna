@@ -9,8 +9,11 @@
 namespace tna 
 {
 
-extern TnaResourceRegistry<TnaMeshData>* p_mesh_registry;
-extern TnaResourceRegistry<TnaShader>*   p_shader_registry;
+using mesh_registry_t = TnaResourceRegistry<mesh_data_t, mesh_data_create, mesh_data_destroy> ;
+using shader_registry_t = TnaResourceRegistry<shader_t, shader_create, shader_destroy>;
+
+extern mesh_registry_t*   p_mesh_registry;
+extern shader_registry_t* p_shader_registry;
 
 void 
 init_resources();

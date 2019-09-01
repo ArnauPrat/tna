@@ -10,13 +10,13 @@
 namespace tna
 {
 
-struct TnaGameState;
+struct game_state_t;
 
 TnaEntity
 create_unit(uint32_t size,
             const std::string& mesh,
-            const TnaVector3& position,
-            TnaGameState* state);
+            const vector3_t& position,
+            game_state_t* state);
 
   
 } /* tna */ 

@@ -5,26 +5,25 @@
 
 #include "../common.h"
 #include "buffer.h"
-#include <string>
 #include "../shapes/aabb.h"
 
 namespace tna 
 {
 
-struct TnaMeshData 
+struct mesh_data_t 
 {
-  TnaVertexBuffer  m_vertex_buffer;
-  TnaIndexBuffer   m_index_buffer;
-  uint32_t         m_num_vertices;
-  uint32_t         m_num_indices;
-  TnaAABB          m_aabb;
-
-  static TnaMeshData* 
-  load(const std::string& path);
-
-  static void 
-  unload(TnaMeshData* mesh_data);
+  vertex_buffer_t*  m_vertex_buffer  = nullptr;
+  index_buffer_t*   m_index_buffer   = nullptr;
+  uint32_t         m_num_vertices   = 0;
+  uint32_t         m_num_indices    = 0;
+  aabb_t           m_aabb;
 };
+
+mesh_data_t* 
+mesh_data_create(const char* path);
+
+void 
+mesh_data_destroy(mesh_data_t* mesh_data);
 
   
 } /* tna */ 

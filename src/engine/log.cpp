@@ -1,7 +1,9 @@
 #include "log.h"
 #include <time.h>
+#include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <assert.h>
 
 #define VARIADIC_BUFFER_SIZE 1024
 #define EXTRACT_VARIADIC( buffer, message ) \
@@ -10,54 +12,88 @@
                             vsnprintf(buffer, VARIADIC_BUFFER_SIZE, message, larg); \
                             va_end(larg);
 
-#define TIMED_MESSAGE( message ) \
+#define TIMED_MESSAGE( log, message ) \
                              time_t rawtime;  \
                              time(&rawtime); \
-                             std::string str_time(ctime(&rawtime)); \
-                             str_time.erase(str_time.size()-1,1); \
-                             m_log_file << str_time << " " << message << std::endl;
+                             char* str_time = ctime(&rawtime); \
+                             fprintf(log->p_log_file, "%s %s\n", str_time, message);
 
-namespace tna {
-
-
-TnaLog::TnaLog(const char* filename) : 
-  m_log_file{filename},
-  m_errors{0}
+namespace tna 
 {
-      log("Started execution");
+
+log_t* p_log = nullptr;
+
+void 
+log_aux(log_t* log, 
+        const char* type, 
+        const char* message );
+
+void
+log_create(const char* filename)
+{
+  p_log = new log_t();
+  log_init(p_log, filename);
 }
 
-TnaLog::~TnaLog() {
-  log("Finished execution");
-  if(m_log_file) {
-    m_log_file.close();
+void
+log_destroy()
+{
+  if(p_log)
+  {
+    log_release(p_log);
+    delete p_log;
+    p_log = nullptr;
   }
-  if(m_errors > 0) {
+}
+
+void
+log_init(log_t* log, const char* filename)
+{
+  log->p_log_file = fopen(filename, "r");
+  log_message(log, "Started execution");
+}
+
+
+
+void
+log_release(log_t* log)
+{
+  log_message(log, "Finished execution");
+  if(log->p_log_file) 
+  {
+    fclose(log->p_log_file);
+  }
+  if(log->m_errors > 0) 
+  {
     printf("Execution finished with errors. Check the log file\n");
   }
 }
 
-void TnaLog::log(const char* message, ...) {
+void log_message(log_t* log, const char* message, ...) {
+    assert(log != nullptr && "Logfile is not initialized");
     char buffer[VARIADIC_BUFFER_SIZE]; 
     EXTRACT_VARIADIC(buffer, message)
-        Message("LOG", buffer);
+    log_aux(log,"LOG", buffer);
 }
-void TnaLog::error(const char* message, ...) {
+void log_error(log_t* log, const char* message, ...) {
+    assert(log != nullptr && "Logfile is not initialized");
     char buffer[VARIADIC_BUFFER_SIZE]; 
     EXTRACT_VARIADIC(buffer, message)
-      Message("ERROR", buffer);
-}
-
-void TnaLog::warning(const char* message, ...) {
-    char buffer[VARIADIC_BUFFER_SIZE]; 
-    EXTRACT_VARIADIC(buffer, message)
-      Message("WARNING", buffer);
+    log_aux(log, "ERROR", buffer);
 }
 
-void TnaLog::Message(const char* type, const char* message) {
+void log_warning(log_t* log, const char* message, ...) {
+    assert(log != nullptr && "Logfile is not initialized");
+    char buffer[VARIADIC_BUFFER_SIZE]; 
+    EXTRACT_VARIADIC(buffer, message)
+    log_aux(log, "WARNING", buffer);
+}
+
+void log_aux(log_t* log, const char* type, const char* message) {
+    assert(log != nullptr && "Logfile is not initialized");
     char buffer[VARIADIC_BUFFER_SIZE];
-    sprintf(buffer, ": %s: %s",type, message);
-    TIMED_MESSAGE(buffer);
+    snprintf(buffer, VARIADIC_BUFFER_SIZE, ": %s: %s",type, message);
+    TIMED_MESSAGE(log, buffer);
 }
 
 }

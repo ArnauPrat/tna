@@ -9,7 +9,6 @@
 #include "vkmem_alloc.h"
 #include "vkdevice.h"
 
-#include <vector>
 
 struct GLFWwindow;
 

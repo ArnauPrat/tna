@@ -9,15 +9,16 @@
 namespace tna 
 {
 
-struct TnaViewport 
+struct viewport_t 
 {
-  FURIOUS_COMPONENT(TnaViewport);
+  FURIOUS_COMPONENT(viewport_t);
 
-  uint32_t  m_width;
-  uint32_t  m_height;
-  float     m_near;
-  float     m_far;
-  float     m_field;
+  uint32_t  m_width     = 900;
+  uint32_t  m_height    = 1440;
+  float     m_near      = 0.1f;
+  float     m_far       = 1000.0f;
+  float     m_field     = 60.0f;
+
 };
   
 } /* tna */ 

@@ -14,7 +14,11 @@ mutex_init(mutex_t* mutex)
 void
 mutex_release(mutex_t* mutex)
 {
-  delete mutex->p_mutex_impl;
+  if(mutex->p_mutex_impl)
+  {
+    delete mutex->p_mutex_impl;
+    mutex->p_mutex_impl = nullptr;
+  }
 }
 
 void

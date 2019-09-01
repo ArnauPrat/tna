@@ -10,7 +10,7 @@
 namespace tna 
 {
 
-template<typename T>
+template<typename T, T*(*CreateFunc)(const char*), void(*DestroyFunc)(T*)>
 class TnaResourceRegistry 
 {
 public:

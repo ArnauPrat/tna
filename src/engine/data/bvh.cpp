@@ -47,7 +47,7 @@ destroy_bvh(TnaBVHNode* root)
  * \return  The x component of the vector
  */
 float
-extract_x(const TnaVector3* vector)
+extract_x(const vector3_t* vector)
 {
   return vector->x;
 }
@@ -60,7 +60,7 @@ extract_x(const TnaVector3* vector)
  * \return  The y component of the vector
  */
 float
-extract_y(const TnaVector3* vector)
+extract_y(const vector3_t* vector)
 {
   return vector->y;
 }
@@ -73,7 +73,7 @@ extract_y(const TnaVector3* vector)
  * \return  The z component of the vector
  */
 float
-extract_z(const TnaVector3* vector)
+extract_z(const vector3_t* vector)
 {
   return vector->z;
 }
@@ -94,12 +94,12 @@ extract_z(const TnaVector3* vector)
  * \return Returns the SAH score of such split
  */
 float
-compute_sah_score(const TnaVector3* centroids, 
+compute_sah_score(const vector3_t* centroids, 
                   const uint32_t* bin_maps,
                   uint32_t num_elements, 
                   uint32_t split_point, 
-                  TnaAABB* left_aabb,
-                  TnaAABB* right_aabb,
+                  aabb_t* left_aabb,
+                  aabb_t* right_aabb,
                   uint32_t* left_count,
                   uint32_t* right_count)
 {
@@ -124,7 +124,7 @@ compute_sah_score(const TnaVector3* centroids,
       i < num_elements; 
       ++i)
   {
-    TnaAABB* target_aabb = nullptr;
+    aabb_t* target_aabb = nullptr;
     if(bin_maps[i] <= split_point)
     {
       target_aabb = left_aabb;
@@ -136,7 +136,7 @@ compute_sah_score(const TnaVector3* centroids,
       (*right_count)++;
     }
 
-    const TnaVector3* centroid = &centroids[i];
+    const vector3_t* centroid = &centroids[i];
     target_aabb->m_max.x = fmax(target_aabb->m_max.x, centroid->x);
     target_aabb->m_max.y = fmax(target_aabb->m_max.y, centroid->y);
     target_aabb->m_max.z = fmax(target_aabb->m_max.z, centroid->z);
@@ -150,8 +150,8 @@ compute_sah_score(const TnaVector3* centroids,
 
 void
 build_bvh(TnaBVHNode* root, 
-          TnaAABB** aabb, 
-          TnaVector3* centroids,
+          aabb_t** aabb, 
+          vector3_t* centroids,
           void** data, 
           const uint32_t* index,
           uint32_t num_elements)
@@ -178,7 +178,7 @@ build_bvh(TnaBVHNode* root,
       i < num_elements; 
       ++i)
   {
-    TnaVector3* centroid = &centroids[index[i]];
+    vector3_t* centroid = &centroids[index[i]];
 
     max_x = fmax(max_x, centroid->x);
     min_x = fmin(min_x, centroid->x);
@@ -197,7 +197,7 @@ build_bvh(TnaBVHNode* root,
 
   float extent_min;
   float extent_max;
-  float (*extract_dim)(const TnaVector3*) = nullptr;
+  float (*extract_dim)(const vector3_t*) = nullptr;
   if(extent_x > extent_y)
   {
     extract_dim = extract_x;
@@ -235,14 +235,14 @@ build_bvh(TnaBVHNode* root,
   // search for optimal split point
   uint32_t best_split_point = 0;
   float best_split_score = FLT_MAX;
-  TnaAABB best_left_aabb;
-  TnaAABB best_right_aabb;
+  aabb_t best_left_aabb;
+  aabb_t best_right_aabb;
   uint32_t best_left_count;
   uint32_t best_right_count;
   for(uint32_t i = 0; i < num_bins - 1; ++i)
   {
-    TnaAABB left_aabb;
-    TnaAABB right_aabb;
+    aabb_t left_aabb;
+    aabb_t right_aabb;
     uint32_t left_count;
     uint32_t right_count;
     float score = compute_sah_score(centroids, 
@@ -323,7 +323,7 @@ build_bvh(TnaBVHNode* root,
 
 void
 build_bvh(TnaBVHNode* root, 
-          TnaAABB** aabb, 
+          aabb_t** aabb, 
           void** data, 
           uint32_t num_elements)
 {
@@ -331,15 +331,15 @@ build_bvh(TnaBVHNode* root,
   if(num_elements > 0)
   {
 
-  TnaVector3* centroids = new TnaVector3[num_elements];
+  vector3_t* centroids = new vector3_t[num_elements];
   uint32_t* index = new uint32_t[num_elements];
 
   for(uint32_t i = 0;
       i < num_elements; 
       ++i)
   {
-    TnaVector3* centroid = &centroids[i];
-    *centroid = TnaVector3((aabb[i]->m_max.x - aabb[i]->m_min.x) / 2.0f + aabb[i]->m_min.x,
+    vector3_t* centroid = &centroids[i];
+    *centroid = vector3_t((aabb[i]->m_max.x - aabb[i]->m_min.x) / 2.0f + aabb[i]->m_min.x,
                            (aabb[i]->m_max.y - aabb[i]->m_min.y) / 2.0f + aabb[i]->m_min.y,
                            (aabb[i]->m_max.z - aabb[i]->m_min.z) / 2.0f + aabb[i]->m_min.z);
     index[i] = i;
@@ -366,7 +366,7 @@ rebuild_bvh(TnaBVHNode* root)
 
 void
 insert_bvh(TnaBVHNode* root, 
-           TnaAABB** aabb, 
+           aabb_t** aabb, 
            void** data, 
            uint32_t num_elements)
 {
@@ -375,7 +375,7 @@ insert_bvh(TnaBVHNode* root,
 
 void
 insert_bvh(TnaBVHNode* root, 
-           TnaAABB* aabb, 
+           aabb_t* aabb, 
            void* data)
 {
 }

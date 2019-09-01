@@ -11,11 +11,11 @@ namespace tna
 template <typename T>
 struct queue_t
 {
-  uint32_t  m_start;
-  uint32_t  m_end; 
-  uint32_t m_num_elements;
-  uint32_t m_capacity;
-  T*       p_elements;
+  uint32_t  m_start         = 0;
+  uint32_t  m_end           = 0; 
+  uint32_t  m_num_elements  = 0;
+  uint32_t  m_capacity      = 0;
+  T*        p_elements      = nullptr;
 };
 
 template <typename T>

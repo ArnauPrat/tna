@@ -17,11 +17,11 @@ enum class TnaBVHNodeType
 struct TnaBVHNode
 {
   TnaBVHNodeType m_type;
-  TnaAABB        m_aabb;
+  aabb_t        m_aabb;
   union {
     struct {
       void* p_data;
-      TnaAABB* p_aabb;
+      aabb_t* p_aabb;
     } m_leaf;
 
     struct {
@@ -58,7 +58,7 @@ destroy_bvh(TnaBVHNode* root);
  */
 void
 build_bvh(TnaBVHNode* root, 
-           TnaAABB** aabb, 
+           aabb_t** aabb, 
            void** data, 
            uint32_t num_elements);
 
@@ -81,7 +81,7 @@ rebuild_bvh(TnaBVHNode* root);
  */
 void
 insert_bvh(TnaBVHNode* root, 
-           TnaAABB** aabb, 
+           aabb_t** aabb, 
            void** data, 
            uint32_t num_elements);
 
@@ -96,7 +96,7 @@ insert_bvh(TnaBVHNode* root,
  */
 void
 insert_bvh(TnaBVHNode* root, 
-           TnaAABB* aabb, 
+           aabb_t* aabb, 
            void* data);
 
 /**

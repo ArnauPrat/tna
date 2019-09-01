@@ -5,18 +5,18 @@
 namespace tna
 {
 
-template<typename T>
-TnaResourceRegistry<T>::~TnaResourceRegistry<T>() 
+template<typename T, T*(*CreateFunc)(const char*), void(*DestroyFunc)(T*)>
+TnaResourceRegistry<T,CreateFunc,DestroyFunc>::~TnaResourceRegistry<T,CreateFunc,DestroyFunc>() 
 {
   for(auto pair : m_resources) {
-    T::unload(pair.second);
+    DestroyFunc(pair.second);
   }
   m_resources.clear();
 }
 
 
-template<typename T>
-T* TnaResourceRegistry<T>::load(const std::string& resource_name) 
+template<typename T, T*(*CreateFunc)(const char*), void(*DestroyFunc)(T*)>
+T* TnaResourceRegistry<T,CreateFunc,DestroyFunc>::load(const std::string& resource_name) 
 {
   auto it = m_resources.find(resource_name);
   if(it == m_resources.end()) 
@@ -24,7 +24,7 @@ T* TnaResourceRegistry<T>::load(const std::string& resource_name)
     std::string path = get_path(resource_name);
     if(!path.empty()) 
     {
-      T* resource = T::load(path);
+      T* resource = CreateFunc(path.c_str());
       m_resources.insert(std::make_pair(resource_name, resource));
       return resource;
     }
@@ -36,22 +36,22 @@ T* TnaResourceRegistry<T>::load(const std::string& resource_name)
   }
 }
 
-template<typename T>
-void  TnaResourceRegistry<T>::unload(const std::string& resource_name) 
+template<typename T, T*(*CreateFunc)(const char*), void(*DestroyFunc)(T*)>
+void  TnaResourceRegistry<T,CreateFunc,DestroyFunc>::unload(const std::string& resource_name) 
 {
   auto it = m_resources.find(resource_name);
   if(it != m_resources.end()) 
   {
-    T::unload(it->second);
+    DestroyFunc(it->second);
     m_resources.erase(it);
   }
 }
 
-template<typename T>
-void  TnaResourceRegistry<T>::clear() 
+template<typename T, T*(*CreateFunc)(const char*), void(*DestroyFunc)(T*)>
+void  TnaResourceRegistry<T,CreateFunc,DestroyFunc>::clear() 
 {
   for(auto pair : m_resources) {
-    T::unload(pair.second);
+    DestroyFunc(pair.second);
   }
   m_resources.clear();
 }

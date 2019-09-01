@@ -4,56 +4,12 @@
 #include "resources/directory_registry.h"
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 
 
-#define TNA_VK_VALIDATION_LAYERS_GROWTH 8
 
 namespace tna 
 {
-
-TnaConfig::TnaConfig() : 
-m_viewport_width(1440),
-m_viewport_height(900),
-m_fullscreen(false),
-m_max_vk_vlayers(0),
-m_num_vk_vlayers(0),
-m_vk_vlayers(nullptr)
-{
-
-}
-
-TnaConfig::~TnaConfig()
-{
-  if(m_vk_vlayers != NULL)
-  {
-    for(uint32_t i = 0; i < m_num_vk_vlayers; ++i)
-    {
-      delete m_vk_vlayers[i];
-    }
-    free(m_vk_vlayers);
-    m_max_vk_vlayers = 0;
-    m_num_vk_vlayers = 0;
-    m_vk_vlayers = NULL;
-  }
-}
-
-
-void
-TnaConfig::insert_vk_layer(const std::string& layer_name)
-{
-  if(m_num_vk_vlayers == m_max_vk_vlayers)
-  {
-    m_max_vk_vlayers += TNA_VK_VALIDATION_LAYERS_GROWTH;
-    m_vk_vlayers = (std::string**)realloc(m_vk_vlayers, sizeof(std::string*)*m_max_vk_vlayers);
-  }
-  m_vk_vlayers[m_num_vk_vlayers] = new std::string(layer_name);
-  m_num_vk_vlayers++;
-}
-
-////////////////////////////////////////////////
-////////////////////////////////////////////////
-////////////////////////////////////////////////
-
 
 static int 
 fread_line(FILE* fd, char** buffer, size_t* buffer_size)
@@ -77,12 +33,12 @@ fread_line(FILE* fd, char** buffer, size_t* buffer_size)
 }
 
 void 
-load_config(const std::string& configFileName, TnaConfig* config) 
+config_init(config_t* config, const char* file_name) 
 {
-  FILE* fd = fopen(configFileName.c_str(), "r");
+  FILE* fd = fopen(file_name, "r");
   if(fd == NULL)
   {
-    p_log->error("Configuration file %s does not exist", configFileName.c_str());
+    TNA_LOG_ERROR("Configuration file %s does not exist", file_name);
     report_error(TNA_ERROR::E_SUCCESS);
   }
 
@@ -102,7 +58,7 @@ load_config(const std::string& configFileName, TnaConfig* config)
     char* tok = strtok(buffer," \t" );
     if(tok == NULL)
     {
-      p_log->error("Ill-formed configuration file entry at line %d", line_count);
+      TNA_LOG_ERROR("Ill-formed configuration file entry at line %d", line_count);
       report_error(TNA_ERROR::E_IO_UNEXPECTED_INPUT_ERROR);
     }
 
@@ -118,7 +74,7 @@ load_config(const std::string& configFileName, TnaConfig* config)
     tok = strtok(NULL," \t");
     if(tok == NULL)
     {
-      p_log->error("Ill-formed configuration file entry at line %d", line_count);
+      TNA_LOG_ERROR("Ill-formed configuration file entry at line %d", line_count);
       report_error(TNA_ERROR::E_IO_UNEXPECTED_INPUT_ERROR);
     }
 
@@ -150,7 +106,7 @@ load_config(const std::string& configFileName, TnaConfig* config)
 
     if (strcmp(option,"VkValidationLayer") == 0) 
     {
-      config->insert_vk_layer(std::string(value));
+      config_insert_vk_layer(config, value);
     }
 
     if (strcmp(option,"ResourceDirectory") == 0)
@@ -158,7 +114,7 @@ load_config(const std::string& configFileName, TnaConfig* config)
       register_directory(value); 
     }
 
-    p_log->log("Parsed option %s with value %s", option, value);
+    TNA_LOG_ERROR("Parsed option %s with value %s", option, value);
     line_count++;
   }
   fclose(fd);
@@ -167,4 +123,34 @@ load_config(const std::string& configFileName, TnaConfig* config)
   free(value);
   return;
 } 
+
+void
+config_release(config_t* config)
+{
+    for(uint32_t i = 0; i < config->m_num_vk_vlayers; ++i)
+    {
+      delete [] config->m_vk_vlayers[i];
+    }
+    config->m_num_vk_vlayers = 0;
+}
+
+
+void
+config_insert_vk_layer(config_t* config, 
+                       const char* layer_name)
+{
+  assert(config->m_num_vk_vlayers < _TNA_MAX_VK_VALIDATION_LAYERS && "Maximum number of validarion layers exceeded");
+
+  uint32_t layer_name_length = strlen(layer_name);
+  config->m_vk_vlayers[config->m_num_vk_vlayers] = new char[layer_name_length+1];
+  strcpy(config->m_vk_vlayers[config->m_num_vk_vlayers], layer_name);
+  config->m_num_vk_vlayers++;
+}
+
+////////////////////////////////////////////////
+////////////////////////////////////////////////
+////////////////////////////////////////////////
+
+
+
 }

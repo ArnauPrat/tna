@@ -87,8 +87,12 @@ set(VK_RENDERER_SOURCE_FILES
   )
 
 set(TNA_ENGINE_COMPONENTS
+  engine/components/fps_camera.h
+  engine/components/fps_camera.cpp
   engine/components/render_mesh_data.h
+  engine/components/render_mesh_data.cpp
   engine/components/transform.h
+  engine/components/transform.cpp
   engine/components/transform_matrix.h
   )
 
@@ -166,6 +170,18 @@ set(TNA_ENGINE_SOURCE_FILES
   engine/data/queue.inl
 	)
 
+set(TNA_ENGINE_SCRIPTS
+  engine/scripts/render_mesh.cpp
+  engine/scripts/transform_hierarchy.cpp
+  engine/scripts/set_proj_view.cpp
+  )
+
+set(TNA_SCRIPTS
+  scripts/rotator.cpp
+  scripts/update_unit_members.cpp
+  scripts/test.cpp
+  )
+
 add_library(tnalib STATIC 
   ${TNA_ENGINE_SOURCE_FILES}
   )
@@ -184,17 +200,6 @@ set(TNA_SOURCE_FILES
 	)
 
 
-set(TNA_ENGINE_SCRIPTS
-  engine/scripts/render_mesh.cpp
-  engine/scripts/transform_hierarchy.cpp
-  engine/scripts/set_proj_view.cpp
-  )
-
-set(TNA_SCRIPTS
-  scripts/rotator.cpp
-  scripts/update_unit_members.cpp
-  scripts/test.cpp
-  )
 
 message(STATUS ${CMAKE_CURRENT_BINARY_DIR})
 add_custom_command(

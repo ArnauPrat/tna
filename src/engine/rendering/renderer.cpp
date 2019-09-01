@@ -7,17 +7,19 @@
 namespace tna
 {
 
-TnaRenderingScene* p_rendering_scene = nullptr;
+rendering_scene_t* p_rendering_scene = nullptr;
 
 void
-create_rendering_scene()
+rendering_scene_create()
 {
-  p_rendering_scene = new TnaRenderingScene();
+  p_rendering_scene = new rendering_scene_t();
+  rendering_scene_init(p_rendering_scene);
 }
 
 void
-destroy_rendering_scene()
+rendering_scene_destroy()
 {
+  rendering_scene_release(p_rendering_scene);
   delete p_rendering_scene;
 }
   
