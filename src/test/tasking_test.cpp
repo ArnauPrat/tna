@@ -9,6 +9,8 @@
 
 namespace tna
 {
+
+constexpr uint32_t num_threads = 1;
   
 /**
  * Creates one asynchronous task per thread, where each task stores its therad id in the
@@ -16,17 +18,15 @@ namespace tna
  * */
 TEST(TaskingTest, SimpleAsycTaskTest) {
 
-  uint32_t numThreads = 4;
-
-  uint32_t* result = new uint32_t[numThreads];
+  uint32_t* result = new uint32_t[num_threads];
 
   // Starts Thread Pool
-  start_thread_pool(numThreads);
+  start_thread_pool(num_threads);
 
   // Create tasks
   atomic_counter_t syncCounter;
   atomic_counter_init(&syncCounter);
-  for(uint32_t i = 0; i < numThreads; ++i) {
+  for(uint32_t i = 0; i < num_threads; ++i) {
     task_t task;
     task.p_fp = [] (void * arg){
                 int32_t* result = reinterpret_cast<int32_t*>(arg);
@@ -45,12 +45,13 @@ TEST(TaskingTest, SimpleAsycTaskTest) {
   stop_thread_pool();
 
   // Checks the results
-  for(uint32_t i = 0; i < numThreads; ++i) {
+  for(uint32_t i = 0; i < num_threads; ++i) {
     ASSERT_TRUE(result[i] == i);
   }
 
   delete [] result;
 }
+
 
 
 
@@ -102,6 +103,8 @@ void mergeArrays(int32_t* array, int32_t* workArray, int32_t begin, int32_t end)
 void mergeSort(void* args) {
   Params* params = reinterpret_cast<Params*>(args);
   if(params->m_end - params->m_begin > 2) {
+
+    printf("THREAD ID: %d BEGIN: %d END: %d SORTS\n", get_current_thread_id(), params->m_begin, params->m_end);
     int32_t splitPoint = (params->m_end - params->m_begin) / 2 + params->m_begin;
     Params leftParams{params->m_begin, splitPoint, params->m_inputArray, params->m_workArray};
     Params rightParams{splitPoint, params->m_end, params->m_inputArray, params->m_workArray};
@@ -118,12 +121,18 @@ void mergeSort(void* args) {
     execute_task_async(get_current_thread_id(), task_right, &counter);
     atomic_counter_join(&counter);
     atomic_counter_release(&counter);
+    printf("THREAD ID: %d BEGIN: %d END: %d MERGES\n", get_current_thread_id(), params->m_begin, params->m_end);
     mergeArrays(params->m_inputArray, params->m_workArray, params->m_begin, params->m_end);
-  } else {
-    if(params->m_inputArray[params->m_begin] > params->m_inputArray[params->m_end-1]) {
+  } 
+  else 
+  {
+    if(params->m_inputArray[params->m_begin] > params->m_inputArray[params->m_end-1]) 
+    {
       params->m_workArray[params->m_begin] = params->m_inputArray[params->m_end-1];
       params->m_workArray[params->m_end-1] = params->m_inputArray[params->m_begin];
-    } else {
+    } 
+    else 
+    {
       params->m_workArray[params->m_begin] = params->m_inputArray[params->m_begin];
       params->m_workArray[params->m_end-1] = params->m_inputArray[params->m_end-1];
     }
@@ -164,10 +173,10 @@ void mergeSortStart(int32_t* inputArray, int32_t length) {
 }
 
 
-TEST(TaskingTest, ParallelSortTest) {
+/*TEST(TaskingTest, ParallelSortTest) {
 
   start_thread_pool(2);
-  int32_t arrayLength = 4096;
+  int32_t arrayLength = 4;
   int32_t* array = new int32_t[arrayLength];
 
   for (int i = 0; i < arrayLength; ++i) {
@@ -183,7 +192,7 @@ TEST(TaskingTest, ParallelSortTest) {
   delete [] array;
   stop_thread_pool();
 
-}
+}*/
 
 } /* tna */ 
 

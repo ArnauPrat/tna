@@ -21,6 +21,7 @@ struct global_transform_matrix_t
   FURIOUS_COMPONENT(global_transform_matrix_t);
 
   matrix4_t  m_matrix = matrix4_t(1.0f);
+  bool        m_dirty  = true;
 };
   
 } /* tna */ 

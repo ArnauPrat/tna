@@ -32,10 +32,19 @@ void
 queue_push(queue_t<T>* queue, 
            T element);
 
-
+/**
+ * \brief Pops an element from the queue
+ *
+ * @tparam T The type of the element to pop
+ * \param queue The queue to pop the element from
+ * \param element A pointer to store the popped element to. If the queue is
+ * empty, nothing is copied to element.
+ *
+ * \return Returns True if an element was found, false otherwise.
+ */
 template <typename T>
-T
-queue_pop(queue_t<T>* queue);
+bool
+queue_pop(queue_t<T>* queue, T* element);
 
 } /* tna */ 
 

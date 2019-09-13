@@ -186,6 +186,14 @@ add_library(tnalib STATIC
   ${TNA_ENGINE_SOURCE_FILES}
   )
 
+target_link_libraries(tnalib
+  boost_context
+  ${FURIOUS_LIBRARIES} 
+  glfw
+  ${Vulkan_LIBRARIES}
+  pthread
+)
+
 set(TNA_SOURCE_FILES 
   game.cpp
   game.h
@@ -219,18 +227,12 @@ add_custom_target(
   COMMENT "Regenerating furious code"
   )
 
-
 add_executable(tna
 	${TNA_SOURCE_FILES}
   )  
 
 target_link_libraries(tna 
-  boost_context
   tnalib
-  ${FURIOUS_LIBRARIES} 
-  glfw
-  ${Vulkan_LIBRARIES}
-  pthread
   )
 
 add_subdirectory(test)

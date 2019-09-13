@@ -17,7 +17,9 @@ function(create_test NAME)
     )
 endfunction(create_test)
 
-SET(TESTS "tasking_test")
+SET(TESTS 
+  "tasking_test"
+  "queue_test")
 
 foreach( TEST ${TESTS} )
   create_test(${TEST})

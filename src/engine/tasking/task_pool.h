@@ -37,7 +37,7 @@ struct task_pool_t
   /**
    * @brief The number of queues
    */
-  uint32_t             m_numQueues = 0;
+  uint32_t                m_num_queues = 0;
 
 };
 

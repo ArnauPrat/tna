@@ -17,7 +17,7 @@ struct transform_t
   vector3_t  m_position        = vector3_t(0.0f, 0.0f, 0.0f);
   vector3_t  m_local_rotation  = vector3_t(0.0f, 0.0f, 0.0f);
   vector3_t  m_global_rotation = vector3_t(0.0f, 0.0f, 0.0f);
-  vector3_t  m_scale           = vector3_t(0.0f, 0.0f, 0.0f);
+  vector3_t  m_scale           = vector3_t(1.0f, 1.0f, 1.0f);
   bool        m_dirty           = true;
 };
 
@@ -35,8 +35,8 @@ transform_init(transform_t* transform,
                const vector3_t& position, 
                const vector3_t& rotation, 
                const vector3_t& scale); 
-matrix4_t
-transform_to_matrix(transform_t* tranform);
+void
+transform_to_matrix(const transform_t* tranform, matrix4_t* output);
 
 } /* tna */ 
 #endif /* ifndef _TNA_TRANSFORM_H_ */

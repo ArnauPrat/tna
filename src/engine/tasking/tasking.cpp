@@ -13,9 +13,10 @@
 #include <condition_variable>
 #include <atomic>
 
+#include <unistd.h>
+#include <sys/mman.h>
 
 
-#define _TNA_TASKING_STACK_SIZE 16384
 
 namespace tna
 {
@@ -24,25 +25,47 @@ struct execution_context_t;
 
 using execution_context_queue_t = queue_t<execution_context_t*>;
 
+static size_t m_stack_size = 0;
+
 /**
  * \brief Stores the context of an execution
  */
 struct execution_context_t
 {
-  char* p_stack;
-  boost_context::fcontext_t m_context;
+  char* p_stack = nullptr;
+  boost_context::fcontext_t m_context = nullptr;
 };
 
 void
 execution_context_init(execution_context_t* exec_context)
 {
-  exec_context->p_stack = new char[_TNA_TASKING_STACK_SIZE];
+  assert(m_stack_size != 0 && "STACK SIZE must be greater than zero");
+  void *ptr;
+	int result = posix_memalign(&ptr, getpagesize(), m_stack_size + 2*getpagesize());
+  assert( result == 0 && "Failed aligned memory allocation");
+  // memory guard
+  result = mprotect(ptr,getpagesize(), PROT_NONE);
+  assert(result == 0 && "Couldn't set page protection");
+
+  result = mprotect((char*)ptr + getpagesize() + m_stack_size, getpagesize(), PROT_NONE);
+  assert(result == 0 && "Couldn't set page protection");
+  exec_context->p_stack = (char*)ptr;
 }
 
 void
 execution_context_release(execution_context_t* exec_context)
 {
-  delete [] exec_context->p_stack;
+  int result = mprotect(exec_context->p_stack, getpagesize(), PROT_READ | PROT_WRITE);
+  assert(result == 0 && "Couldn't remove page protection");
+  result = mprotect(exec_context->p_stack + getpagesize() + m_stack_size, getpagesize(), PROT_READ | PROT_WRITE);
+  assert(result == 0 && "Couldn't remove page protection");
+  free(exec_context->p_stack);
+}
+
+void
+execution_context_reset(execution_context_t* exec_context)
+{
+  exec_context->m_context = nullptr;
 }
 
 ////////////////////////////////////////////////
@@ -62,41 +85,34 @@ struct task_context_t {
   /**
    * @brief Synchronization counter used to synchronize this task
    */
-  atomic_counter_t*     p_syn_counter;
+  atomic_counter_t*     p_syn_counter = nullptr;
 
   /**
    * @bried The execution context of this task
    */
-  execution_context_t*  p_context;
+  execution_context_t*  p_context     = nullptr;
 
   /**
    * @brief Whether the task is finished or not
    */
-  bool                  m_finished;
+  bool                  m_finished    = false;
 
   /**
    * @brief A pointer to the parent of the task in the task dependency graph
    */
-  task_context_t*      p_parent;
+  task_context_t*      p_parent       = nullptr;
 
 };  
 
 void
-task_context_init(task_context_t* context)
+task_context_reset(task_context_t* task_context)
 {
-  context->m_finished = false;
-  context->p_parent = nullptr;
-  context->p_syn_counter = nullptr;
-  context->p_context = nullptr;
-}
-
-void
-task_context_release(task_context_t* context)
-{
-  context->m_finished = false;
-  context->p_parent = nullptr;
-  context->p_syn_counter = nullptr;
-  context->p_context = nullptr;
+  task_context->m_task.p_fp   = nullptr;
+  task_context->m_task.p_args = nullptr;
+  task_context->p_syn_counter = nullptr;
+  task_context->p_context     = nullptr;
+  task_context->m_finished    = false;
+  task_context->p_parent      = nullptr;
 }
 
 /**
@@ -119,6 +135,9 @@ static task_context_queue_t*        p_task_context_queue = nullptr;
  */
 static mutex_t                          m_task_context_queue_mutex;
 
+/**
+ * \brief stores if the threadpool is initialized
+ */
 static bool                         m_initialized = false;
 
 /**
@@ -146,12 +165,6 @@ static task_pool_t                    m_to_start_task_pool;
  */
 static task_pool_t                   m_running_task_pool;
 
-
-/**
- * @brief Thread local variable to store the id of the current thread
- */
-static thread_local uint32_t        m_current_thread_id = INVALID_THREAD_ID;
-
 /**
  * @brief Array of Contexts used to store the main context of each thread to
  * fall back to it when yielding a task
@@ -163,7 +176,6 @@ static execution_context_t*            m_worker_contexts = nullptr;
  * threads that more work is ready
  */
 static std::mutex*                  m_condvar_mutexes = nullptr;
-
 
 /**
  * @brief Condition variables sed to notify sleeping threads that more work is
@@ -182,19 +194,31 @@ static bool*                        m_ready = nullptr;
 static thread_local task_context_t*    p_current_running_task = nullptr;
 
 /**
+ * @brief Thread local variable to store the id of the current thread
+ */
+static thread_local uint32_t        m_current_thread_id = INVALID_THREAD_ID;
+
+/**
  * @brief Finalizes the current running task and releases its resources
  */
 static void 
 finalize_current_running_task() {
+  assert(get_current_thread_id() < m_num_threads && "Invalid thead id");
+
   if(p_current_running_task->m_finished) 
   {
     if(p_current_running_task->p_syn_counter != nullptr) 
     {
       atomic_counter_fetch_decrement(p_current_running_task->p_syn_counter);
     }
+    mutex_lock(&m_execution_context_queue_mutex);
     queue_push(p_execution_context_queue, p_current_running_task->p_context);
+    mutex_unlock(&m_execution_context_queue_mutex);
     p_current_running_task->p_context = nullptr;
+
+    mutex_lock(&m_task_context_queue_mutex);
     queue_push(p_task_context_queue, p_current_running_task);
+    mutex_unlock(&m_task_context_queue_mutex);
   }
   else 
   {
@@ -203,6 +227,20 @@ finalize_current_running_task() {
                        p_current_running_task);
   }
   p_current_running_task = nullptr;
+}
+
+void
+fiber_function(void* arg)
+{
+  assert(get_current_thread_id() < m_num_threads && "Invalid thead id");
+  
+  task_context_t* task_context = (task_context_t*)arg;
+  task_context->m_task.p_fp(task_context->m_task.p_args);
+  task_context->m_finished = true;
+  boost_context::jump_fcontext(&task_context->p_context->m_context, 
+                               m_worker_contexts[get_current_thread_id()].m_context, 
+                               task_context->m_task.p_args);
+
 }
 
 /**
@@ -216,11 +254,12 @@ finalize_current_running_task() {
 static void 
 start_task(task_context_t* task_context) 
 {
-  p_current_running_task = task_context; // TODO: A pool should be used here
+  assert(get_current_thread_id() < m_num_threads && "Invalid thead id");
 
   // find free fiber
   mutex_lock(&m_execution_context_queue_mutex);
-  execution_context_t* ctx = queue_pop(p_execution_context_queue);
+  execution_context_t* ctx = nullptr; 
+  queue_pop(p_execution_context_queue, &ctx);
   mutex_unlock(&m_execution_context_queue_mutex);
 
   if(ctx == nullptr)
@@ -228,14 +267,25 @@ start_task(task_context_t* task_context)
     ctx = new execution_context_t();
     execution_context_init(ctx);
   }
+  else
+  {
+    // we reset it in case it is a reused context
+    execution_context_reset(ctx);
+  }
 
   // initialize fiber task function
   task_context->p_context = ctx;
-  ctx->m_context = boost_context::make_fcontext(ctx->p_stack + _TNA_TASKING_STACK_SIZE, 
-                                                _TNA_TASKING_STACK_SIZE, 
-                                                task_context->m_task.p_fp);
+
+  ctx->m_context = boost_context::make_fcontext(ctx->p_stack + getpagesize() + m_stack_size, 
+                                                m_stack_size, 
+                                                fiber_function);
+  // set the task as the current running task
+  p_current_running_task = task_context; 
+
   // jump to fiber
-  boost_context::jump_fcontext(&m_worker_contexts->m_context, ctx->m_context, task_context->m_task.p_args);
+  boost_context::jump_fcontext(&(m_worker_contexts[get_current_thread_id()].m_context), 
+                               ctx->m_context, 
+                               task_context);
   finalize_current_running_task();
 }
 
@@ -248,11 +298,13 @@ start_task(task_context_t* task_context)
 static void 
 resume_task(task_context_t* runningTask) 
 {
+  assert(get_current_thread_id() < m_num_threads && "Invalid thead id");
+
   p_current_running_task = runningTask;
   // call jump to fiber to resume
-  boost_context::jump_fcontext(&p_current_running_task->p_context->m_context, 
+  boost_context::jump_fcontext(&(m_worker_contexts[get_current_thread_id()].m_context), 
                                runningTask->p_context->m_context, 
-                               runningTask->m_task.p_args);
+                               runningTask);
   finalize_current_running_task();
 }
 
@@ -264,19 +316,17 @@ resume_task(task_context_t* runningTask)
 static void 
 thread_function(int threadId) 
 {
-
   m_current_thread_id = threadId;
-
   while(m_is_running[m_current_thread_id].load()) 
   {
-    task_context_t* task = task_pool_get_next(&m_to_start_task_pool, m_current_thread_id);
-    if(task != nullptr) 
+    task_context_t* task_context = task_pool_get_next(&m_to_start_task_pool, m_current_thread_id);
+    if(task_context != nullptr) 
     {
-      start_task(task);
+      start_task(task_context);
     } 
-    else if ( (task = task_pool_get_next(&m_running_task_pool, m_current_thread_id)) != nullptr)
+    else if ( (task_context = task_pool_get_next(&m_running_task_pool, m_current_thread_id)) != nullptr)
     {
-      resume_task(task);
+      resume_task(task_context);
     } 
     else 
     {
@@ -298,6 +348,22 @@ start_thread_pool(uint32_t numThreads)
 
   if(m_num_threads > 0) 
   {
+
+    // computing stack_size
+    constexpr size_t _TNA_STACK_SIZE = 16384;
+    size_t page_size = getpagesize();
+    size_t reminder = _TNA_STACK_SIZE % page_size;
+    if( reminder == 0)
+    {
+      m_stack_size = _TNA_STACK_SIZE;
+    }
+    else
+    {
+      m_stack_size = _TNA_STACK_SIZE + page_size - reminder;
+    }
+
+
+    // initializing resources
     task_pool_init(&m_to_start_task_pool, numThreads);
     task_pool_init(&m_running_task_pool, numThreads);
     m_worker_contexts  = new execution_context_t[numThreads];
@@ -312,20 +378,23 @@ start_thread_pool(uint32_t numThreads)
     m_condvars            = new std::condition_variable[m_num_threads];
     m_ready               = new bool[m_num_threads];
     p_execution_context_queue   = new execution_context_queue_t();
-    queue_init(p_execution_context_queue, 2048);
+    queue_init(p_execution_context_queue, 4096);
     mutex_init(&m_execution_context_queue_mutex);
+
     p_task_context_queue   = new task_context_queue_t();
-    queue_init(p_task_context_queue, 2048);
+    queue_init(p_task_context_queue, 4096);
     mutex_init(&m_task_context_queue_mutex);
 
 
     for(uint32_t i = 0; i < m_num_threads; ++i) {
       m_is_running[i].store(true);
-      p_threads[i] = new std::thread(thread_function, i);
       m_ready[i] = false;
+      p_threads[i] = new std::thread(thread_function, i);
     }
+
+    m_initialized = true;
+
   }
-  m_initialized = true;
 
 }
 
@@ -371,23 +440,22 @@ stop_thread_pool()
     task_pool_release(&m_to_start_task_pool);
 
     execution_context_t* execution_context = nullptr;
-    while((execution_context = queue_pop(p_execution_context_queue))  != nullptr)
+    while(queue_pop(p_execution_context_queue, &execution_context))
     {
       execution_context_release(execution_context);
-      delete [] execution_context;
+      delete execution_context;
     }
     queue_release(p_execution_context_queue);
-    delete [] p_execution_context_queue;
+    delete p_execution_context_queue;
     mutex_release(&m_execution_context_queue_mutex);
 
     task_context_t* task_context = nullptr;
-    while((task_context = queue_pop(p_task_context_queue))  != nullptr)
+    while(queue_pop(p_task_context_queue, &task_context))
     {
-      task_context_release(task_context);
-      delete [] task_context;
+      delete task_context;
     }
     queue_release(p_task_context_queue);
-    delete [] p_task_context_queue;
+    delete p_task_context_queue;
     mutex_release(&m_task_context_queue_mutex);
   }
   m_initialized = false;
@@ -402,14 +470,20 @@ execute_task_async(uint32_t queueId,
   assert(m_num_threads > 0 && "Number of threads in the threadpool must be > 0");
   
   mutex_lock(&m_task_context_queue_mutex);
-  task_context_t* task_context = queue_pop(p_task_context_queue);
+  task_context_t* task_context = nullptr;
+  queue_pop(p_task_context_queue, &task_context);
   mutex_unlock(&m_task_context_queue_mutex);
 
   if(task_context == nullptr)
   {
     task_context = new task_context_t();
-    task_context_init(task_context);
   }
+  else
+  { 
+    // we reset it in case it is a reused context
+    task_context_reset(task_context);
+  }
+
   task_context->m_task = task;
   task_context->p_syn_counter = counter;
   if(task_context->p_syn_counter != nullptr) 
@@ -439,8 +513,8 @@ execute_task_async(uint32_t queueId,
 
 void 
 execute_task_sync(uint32_t queueId, 
-                     task_t task, 
-                     atomic_counter_t* counter) 
+                  task_t task, 
+                  atomic_counter_t* counter) 
 {
   assert(m_initialized && "ThreadPool is not initialized");
   assert(m_num_threads > 0 && "Number of threads in the threadpool must be > 0");
@@ -450,6 +524,7 @@ execute_task_sync(uint32_t queueId,
 
 uint32_t get_current_thread_id() 
 {
+  assert(((m_current_thread_id >= 0 && m_current_thread_id < m_num_threads) || m_current_thread_id == INVALID_THREAD_ID) && "Invalid thread id");
   return m_current_thread_id;
 }
 
@@ -459,7 +534,7 @@ yield()
   assert(m_initialized && "ThreadPool is not initialized");
   assert(m_num_threads > 0 && "Number of threads in the threadpool must be > 0");
   assert(m_current_thread_id != INVALID_THREAD_ID);
-  boost_context::jump_fcontext(&p_current_running_task->p_context->m_context, m_worker_contexts[m_current_thread_id].m_context, nullptr);
+  boost_context::jump_fcontext(&(p_current_running_task->p_context->m_context), m_worker_contexts[m_current_thread_id].m_context, nullptr);
 }
 
 uint32_t

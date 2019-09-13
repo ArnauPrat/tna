@@ -16,10 +16,10 @@ extern mesh_registry_t*   p_mesh_registry;
 extern shader_registry_t* p_shader_registry;
 
 void 
-init_resources();
+resources_init();
 
 void 
-terminate_resources();
+resources_release();
   
 } /* tna */ 
 #endif /* ifndef _TNA_RESOURCES_H_ */

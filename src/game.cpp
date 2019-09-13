@@ -71,7 +71,7 @@ void Game::on_app_start()
   // CREATING SCENE
   create_terrain(&m_state);
   //create_buildings(&m_state);
-  //create_cars(&m_state);
+  create_cars(&m_state);
   //create_player(&m_state);
 
   /*for(uint32_t i = 0; i < 20; ++i)

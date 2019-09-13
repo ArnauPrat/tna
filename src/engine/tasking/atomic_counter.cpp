@@ -3,6 +3,7 @@
 #include "atomic_counter.h"
 #include "tasking.h"
 #include <atomic>
+#include <thread>
 
 
 namespace tna
@@ -50,7 +51,7 @@ void atomic_counter_join(atomic_counter_t* counter)
   {
     if(get_current_thread_id() == INVALID_THREAD_ID) 
     { // if this is a non-pool thread
-      //std::this_thread::sleep_for(std::chrono::milliseconds(1));
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
     } 
     else 
     { // if this is a lightweight thread
