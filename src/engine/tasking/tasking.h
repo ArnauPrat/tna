@@ -5,12 +5,13 @@
 
 #include "../types.h"
 #include "task.h"
+#include <assert.h>
 
 namespace tna
 {
 
 struct atomic_counter_t;
-  
+
 #define INVALID_THREAD_ID 0xffffffff
 
 /**

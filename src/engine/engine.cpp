@@ -8,6 +8,7 @@
 #include "gui/imgui.h"
 #include "tasking/tasking.h"
 #include "tasking/atomic_counter.h"
+#include "tasking/barrier.h"
 #include "data/queue.h"
 
 #include "components/proj_view_matrix.h"
@@ -47,6 +48,7 @@ struct task_params_t
   void*                 p_user_data = nullptr;
   furious::task_func_t  p_func = nullptr;
   uint32_t              m_queue_id = 0;
+  barrier_t*             p_barrier = nullptr;
 };
 
 static void 
@@ -106,7 +108,6 @@ initialize()
   // Initializing tasking's system thread pool
   mutex_init(&m_task_params_mutex);
   queue_init(&m_task_params_queue, 128);
-  m_num_threads = 1;
   start_thread_pool(m_num_threads);
 
   // Reading engine's config
@@ -249,6 +250,8 @@ run_task(const furious::task_t* furious_task,
 {
 
   task_params_t* tmp_task_params[m_num_threads];
+  barrier_t barrier;
+  barrier_init(&barrier);
   for(uint32_t i = 0; i < m_num_threads; ++i)
   {
     task_params_t* params = nullptr;
@@ -263,20 +266,23 @@ run_task(const furious::task_t* furious_task,
     params->p_user_data = user_data;
     params->p_func = furious_task->p_func;
     params->m_queue_id = i;
+    params->p_barrier = &barrier;
     task_t task;
     task.p_fp=[] (void* t) {
       task_params_t* params = (task_params_t*)t;
       params->p_func(params->m_delta, 
                      params->p_database,
                      params->p_user_data,
-                     1,
+                     64,
                      params->m_queue_id,
-                     m_num_threads); 
+                     m_num_threads,
+                     params->p_barrier); 
     };
     task.p_args=params;
     execute_task_async(i, task, sync_counter);
   }
   atomic_counter_join(sync_counter);
+  barrier_release(&barrier);
   for(uint32_t i = 0; i < m_num_threads; ++i)
   {
     queue_push(&m_task_params_queue, tmp_task_params[i]);
@@ -413,6 +419,7 @@ run(TnaGameApp* game_app)
     glfwPollEvents();
     begin_frame(p_rendering_scene);
     p_current_app->on_frame_start(time);
+
     run_furious_task_graph(task_graph, m_task_counters, time, p_database, nullptr);
     for(uint32_t i = 0; i < task_graph->m_num_tasks; ++i)
     {

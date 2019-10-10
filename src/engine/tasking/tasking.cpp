@@ -148,7 +148,7 @@ static std::atomic<bool>*           m_is_running = nullptr;
 /**
  * @brief The number of threads in the thread pool
  */
-static uint32_t                  m_num_threads = 0;
+static uint32_t                     m_num_threads = 0;
 
 /**
  * @brief Vector of running threads objects
@@ -334,8 +334,10 @@ thread_function(int threadId)
       std::unique_lock<std::mutex> lock(m_condvar_mutexes[m_current_thread_id]);
       m_ready[m_current_thread_id] = false;
       m_condvars[m_current_thread_id].wait_for(lock,
-                                             std::chrono::milliseconds(1), 
+                                             std::chrono::microseconds(200), 
                                              [] { return m_ready[m_current_thread_id]; });
+                                             
+                                             
     }
   }
 }
@@ -522,11 +524,13 @@ execute_task_sync(uint32_t queueId,
   atomic_counter_join(counter);
 }
 
-uint32_t get_current_thread_id() 
+uint32_t 
+get_current_thread_id() 
 {
   assert(((m_current_thread_id >= 0 && m_current_thread_id < m_num_threads) || m_current_thread_id == INVALID_THREAD_ID) && "Invalid thread id");
   return m_current_thread_id;
 }
+
 
 void 
 yield() 

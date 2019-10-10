@@ -40,9 +40,16 @@ atomic_counter_fetch_increment(atomic_counter_t* counter)
   return counter->p_impl->fetch_add(1);
 }
 
-int32_t atomic_counter_fetch_decrement(atomic_counter_t* counter)
+int32_t 
+atomic_counter_fetch_decrement(atomic_counter_t* counter)
 {
   return counter->p_impl->fetch_add(-1);
+}
+
+int32_t 
+atomic_counter_get(atomic_counter_t* counter)
+{
+  return counter->p_impl->load();
 }
 
 void atomic_counter_join(atomic_counter_t* counter) 
@@ -51,7 +58,7 @@ void atomic_counter_join(atomic_counter_t* counter)
   {
     if(get_current_thread_id() == INVALID_THREAD_ID) 
     { // if this is a non-pool thread
-      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+      //std::this_thread::sleep_for(std::chrono::milliseconds(1));
     } 
     else 
     { // if this is a lightweight thread

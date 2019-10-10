@@ -59,6 +59,16 @@ int32_t
 atomic_counter_fetch_decrement(atomic_counter_t* counter);
 
 /**
+ * \brief Gets the current value of the atomic counter 
+ *
+ * \param counter The atomic counter to get the value from
+ *
+ * \return Returns the current value of the atomic counter
+ */
+int32_t
+atomic_counter_get(atomic_counter_t* counter);
+
+/**
  * @brief Blocks until the counter is set to zero
  */
 void 
