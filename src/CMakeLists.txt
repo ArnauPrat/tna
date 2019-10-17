@@ -1,7 +1,7 @@
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wno-ignored-attributes -fno-exceptions -fno-rtti -fno-omit-frame-pointer")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_DEBUG_FLAGS} -O0 -pg -g -ggdb -D_DEBUG")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_RELEASE_FLAGS} -O3 -g -ggdb -DNDEBUG")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_DEBUG_FLAGS} -O0 -pg -g -ggdb -D_TNA_DEBUG -D_TNA_DEV")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_RELEASE_FLAGS} -O3 -g -ggdb -DNDEBUG -D_TNA_DEV")
 
 ### Setting up furious
 set(FURIOUS_ROOT "/home/aprat/projects/personal/furious/build/dist")
@@ -109,6 +109,8 @@ set(TNA_ENGINE_GUI
   engine/gui/imstb_truetype.h
   engine/gui/imgui_impl_glfw.h
   engine/gui/imgui_impl_glfw.cpp
+  engine/gui/widgets/tasking_widget.h
+  engine/gui/widgets/tasking_widget.cpp
   )
 
 set(TNA_ENGINE_TASKING

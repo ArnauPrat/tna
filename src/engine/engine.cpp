@@ -10,6 +10,7 @@
 #include "tasking/atomic_counter.h"
 #include "tasking/barrier.h"
 #include "data/queue.h"
+#include "gui/widgets/tasking_widget.h"
 
 #include "components/proj_view_matrix.h"
 #include "components/viewport.h"
@@ -39,16 +40,20 @@ mutex_t             m_task_params_mutex;
 task_params_queue_t m_task_params_queue; 
 atomic_counter_t*   m_task_counters = nullptr;
 atomic_counter_t*   m_post_task_counters = nullptr;
-uint32_t            m_num_threads = 1;
+uint32_t            m_num_threads = 4;
+float               m_last_game_loop_time = 0.0f;
 
+/**
+ * \brief Structure to pass parameters to takss
+ */
 struct task_params_t
 {
-  furious::Database*    p_database = nullptr;
-  float                 m_delta = 0.0;
-  void*                 p_user_data = nullptr;
-  furious::task_func_t  p_func = nullptr;
-  uint32_t              m_queue_id = 0;
-  barrier_t*             p_barrier = nullptr;
+  furious::Database*    p_database = nullptr;   //< pointer to database
+  float                 m_delta = 0.0;          //< delta from last frame
+  void*                 p_user_data = nullptr;  //< pointer to user data
+  furious::task_func_t  p_func = nullptr;       //< task function to execute
+  uint32_t              m_queue_id = 0;         //< the queue to add the task to
+  barrier_t*            p_barrier = nullptr;    //< the barrier to synchronize parallel tasks (null if not needed)
 };
 
 static void 
@@ -108,7 +113,7 @@ initialize()
   // Initializing tasking's system thread pool
   mutex_init(&m_task_params_mutex);
   queue_init(&m_task_params_queue, 128);
-  start_thread_pool(m_num_threads);
+  tasking_start_thread_pool(m_num_threads);
 
   // Reading engine's config
   if(file_exists("./config.ini")) 
@@ -173,7 +178,7 @@ terminate()
 
   resources_release();
   config_release(&m_config);
-  stop_thread_pool();
+  tasking_stop_thread_pool();
   task_params_t* next = nullptr;
   while(queue_pop(&m_task_params_queue, &next))
   {
@@ -228,6 +233,9 @@ draw_gui()
   ImGui::NewFrame();
   if(m_show_gui)
   {
+
+    //bool aux = true; ImGui::ShowDemoWindow(&aux);
+
     ImGui::Begin("TNA");                         
     ImGui::Text("Frame time %.3f ms",
                 1000.0f / ImGui::GetIO().Framerate);
@@ -235,7 +243,12 @@ draw_gui()
     ImGui::Text("FPS %.1f", 
                 ImGui::GetIO().Framerate);
 
+    ImGui::Text("Game Loop time: %.5f", 
+                m_last_game_loop_time);
     ImGui::End();
+
+    tasking_widget_render();
+
   }
   ImGui::Render();
 }
@@ -273,13 +286,30 @@ run_task(const furious::task_t* furious_task,
       params->p_func(params->m_delta, 
                      params->p_database,
                      params->p_user_data,
-                     64,
+                     16,
                      params->m_queue_id,
                      m_num_threads,
                      params->p_barrier); 
     };
     task.p_args=params;
-    execute_task_async(i, task, sync_counter);
+
+    char name[_TNA_TASKING_MAX_NAME_STRING_LENGTH];
+    snprintf(name, 
+             _TNA_TASKING_MAX_NAME_STRING_LENGTH, 
+             "Task %d", 
+             furious_task->m_id);
+
+    char info[_TNA_TASKING_MAX_INFO_STRING_LENGTH];
+    snprintf(info, 
+             _TNA_TASKING_MAX_INFO_STRING_LENGTH, 
+             "Task %d block_size: %d, worker: %d, num_threads: %d \n %s", 
+             furious_task->m_id, 
+             16, 
+             i, 
+             m_num_threads, 
+             furious_task->p_info);
+
+    tasking_execute_task_async(i, task, sync_counter, name, info);
   }
   atomic_counter_join(sync_counter);
   barrier_release(&barrier);
@@ -411,6 +441,8 @@ run(TnaGameApp* game_app)
 
   while (!glfwWindowShouldClose(p_window)) 
   {
+    tasking_record_new_frame();
+    
     // Keep running
     auto current_time = std::chrono::high_resolution_clock::now();
     float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
@@ -420,6 +452,7 @@ run(TnaGameApp* game_app)
     begin_frame(p_rendering_scene);
     p_current_app->on_frame_start(time);
 
+    auto game_loop_start = std::chrono::high_resolution_clock::now();
     run_furious_task_graph(task_graph, m_task_counters, time, p_database, nullptr);
     for(uint32_t i = 0; i < task_graph->m_num_tasks; ++i)
     {
@@ -431,6 +464,8 @@ run(TnaGameApp* game_app)
     {
       atomic_counter_join(&m_post_task_counters[i]);
     }
+    auto game_loop_end = std::chrono::high_resolution_clock::now();
+    m_last_game_loop_time = std::chrono::duration<float, std::chrono::milliseconds::period>(game_loop_end - game_loop_start).count();
 
     /*furious::__furious_frame(time, 
                              p_database, 

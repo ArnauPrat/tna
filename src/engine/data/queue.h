@@ -32,6 +32,11 @@ void
 queue_push(queue_t<T>* queue, 
            T element);
 
+template <typename T>
+void
+queue_clear(queue_t<T>* queue);
+
+
 /**
  * \brief Pops an element from the queue
  *

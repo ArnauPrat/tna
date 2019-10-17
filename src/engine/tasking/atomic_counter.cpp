@@ -56,13 +56,13 @@ void atomic_counter_join(atomic_counter_t* counter)
 {
   while(counter->p_impl->load() != 0) 
   {
-    if(get_current_thread_id() == INVALID_THREAD_ID) 
+    if(tasking_get_current_thread_id() == INVALID_THREAD_ID) 
     { // if this is a non-pool thread
       //std::this_thread::sleep_for(std::chrono::milliseconds(1));
     } 
     else 
     { // if this is a lightweight thread
-      yield();
+      tasking_yield();
     }
   }
 }

@@ -20,6 +20,7 @@ struct task_t {
    * function
    */
   void*         p_args = nullptr;
+
 };
 
 } /* tna */ 

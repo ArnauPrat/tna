@@ -7,12 +7,13 @@
 #include "tasking.h"
 #include <boost_context/fcontext.h>
 
-#include <assert.h>
 #include <queue>
 #include <thread>
 #include <condition_variable>
 #include <atomic>
 
+#include <assert.h>
+#include <time.h>
 #include <unistd.h>
 #include <sys/mman.h>
 
@@ -35,6 +36,7 @@ struct execution_context_t
   char* p_stack = nullptr;
   boost_context::fcontext_t m_context = nullptr;
 };
+
 
 void
 execution_context_init(execution_context_t* exec_context)
@@ -102,6 +104,17 @@ struct task_context_t {
    */
   task_context_t*      p_parent       = nullptr;
 
+  /**
+   * \brief Task name
+   */
+  char                      m_name[_TNA_TASKING_MAX_NAME_STRING_LENGTH];
+
+  /**
+   * @brief Task info
+   */
+  char               m_info[_TNA_TASKING_MAX_INFO_STRING_LENGTH];
+
+
 };  
 
 void
@@ -113,6 +126,7 @@ task_context_reset(task_context_t* task_context)
   task_context->p_context     = nullptr;
   task_context->m_finished    = false;
   task_context->p_parent      = nullptr;
+  task_context->m_info[0]     = '\0'; 
 }
 
 /**
@@ -153,7 +167,7 @@ static uint32_t                     m_num_threads = 0;
 /**
  * @brief Vector of running threads objects
  */
-static std::thread**                p_threads;
+static std::thread**                p_threads = nullptr;
 
 /**
  * @brief Pointer to the task pool with the tasks pending to start 
@@ -189,6 +203,32 @@ static std::condition_variable*     m_condvars = nullptr;
 static bool*                        m_ready = nullptr;
 
 /**
+ * \brief Timing event arrays for each of the threads
+ */
+static task_timing_event_t**  p_timing_event_arrays = nullptr;
+
+/**
+ * \brief The timing event arrays count
+ */
+static uint32_t*              m_timing_event_count = nullptr;
+
+/**
+ * \brief The timing event arrays capacity
+ */
+static uint32_t*              m_timing_event_capacity = nullptr;
+
+/**
+ * \brief Mutex for event arrays
+ */
+static mutex_t               m_timing_event_mutex;
+
+
+/**
+ * \brief To record timing events or not
+ */
+static bool                          m_record_timings = false;
+
+/**
  * @brief Pointer to the thread local currently running task 
  */
 static thread_local task_context_t*    p_current_running_task = nullptr;
@@ -198,15 +238,69 @@ static thread_local task_context_t*    p_current_running_task = nullptr;
  */
 static thread_local uint32_t        m_current_thread_id = INVALID_THREAD_ID;
 
+
+/**
+ * \brief Inserts a timing event into the correponding queue
+ *
+ * \param queueid The queueid
+ * \param event_type The event_type
+ */
+static void
+insert_timing_event(uint32_t queue_id, 
+                    task_timing_event_type_t event_type, 
+                    task_context_t* task_context)
+{
+#ifdef _TNA_DEV
+  mutex_lock(&m_timing_event_mutex);
+  if(m_record_timings)
+  {
+    task_timing_event_t timing_event;
+
+    timespec time;
+    clock_gettime(CLOCK_REALTIME, &time);
+    timing_event.m_time_ns = time.tv_sec * 1000 * 1000 * 1000 + time.tv_nsec;
+    timing_event.m_event_type = event_type;
+    if(task_context != nullptr)
+    {
+      strncpy(timing_event.m_info, task_context->m_info, _TNA_TASKING_MAX_INFO_STRING_LENGTH);
+      strncpy(timing_event.m_name, task_context->m_name, _TNA_TASKING_MAX_NAME_STRING_LENGTH);
+    }
+    else
+    {
+      timing_event.m_info[0] = '\0';
+    }
+    if(m_timing_event_count[queue_id] >= m_timing_event_capacity[queue_id])
+    {
+      uint32_t new_capacity = m_timing_event_capacity[queue_id]*2;
+      task_timing_event_t* new_buffer = new task_timing_event_t[new_capacity];
+      memcpy(new_buffer, p_timing_event_arrays[queue_id], sizeof(task_timing_event_t)*m_timing_event_count[queue_id]);
+      m_timing_event_capacity[queue_id] = new_capacity;
+      delete [] p_timing_event_arrays[queue_id];
+      p_timing_event_arrays[queue_id] = new_buffer;
+    }
+
+    (p_timing_event_arrays[queue_id])[m_timing_event_count[queue_id]] = timing_event;
+    m_timing_event_count[queue_id]++;
+  }
+  mutex_unlock(&m_timing_event_mutex);
+#endif
+}
+
 /**
  * @brief Finalizes the current running task and releases its resources
  */
 static void 
 finalize_current_running_task() {
-  assert(get_current_thread_id() < m_num_threads && "Invalid thead id");
+  assert(tasking_get_current_thread_id() < m_num_threads && "Invalid thead id");
 
   if(p_current_running_task->m_finished) 
   {
+
+    // insert event
+    insert_timing_event(tasking_get_current_thread_id(), 
+                        task_timing_event_type_t::E_STOP, 
+                        p_current_running_task);
+
     if(p_current_running_task->p_syn_counter != nullptr) 
     {
       atomic_counter_fetch_decrement(p_current_running_task->p_syn_counter);
@@ -232,13 +326,13 @@ finalize_current_running_task() {
 void
 fiber_function(void* arg)
 {
-  assert(get_current_thread_id() < m_num_threads && "Invalid thead id");
+  assert(tasking_get_current_thread_id() < m_num_threads && "Invalid thead id");
   
   task_context_t* task_context = (task_context_t*)arg;
   task_context->m_task.p_fp(task_context->m_task.p_args);
   task_context->m_finished = true;
   boost_context::jump_fcontext(&task_context->p_context->m_context, 
-                               m_worker_contexts[get_current_thread_id()].m_context, 
+                               m_worker_contexts[tasking_get_current_thread_id()].m_context, 
                                task_context->m_task.p_args);
 
 }
@@ -254,7 +348,7 @@ fiber_function(void* arg)
 static void 
 start_task(task_context_t* task_context) 
 {
-  assert(get_current_thread_id() < m_num_threads && "Invalid thead id");
+  assert(tasking_get_current_thread_id() < m_num_threads && "Invalid thead id");
 
   // find free fiber
   mutex_lock(&m_execution_context_queue_mutex);
@@ -282,8 +376,13 @@ start_task(task_context_t* task_context)
   // set the task as the current running task
   p_current_running_task = task_context; 
 
+  // insert event
+  insert_timing_event(tasking_get_current_thread_id(), 
+                      task_timing_event_type_t::E_START, 
+                      p_current_running_task);
+
   // jump to fiber
-  boost_context::jump_fcontext(&(m_worker_contexts[get_current_thread_id()].m_context), 
+  boost_context::jump_fcontext(&(m_worker_contexts[tasking_get_current_thread_id()].m_context), 
                                ctx->m_context, 
                                task_context);
   finalize_current_running_task();
@@ -298,11 +397,17 @@ start_task(task_context_t* task_context)
 static void 
 resume_task(task_context_t* runningTask) 
 {
-  assert(get_current_thread_id() < m_num_threads && "Invalid thead id");
+  assert(tasking_get_current_thread_id() < m_num_threads && "Invalid thead id");
 
   p_current_running_task = runningTask;
+
+  // insert event
+  insert_timing_event(tasking_get_current_thread_id(), 
+                      task_timing_event_type_t::E_RESUME, 
+                      p_current_running_task);
+
   // call jump to fiber to resume
-  boost_context::jump_fcontext(&(m_worker_contexts[get_current_thread_id()].m_context), 
+  boost_context::jump_fcontext(&(m_worker_contexts[tasking_get_current_thread_id()].m_context), 
                                runningTask->p_context->m_context, 
                                runningTask);
   finalize_current_running_task();
@@ -334,7 +439,7 @@ thread_function(int threadId)
       std::unique_lock<std::mutex> lock(m_condvar_mutexes[m_current_thread_id]);
       m_ready[m_current_thread_id] = false;
       m_condvars[m_current_thread_id].wait_for(lock,
-                                             std::chrono::microseconds(200), 
+                                             std::chrono::microseconds(100), 
                                              [] { return m_ready[m_current_thread_id]; });
                                              
                                              
@@ -343,7 +448,7 @@ thread_function(int threadId)
 }
 
 void 
-start_thread_pool(uint32_t numThreads) 
+tasking_start_thread_pool(uint32_t numThreads) 
 {
 
   m_num_threads          = numThreads;
@@ -379,9 +484,13 @@ start_thread_pool(uint32_t numThreads)
     m_condvar_mutexes     = new std::mutex[m_num_threads];
     m_condvars            = new std::condition_variable[m_num_threads];
     m_ready               = new bool[m_num_threads];
+    p_timing_event_arrays = new task_timing_event_t*[m_num_threads+1];
+    m_timing_event_count  = new uint32_t[m_num_threads+1];
+    m_timing_event_capacity = new uint32_t[m_num_threads+1];
     p_execution_context_queue   = new execution_context_queue_t();
     queue_init(p_execution_context_queue, 4096);
     mutex_init(&m_execution_context_queue_mutex);
+    mutex_init(&m_timing_event_mutex);
 
     p_task_context_queue   = new task_context_queue_t();
     queue_init(p_task_context_queue, 4096);
@@ -391,8 +500,20 @@ start_thread_pool(uint32_t numThreads)
     for(uint32_t i = 0; i < m_num_threads; ++i) {
       m_is_running[i].store(true);
       m_ready[i] = false;
+      m_timing_event_count[i] = 0;
+      m_timing_event_capacity[i] = 1024;
+      p_timing_event_arrays[i] = new task_timing_event_t[1024];
       p_threads[i] = new std::thread(thread_function, i);
+      cpu_set_t cpuset;
+      CPU_ZERO(&cpuset);
+      CPU_SET(i, &cpuset);
+      pthread_setaffinity_np(p_threads[i]->native_handle(),
+                             sizeof(cpu_set_t), &cpuset);
     }
+
+    p_timing_event_arrays[m_num_threads] = new task_timing_event_t[1024];
+    m_timing_event_count[m_num_threads] = 0;
+    m_timing_event_capacity[m_num_threads] = 1024;
 
     m_initialized = true;
 
@@ -401,11 +522,12 @@ start_thread_pool(uint32_t numThreads)
 }
 
 void 
-stop_thread_pool() 
+tasking_stop_thread_pool() 
 {
   assert(m_initialized && "ThreadPool is not initialized");
 
   if(m_num_threads > 0) {
+
     // Telling threads to stop
     for(uint32_t i = 0; i < m_num_threads; ++i) {
       m_is_running[i].store(false);
@@ -425,6 +547,17 @@ stop_thread_pool()
       p_threads[i]->join();
       delete p_threads[i];
     }
+
+    for (uint32_t i = 0; i < m_num_threads; ++i) 
+    {
+      delete [] p_timing_event_arrays[i];
+    }
+    delete [] p_timing_event_arrays[m_num_threads];
+
+    delete [] p_timing_event_arrays;
+    delete [] m_timing_event_capacity;
+    delete [] m_timing_event_count;
+    mutex_release(&m_timing_event_mutex);
 
     delete [] m_ready;
     delete [] m_condvars;
@@ -464,9 +597,11 @@ stop_thread_pool()
 }
 
 void 
-execute_task_async(uint32_t queueId, 
+tasking_execute_task_async(uint32_t queueId, 
                    task_t task, 
-                   atomic_counter_t* counter ) 
+                   atomic_counter_t* counter,
+                   const char* name, 
+                   const char* info) 
 {
   assert(m_initialized && "ThreadPool is not initialized");
   assert(m_num_threads > 0 && "Number of threads in the threadpool must be > 0");
@@ -488,12 +623,31 @@ execute_task_async(uint32_t queueId,
 
   task_context->m_task = task;
   task_context->p_syn_counter = counter;
+  task_context->m_name[0] = '\0';
+  if(name != nullptr)
+  {
+    strncpy(task_context->m_name, name, _TNA_TASKING_MAX_NAME_STRING_LENGTH-1);
+    if(strlen(info) >= _TNA_TASKING_MAX_NAME_STRING_LENGTH)
+    {
+      task_context->m_name[_TNA_TASKING_MAX_NAME_STRING_LENGTH-1] = '\0';
+    }
+  }
+  task_context->m_info[0] = '\0';
+  if(info != nullptr)
+  {
+    strncpy(task_context->m_info, info, _TNA_TASKING_MAX_INFO_STRING_LENGTH);
+    if(strlen(info) >= _TNA_TASKING_MAX_INFO_STRING_LENGTH)
+    {
+      task_context->m_info[_TNA_TASKING_MAX_INFO_STRING_LENGTH-1] = '\0';
+    }
+  }
+
   if(task_context->p_syn_counter != nullptr) 
   {
     atomic_counter_fetch_increment(task_context->p_syn_counter);
   }
 
-  if(get_current_thread_id() != INVALID_THREAD_ID ) 
+  if(tasking_get_current_thread_id() != INVALID_THREAD_ID ) 
   {
     task_context->p_parent = p_current_running_task;
   } 
@@ -514,18 +668,20 @@ execute_task_async(uint32_t queueId,
 } 
 
 void 
-execute_task_sync(uint32_t queueId, 
+tasking_execute_task_sync(uint32_t queueId, 
                   task_t task, 
-                  atomic_counter_t* counter) 
+                  atomic_counter_t* counter, 
+                  const char* name, 
+                  const char* info) 
 {
   assert(m_initialized && "ThreadPool is not initialized");
   assert(m_num_threads > 0 && "Number of threads in the threadpool must be > 0");
-  execute_task_async(queueId, task, counter);
+  tasking_execute_task_async(queueId, task, counter, name, info);
   atomic_counter_join(counter);
 }
 
 uint32_t 
-get_current_thread_id() 
+tasking_get_current_thread_id() 
 {
   assert(((m_current_thread_id >= 0 && m_current_thread_id < m_num_threads) || m_current_thread_id == INVALID_THREAD_ID) && "Invalid thread id");
   return m_current_thread_id;
@@ -533,19 +689,59 @@ get_current_thread_id()
 
 
 void 
-yield() 
+tasking_yield() 
 {
   assert(m_initialized && "ThreadPool is not initialized");
   assert(m_num_threads > 0 && "Number of threads in the threadpool must be > 0");
   assert(m_current_thread_id != INVALID_THREAD_ID);
+
+  insert_timing_event(tasking_get_current_thread_id(), 
+                      task_timing_event_type_t::E_YIELD, 
+                      p_current_running_task);
+
   boost_context::jump_fcontext(&(p_current_running_task->p_context->m_context), m_worker_contexts[m_current_thread_id].m_context, nullptr);
 }
 
 uint32_t
-get_num_threads() 
+tasking_get_num_threads() 
 {
   assert(m_initialized && "ThreadPool is not initialized");
   return m_num_threads;
+}
+
+void
+tasking_start_recording_timings()
+{
+  mutex_lock(&m_timing_event_mutex);
+  m_record_timings = true;
+  for(uint32_t i = 0; i < m_num_threads; ++i)
+  {
+    m_timing_event_count[i] = 0;
+  }
+  mutex_unlock(&m_timing_event_mutex);
+}
+
+void
+tasking_stop_recording_timings()
+{
+  mutex_lock(&m_timing_event_mutex);
+  m_record_timings = false;
+  mutex_unlock(&m_timing_event_mutex);
+}
+
+void
+tasking_record_new_frame()
+{
+  insert_timing_event(m_num_threads, 
+                      task_timing_event_type_t::E_NEW_FRAME, 
+                      nullptr);
+}
+
+task_timing_event_t*
+tasking_get_task_timing_event_array(uint32_t queue_id, uint32_t* count)
+{
+  *count = m_timing_event_count[queue_id];
+  return p_timing_event_arrays[queue_id];
 }
 
 } /* tna */ 

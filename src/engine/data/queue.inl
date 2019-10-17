@@ -18,7 +18,7 @@ queue_init(queue_t<T>* queue,
   queue->m_end = 0;
   queue->p_elements = (T*)malloc(sizeof(T)*queue->m_capacity);
 
-#ifndef NDEBUG
+#ifdef _TNA_DEBUG 
   memset(queue->p_elements, 0, sizeof(T)*queue->m_capacity);
 #endif
 
@@ -66,7 +66,7 @@ queue_pop(queue_t<T>* queue, T* element)
 
   *element = queue->p_elements[queue->m_start];
 
-#ifndef NDEBUG
+#ifdef _TNA_DEBUG 
   memset(&queue->p_elements[queue->m_start], 0, sizeof(T));
 #endif
 
@@ -86,7 +86,7 @@ queue_resize(queue_t<T>* queue)
   uint32_t new_capacity = queue->m_capacity*2;
   T* buffer = (T*)malloc(sizeof(T)*new_capacity);
 
-#ifndef NDEBUG
+#ifdef _TNA_DEBUG 
   memset(buffer, 0, sizeof(T)*new_capacity);
 #endif
 
@@ -109,6 +109,15 @@ queue_resize(queue_t<T>* queue)
   queue->m_capacity = new_capacity;
   free(queue->p_elements);
   queue->p_elements = buffer;
+}
+
+template <typename T>
+void
+queue_clear(queue_t<T>* queue)
+{
+  queue->m_start = 0;
+  queue->m_num_elements = 0;
+  queue->m_end = 0;
 }
   
 } /*  tna */ 

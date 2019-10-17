@@ -21,7 +21,7 @@ TEST(TaskingTest, SimpleAsycTaskTest) {
   uint32_t* result = new uint32_t[num_threads];
 
   // Starts Thread Pool
-  start_thread_pool(num_threads);
+  tasking_start_thread_pool(num_threads);
 
   // Create tasks
   atomic_counter_t syncCounter;
@@ -30,11 +30,11 @@ TEST(TaskingTest, SimpleAsycTaskTest) {
     task_t task;
     task.p_fp = [] (void * arg){
                 int32_t* result = reinterpret_cast<int32_t*>(arg);
-                *result=get_current_thread_id();
+                *result=tasking_get_current_thread_id();
               }; 
     task.p_args = &result[i];
 
-    execute_task_async(i, task, &syncCounter);
+    tasking_execute_task_async(i, task, &syncCounter,"test", "test");
   }
 
   // Synchronize with the running tasks
@@ -42,7 +42,7 @@ TEST(TaskingTest, SimpleAsycTaskTest) {
   atomic_counter_release(&syncCounter);
 
   // Stops thread pool
-  stop_thread_pool();
+  tasking_stop_thread_pool();
 
   // Checks the results
   for(uint32_t i = 0; i < num_threads; ++i) {
@@ -104,7 +104,7 @@ void mergeSort(void* args) {
   Params* params = reinterpret_cast<Params*>(args);
   if(params->m_end - params->m_begin > 2) {
 
-    printf("THREAD ID: %d BEGIN: %d END: %d SORTS\n", get_current_thread_id(), params->m_begin, params->m_end);
+    printf("THREAD ID: %d BEGIN: %d END: %d SORTS\n", tasking_get_current_thread_id(), params->m_begin, params->m_end);
     int32_t splitPoint = (params->m_end - params->m_begin) / 2 + params->m_begin;
     Params leftParams{params->m_begin, splitPoint, params->m_inputArray, params->m_workArray};
     Params rightParams{splitPoint, params->m_end, params->m_inputArray, params->m_workArray};
@@ -113,15 +113,15 @@ void mergeSort(void* args) {
     task_t task_left;
     task_left.p_fp = mergeSort;
     task_left.p_args = &leftParams;
-    execute_task_async(get_current_thread_id(), task_left, &counter);
+    tasking_execute_task_async(tasking_get_current_thread_id(), task_left, &counter,"","");
 
     task_t task_right;
     task_right.p_fp = mergeSort;
     task_right.p_args = &rightParams;
-    execute_task_async(get_current_thread_id(), task_right, &counter);
+    tasking_execute_task_async(tasking_get_current_thread_id(), task_right, &counter, "", "");
     atomic_counter_join(&counter);
     atomic_counter_release(&counter);
-    printf("THREAD ID: %d BEGIN: %d END: %d MERGES\n", get_current_thread_id(), params->m_begin, params->m_end);
+    printf("THREAD ID: %d BEGIN: %d END: %d MERGES\n", tasking_get_current_thread_id(), params->m_begin, params->m_end);
     mergeArrays(params->m_inputArray, params->m_workArray, params->m_begin, params->m_end);
   } 
   else 
@@ -159,12 +159,12 @@ void mergeSortStart(int32_t* inputArray, int32_t length) {
     task_t task_left;
     task_left.p_fp = mergeSort;
     task_left.p_args = &leftParams;
-    execute_task_async(0, task_left, &counter);
+    tasking_execute_task_async(0, task_left, &counter, "", "");
 
     task_t task_right;
     task_right.p_fp = mergeSort;
     task_right.p_args = &rightParams;
-    execute_task_async(1, task_right, &counter);
+    tasking_execute_task_async(1, task_right, &counter, "", "");
 
     atomic_counter_join(&counter);
     atomic_counter_release(&counter);
