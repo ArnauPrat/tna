@@ -10,9 +10,9 @@
 namespace tna
 {
 
-struct Soldier 
+struct soldier_t 
 {
-  FURIOUS_COMPONENT(Soldier);
+  FURIOUS_COMPONENT(soldier_t);
 
 }; /* tna */ 
 

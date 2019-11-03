@@ -21,8 +21,8 @@ create_shader_module(VkDevice device,
                            nullptr, 
                            &shader_module) != VK_SUCCESS) 
   {
-    TNA_LOG_ERROR("failed to create shader module!");
-    report_error(TNA_ERROR::E_RENDERER_RESOURCE_ALLOCATION_ERROR);
+    TNA_LOG_ERROR(TNA_ERROR::E_RENDERER_RESOURCE_ALLOCATION_ERROR, 
+                  "failed to create shader module!");
   }
   return shader_module;
 }

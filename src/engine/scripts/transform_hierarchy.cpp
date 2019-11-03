@@ -13,7 +13,7 @@ BEGIN_FURIOUS_SCRIPT
 
 using namespace tna;
 
-struct TnaInitTransformMatrix 
+struct init_transform_matrix_t 
 {
   void run(furious::Context* context, 
            uint32_t id, 
@@ -35,14 +35,14 @@ furious::match<local_transform_matrix_t, global_transform_matrix_t, transform_t>
                                                       return transform->m_dirty;
                                                     }
                                                     )
-                                            .foreach<TnaInitTransformMatrix>()
+                                            .foreach<init_transform_matrix_t>()
                                             .set_priority(PRIORITY_INIT_TRANSFORM_MATRIX);
 
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 
-struct TnaTransformMatrixHierarchy 
+struct transform_matrix_hierarchy_t 
 {
   void run(furious::Context* context, 
            uint32_t id, 
@@ -64,7 +64,7 @@ furious::match<global_transform_matrix_t, local_transform_matrix_t>().expand<glo
                                           return local_matrix->m_dirty || parent_matrix->m_dirty;
                                          }
                                          )
-                                    .foreach<TnaTransformMatrixHierarchy>()
+                                    .foreach<transform_matrix_hierarchy_t>()
                                     .set_priority(PRIORITY_TRANSFORM_MATRIX_HIERARCHY);
 
 
@@ -72,7 +72,7 @@ furious::match<global_transform_matrix_t, local_transform_matrix_t>().expand<glo
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 
-struct TnaResetTransform
+struct reset_transform_t
 {
 
   void run(furious::Context* context, 
@@ -83,7 +83,7 @@ struct TnaResetTransform
   }
 };
 
-furious::match<transform_t>().foreach<TnaResetTransform>()
+furious::match<transform_t>().foreach<reset_transform_t>()
                                          .set_post_frame();
 
 ////////////////////////////////////////////////
@@ -91,7 +91,7 @@ furious::match<transform_t>().foreach<TnaResetTransform>()
 ////////////////////////////////////////////////
 
 
-struct TnaResetLocalTransformMatrix
+struct reset_local_transform_matrix_t
 {
   void run(furious::Context* context, 
            uint32_t id, 
@@ -101,7 +101,7 @@ struct TnaResetLocalTransformMatrix
   }
 };
 
-furious::match<local_transform_matrix_t>().foreach<TnaResetLocalTransformMatrix>()
+furious::match<local_transform_matrix_t>().foreach<reset_local_transform_matrix_t>()
                                          .set_post_frame();
 
 
@@ -109,7 +109,7 @@ furious::match<local_transform_matrix_t>().foreach<TnaResetLocalTransformMatrix>
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 
-struct TnaResetGlobalTransformMatrix
+struct reset_global_transform_matrix_t
 {
   void run(furious::Context* context, 
            uint32_t id, 
@@ -119,8 +119,8 @@ struct TnaResetGlobalTransformMatrix
   }
 };
 
-furious::match<global_transform_matrix_t>().foreach<TnaResetGlobalTransformMatrix>()
-                                         .set_post_frame();
+furious::match<global_transform_matrix_t>().foreach<reset_global_transform_matrix_t>()
+                                           .set_post_frame();
 
 END_FURIOUS_SCRIPT
 

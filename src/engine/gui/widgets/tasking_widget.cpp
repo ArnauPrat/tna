@@ -28,6 +28,20 @@ tasking_widget_release()
 {
 }
 
+
+
+static double
+ns_to_ms(uint64_t time)
+{
+  return (time/NS_PER_MS);
+}
+
+static double
+ns_to_px(uint64_t time)
+{
+  return ns_to_ms(time)*PX_PER_MS;
+}
+
 void
 tasking_widget_render()
 {
@@ -58,16 +72,29 @@ tasking_widget_render()
 
     if(m_button_start)
     {
-
       // Reading input
       ImGuiIO& io = ImGui::GetIO();
-      if(io.MouseWheel != 0.0)
-      {
-        PX_PER_MS += PX_PER_MS*(10*io.MouseWheel) / 100.0;
-      }
 
-      bool mouse_clicked_left = io.MouseDown[0];
-      ImVec2 mouse_clicked_pos = io.MousePos;
+      bool mouse_clicked_left = false;
+      ImVec2 mouse_clicked_pos;
+
+      if(ImGui::IsWindowFocused())
+      {
+        mouse_clicked_left = io.MouseDown[0];
+        mouse_clicked_pos = io.MousePos;
+
+        if(io.MouseWheel != 0.0)
+        {
+          if(io.KeyCtrl)
+          {
+            PX_PER_MS += PX_PER_MS*(10*io.MouseWheel) / 100.0;
+          } 
+          else
+          {
+            ImGui::SetScrollX(ImGui::GetScrollX() - io.MouseWheel*50.0);
+          }
+        } 
+      }
 
       uint64_t time_min = ULLONG_MAX;
       //uint64_t time_max = 0;
@@ -107,6 +134,7 @@ tasking_widget_render()
         task_timing_event_t* events = tasking_get_task_timing_event_array(i,&count);
         uint64_t left = 0;
         int32_t mouse_selected_task = -1;
+        task_timing_event_type_t previous_open = task_timing_event_type_t::E_START;
         // Drawing task rectangles
         for (uint32_t j = 0; j < count; ++j) 
         {
@@ -114,14 +142,23 @@ tasking_widget_render()
              events[j].m_event_type == task_timing_event_type_t::E_RESUME)
           {
             left = events[j].m_time_ns - time_min;
+            previous_open = events[j].m_event_type;
           }
           else
           {
             uint64_t right = events[j].m_time_ns - time_min;
-            ImVec2 min(pos.x + (left/NS_PER_MS)*PX_PER_MS, pos.y); 
-            ImVec2 max(pos.x + (right/NS_PER_MS)*PX_PER_MS, min.y + 25);
-            ImGui::GetWindowDrawList()->AddRectFilled(min, max, ImGui::ColorConvertFloat4ToU32(ImVec4(1, .15, .15, 1)));
-            ImGui::GetWindowDrawList()->AddRect(min, max, ImGui::ColorConvertFloat4ToU32(ImVec4(1, 1, 1, 1)));
+            ImVec2 min(pos.x + ns_to_px(left), pos.y); 
+            ImVec2 max(pos.x + ns_to_px(right), min.y + 25);
+
+            ImU32 color = (previous_open == task_timing_event_type_t::E_START) && (events[j].m_event_type == task_timing_event_type_t::E_STOP) ? 
+                                            ImGui::ColorConvertFloat4ToU32(ImVec4(1, .15, .15, 1)) : 
+                                            ImGui::ColorConvertFloat4ToU32(ImVec4(.15, 1.0, .15, 1));
+            ImGui::GetWindowDrawList()->AddRectFilled(min, 
+                                                      max, 
+                                                      color);
+            ImGui::GetWindowDrawList()->AddRect(min, 
+                                                max, 
+                                                ImGui::ColorConvertFloat4ToU32(ImVec4(1, 1, 1, 1)));
 
             if(right > right_most)
             {
@@ -135,10 +172,14 @@ tasking_widget_render()
                mouse_clicked_left)
             {
               mouse_selected_task = (int32_t)j;
-              m_display_exec_time_ms = (right - left) / NS_PER_MS;
+              m_display_exec_time_ms = ns_to_ms(right - left);
             }
           }
-          ImGui::GetWindowDrawList()->AddDrawCmd();
+
+          if( j % 100 == 0)
+          {
+            ImGui::GetWindowDrawList()->AddDrawCmd();
+          }
         }
 
 
@@ -158,18 +199,21 @@ tasking_widget_render()
           else
           {
             double right = events[j].m_time_ns - time_min;
-            ImVec2 min(pos.x + (left/NS_PER_MS)*PX_PER_MS, pos.y); 
-            ImVec2 max(pos.x + (right/NS_PER_MS)*PX_PER_MS, min.y + 25);
+            ImVec2 min(pos.x + ns_to_px(left), pos.y); 
+            ImVec2 max(pos.x + ns_to_px(right), min.y + 25);
 
             ImVec2 text_pos((max.x-min.x)/2 + min.x - 10, (max.y-min.y)/2 + min.y - 10);
             ImGui::GetWindowDrawList()->AddText(text_pos, 
                                                 ImGui::ColorConvertFloat4ToU32(ImVec4(1, 1, 1, 1)),
                                                 events[j].m_name);
           }
-          ImGui::GetWindowDrawList()->AddDrawCmd();
+          if(j%100==0)
+          {
+            ImGui::GetWindowDrawList()->AddDrawCmd();
+          }
         }
 
-        m_last_window_content_width = (right_most/NS_PER_MS)*PX_PER_MS;
+        m_last_window_content_width = ns_to_px(right_most);
         // space taken by rectangles 
         pos.y += 25;
         // padding between lines
@@ -187,7 +231,10 @@ tasking_widget_render()
         double xpos = ((events[i].m_time_ns - time_min)/NS_PER_MS)*PX_PER_MS;
         ImVec2 start(pos.x + xpos, ImGui::GetWindowPos().y+50);
         ImVec2 end(pos.x + xpos, pos.y);
-        ImGui::GetWindowDrawList()->AddLine(start, end, ImGui::ColorConvertFloat4ToU32(ImVec4(0, 1, 0, 1)), 2.0);
+        ImGui::GetWindowDrawList()->AddLine(start, 
+                                            end, 
+                                            ImGui::ColorConvertFloat4ToU32(ImVec4(0, 1, 0, 1)), 
+                                            2.0);
       }
 
       // Force drawing
@@ -196,12 +243,18 @@ tasking_widget_render()
       // Drawing X axis
       ImVec2 start(pos.x, pos.y);
       ImVec2 end(pos.x + m_last_window_content_width, pos.y);
-      ImGui::GetWindowDrawList()->AddLine(start, end, ImGui::ColorConvertFloat4ToU32(ImVec4(0, 1, 0, 1)), 2.0);
+      ImGui::GetWindowDrawList()->AddLine(start, 
+                                          end, 
+                                          ImGui::ColorConvertFloat4ToU32(ImVec4(0, 1, 0, 1)), 
+                                          2.0);
       for(uint32_t i = 0; i < m_last_window_content_width/PX_PER_MS; ++i)
       {
         ImVec2 start(pos.x + i*PX_PER_MS, pos.y-5);
         ImVec2 end(pos.x + i*PX_PER_MS, pos.y+5);
-        ImGui::GetWindowDrawList()->AddLine(start, end, ImGui::ColorConvertFloat4ToU32(ImVec4(0, 1, 0, 1)), 2.0);
+        ImGui::GetWindowDrawList()->AddLine(start, 
+                                            end, 
+                                            ImGui::ColorConvertFloat4ToU32(ImVec4(0, 1, 0, 1)), 
+                                            2.0);
 
         char text[256];
         sprintf(text, "%u ms", i);
@@ -213,9 +266,9 @@ tasking_widget_render()
 
       pos.y += 50;
 
+      // Rendering task information
       ImVec2 info_text_pos = pos;
-      info_text_pos.x += ImGui::GetScrollX();
-
+      info_text_pos.x += ImGui::GetScrollX(); // we correct the position not to be affected by the scroll
       if(strlen(m_display_info) > 0 )
       {
         char text[128];
@@ -223,12 +276,13 @@ tasking_widget_render()
         ImGui::GetWindowDrawList()->AddText(info_text_pos, 
                                             ImGui::ColorConvertFloat4ToU32(ImVec4(1, 1, 1, 1)),
                                             text);
+
+        info_text_pos.y += 10;
+        ImGui::GetWindowDrawList()->AddText(info_text_pos, 
+                                            ImGui::ColorConvertFloat4ToU32(ImVec4(1, 1, 1, 1)),
+                                            m_display_info);
       }
 
-      info_text_pos.y += 10;
-      ImGui::GetWindowDrawList()->AddText(info_text_pos, 
-                                          ImGui::ColorConvertFloat4ToU32(ImVec4(1, 1, 1, 1)),
-                                          m_display_info);
 
     }
 

@@ -16,10 +16,10 @@
 namespace tna
 {
 
-TnaEntity 
+entity_t 
 create_entity(game_state_t* state)
 {
-  TnaEntity entity = furious::create_entity(state->p_database);
+  entity_t entity = furious::create_entity(state->p_database);
   FURIOUS_ADD_COMPONENT(entity,transform_t);
   FURIOUS_ADD_COMPONENT(entity,local_transform_matrix_t);
   FURIOUS_ADD_COMPONENT(entity,global_transform_matrix_t);
@@ -28,7 +28,7 @@ create_entity(game_state_t* state)
 }
 
 void 
-remove_entity(TnaEntity entity)
+remove_entity(entity_t entity)
 {
   furious::destroy_entity(entity);
 }

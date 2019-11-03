@@ -36,6 +36,10 @@ template <typename T>
 void
 queue_clear(queue_t<T>* queue);
 
+template <typename T>
+uint32_t
+queue_count(queue_t<T>* queue);
+
 
 /**
  * \brief Pops an element from the queue

@@ -37,7 +37,8 @@ T* TnaResourceRegistry<T,CreateFunc,DestroyFunc>::load(const char* resource_name
                                                 2048);
   if(length >= 2048)
   {
-    TNA_LOG_ERROR("Path buffer in registry is not large enough");
+    TNA_LOG_ERROR(TNA_ERROR::E_IO_UNEXPECTED_INPUT_ERROR, 
+                  "Path buffer in registry is not large enough");
   }
 
   T* resource = nullptr;

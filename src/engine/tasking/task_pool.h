@@ -82,6 +82,18 @@ task_context_t*
 task_pool_get_next(task_pool_t* task_pool,
                    uint32_t queue_id);
 
+/**
+ * \brief Counts the  number of tasks in the pool
+ *
+ * \param task_pool The task pool to count to tasks for
+ * \param queue_id The queue to count the tasks for
+ *
+ * \return Returns the number of tasks in the pool
+ */
+uint32_t
+task_pool_count(task_pool_t* task_pool,
+                uint32_t queue_id);
+
 }
 
 #endif /* ifndef _TASKING_TASK_POOL_H_ */

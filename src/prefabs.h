@@ -12,7 +12,7 @@ namespace tna
 
 struct game_state_t;
 
-TnaEntity
+entity_t
 create_unit(uint32_t size,
             const std::string& mesh,
             const vector3_t& position,

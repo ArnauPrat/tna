@@ -63,8 +63,8 @@ rendering_scene_create_object(rendering_scene_t* scene,
         header->m_offset = scene->m_meshes.size();
         if(header->m_offset >= MAX_PRIMITIVE_COUNT)
         {
-          TNA_LOG_ERROR("Exceeded max primitive count");
-          report_error(TNA_ERROR::E_RENDERER_RUNTIME_ERROR);
+          TNA_LOG_ERROR(TNA_ERROR::E_RENDERER_RUNTIME_ERROR, 
+                        "Exceeded max primitive count");
         }
         scene->m_meshes.append(nullptr);
         *((render_mesh_uniform_t*)&scene->m_uniforms[header->m_offset]) = render_mesh_uniform_t();

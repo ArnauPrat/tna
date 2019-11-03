@@ -17,6 +17,8 @@ struct atomic_counter_t;
 #define _TNA_TASKING_MAX_INFO_STRING_LENGTH 1024
 #define _TNA_TASKING_MAX_NAME_STRING_LENGTH 128
 
+using yield_func_t = bool (*)(void*);
+
 template<typename T>
 struct
 queue_t;
@@ -29,14 +31,15 @@ enum class task_timing_event_type_t
   E_YIELD,
   E_STOP,
   E_NEW_FRAME,
+  E_UNKNOWN
 };
 
 struct task_timing_event_t
 {
-  uint64_t                  m_time_ns;
-  task_timing_event_type_t  m_event_type;
-  char                      m_name[_TNA_TASKING_MAX_NAME_STRING_LENGTH];
-  char                      m_info[_TNA_TASKING_MAX_INFO_STRING_LENGTH];
+  uint64_t                  m_time_ns = 0;
+  task_timing_event_type_t  m_event_type = task_timing_event_type_t::E_UNKNOWN;
+  char                      m_name[_TNA_TASKING_MAX_NAME_STRING_LENGTH] = {'\0'};
+  char                      m_info[_TNA_TASKING_MAX_INFO_STRING_LENGTH] = {'\0'};
 };
 
 using task_timing_event_queue_t = queue_t<task_timing_event_t>;
@@ -101,6 +104,12 @@ tasking_get_current_thread_id();
  */
 void 
 tasking_yield();
+
+void
+tasking_yield(yield_func_t yield_func, void* data);
+
+void
+tasking_yield(atomic_counter_t* sync_counter);
 
 /**
  * @brief Gets the number of threads available in the buffer pool

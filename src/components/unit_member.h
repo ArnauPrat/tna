@@ -9,30 +9,15 @@
 namespace tna
 {
 
-struct UnitMember
+struct unit_member_t
 {
-  FURIOUS_COMPONENT(UnitMember);
+  FURIOUS_COMPONENT(unit_member_t);
 
-  UnitMember(const vector3_t& unit_position,
-             const vector3_t& target,
-             float speed,
-             int row,
-             int column) :
-  m_unit_position(unit_position),
-  m_target(target),
-  m_speed(speed),
-  m_row(row),
-  m_column(column),
-  m_time_to_max_speed(-1.0)
-  {
-
-  }
-
-  vector3_t  m_unit_position;
-  vector3_t  m_target;
+  vector3_t   m_unit_position;
+  vector3_t   m_target;
   float       m_speed;
-  float       m_row;
-  float       m_column;
+  int32_t     m_row;
+  int32_t     m_column;
   float       m_time_to_max_speed;
 }; /* tna */ 
 

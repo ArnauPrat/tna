@@ -17,14 +17,14 @@ namespace  tna
 
 
 
-TnaEntity
+entity_t
 create_unit(uint32_t size,
             const std::string& mesh,
             const vector3_t& position,
             game_state_t* state)
 {
 
-  TnaEntity unit = create_entity(state); 
+  entity_t unit = create_entity(state); 
 
   transform_t* unit_transform = FURIOUS_GET_COMPONENT(unit, transform_t);
   unit_transform->m_position.x = position.x;
@@ -32,7 +32,7 @@ create_unit(uint32_t size,
   unit_transform->m_position.z = position.z;
   unit_transform->m_dirty = true;
 
-  TnaEntity* soldiers = new TnaEntity[size];
+  entity_t* soldiers = new entity_t[size];
   constexpr int32_t MAX_RANKS = 5;
   constexpr int32_t SEPARATION = 3;
   uint32_t count = 0;
@@ -56,12 +56,13 @@ create_unit(uint32_t size,
       render_mesh_data_init(component, "models/cube.obj");
 
       FURIOUS_ADD_COMPONENT(soldiers[count], 
-                            UnitMember,
+                            unit_member_t,
                             vector3_t{xpos, ypos, zpos},
                             vector3_t{xpos, ypos, zpos},
                             1.0f,
                             next_row,
-                            j);
+                            j, 
+                            -1.0f);
 
       transform_t* transform = FURIOUS_GET_COMPONENT(soldiers[count], transform_t);
       transform->m_position.x = unit_transform->m_position.x + xpos;

@@ -12,7 +12,7 @@ BEGIN_FURIOUS_SCRIPT
 
 using namespace tna;
 
-struct TnaSetProjView 
+struct set_proj_view_t 
 {
   void run(furious::Context* context, 
            uint32_t id, 
@@ -36,6 +36,6 @@ struct TnaSetProjView
   }
 };
 
-furious::match<furious::Global<projview_matrix_t>, furious::Global<fps_camera_t>, furious::Global<viewport_t>>().foreach<TnaSetProjView>();
+furious::match<furious::Global<projview_matrix_t>, furious::Global<fps_camera_t>, furious::Global<viewport_t>>().foreach<set_proj_view_t>();
 
 END_FURIOUS_SCRIPT

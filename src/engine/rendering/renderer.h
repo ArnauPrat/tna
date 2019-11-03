@@ -12,7 +12,7 @@ namespace tna
 {
 
 #define MAX_PRIMITIVE_COUNT 1000000
-#define MAX_FRAME_BUFFERS 3
+#define MAX_FRAME_BUFFERS 5
 
 struct config_t;
 struct rendering_scene_t;

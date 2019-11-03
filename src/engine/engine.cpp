@@ -20,6 +20,8 @@
 
 #include <chrono>
 #include <fstream>
+#include <condition_variable>
+#include <mutex>
 #include <glm/glm.hpp>
 #include <furious/furious.h>
 
@@ -40,8 +42,11 @@ mutex_t             m_task_params_mutex;
 task_params_queue_t m_task_params_queue; 
 atomic_counter_t*   m_task_counters = nullptr;
 atomic_counter_t*   m_post_task_counters = nullptr;
-uint32_t            m_num_threads = 4;
+uint32_t            m_num_threads = 8;
 float               m_last_game_loop_time = 0.0f;
+
+std::condition_variable*     m_main_thread_cond = nullptr;
+std::mutex*                  m_main_thread_mutex = nullptr;
 
 /**
  * \brief Structure to pass parameters to takss
@@ -134,8 +139,8 @@ initialize()
                               nullptr);
   if (!p_window) 
   {
-    TNA_LOG_ERROR("Error creating window");
-    report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
+    TNA_LOG_ERROR(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR, 
+                  "Error creating window");
   }
 
   glfwMakeContextCurrent(p_window);
@@ -311,7 +316,8 @@ run_task(const furious::task_t* furious_task,
 
     tasking_execute_task_async(i, task, sync_counter, name, info);
   }
-  atomic_counter_join(sync_counter);
+  tasking_yield(sync_counter);
+  //atomic_counter_join(sync_counter);
   barrier_release(&barrier);
   for(uint32_t i = 0; i < m_num_threads; ++i)
   {
@@ -394,10 +400,27 @@ run_furious_task_graph(const furious::task_graph_t* task_graph,
 
 }
 
+void update_game_logic(void* ptr)
+{
+  furious::task_graph_t* task_graph = furious::__furious_task_graph();
+  furious::task_graph_t* post_task_graph = furious::__furious_post_task_graph();
+  run_furious_task_graph(task_graph, m_task_counters, *(float*)ptr, p_database, nullptr);
+  for(uint32_t i = 0; i < task_graph->m_num_tasks; ++i)
+  {
+    atomic_counter_join(&m_task_counters[i]);
+  }
+
+  run_furious_task_graph(post_task_graph, m_post_task_counters, *(float*)ptr, p_database, nullptr);
+  for(uint32_t i = 0; i < post_task_graph->m_num_tasks; ++i)
+  {
+    atomic_counter_join(&m_post_task_counters[i]);
+  }
+  m_main_thread_cond->notify_all();
+}
+
 void
 run(TnaGameApp* game_app) 
 {
-  static auto start_time = std::chrono::high_resolution_clock::now();
 
   p_database = new furious::Database();
   p_database->start_webserver("localhost", "8080");
@@ -425,6 +448,7 @@ run(TnaGameApp* game_app)
 
   p_current_app->on_app_start();
 
+  static auto start_time = std::chrono::high_resolution_clock::now();
   furious::task_graph_t* task_graph = furious::__furious_task_graph();
   furious::task_graph_t* post_task_graph = furious::__furious_post_task_graph();
   m_task_counters = new atomic_counter_t[task_graph->m_num_tasks];
@@ -439,6 +463,9 @@ run(TnaGameApp* game_app)
     atomic_counter_init(&m_post_task_counters[i]);
   }
 
+  m_main_thread_mutex   = new std::mutex();
+  m_main_thread_cond    = new std::condition_variable();
+
   while (!glfwWindowShouldClose(p_window)) 
   {
     tasking_record_new_frame();
@@ -451,30 +478,17 @@ run(TnaGameApp* game_app)
     glfwPollEvents();
     begin_frame(p_rendering_scene);
     p_current_app->on_frame_start(time);
-
     auto game_loop_start = std::chrono::high_resolution_clock::now();
-    run_furious_task_graph(task_graph, m_task_counters, time, p_database, nullptr);
-    for(uint32_t i = 0; i < task_graph->m_num_tasks; ++i)
-    {
-      atomic_counter_join(&m_task_counters[i]);
-    }
 
-    run_furious_task_graph(post_task_graph, m_post_task_counters, time, p_database, nullptr);
-    for(uint32_t i = 0; i < post_task_graph->m_num_tasks; ++i)
-    {
-      atomic_counter_join(&m_post_task_counters[i]);
-    }
+    task_t task;
+    task.p_args = &time;
+    task.p_fp = update_game_logic;
+    tasking_execute_task_async(0, task, nullptr, "update_game_logic", "update_game_logic");
+    std::unique_lock<std::mutex> lock(*m_main_thread_mutex);
+    m_main_thread_cond->wait(lock);
+
     auto game_loop_end = std::chrono::high_resolution_clock::now();
     m_last_game_loop_time = std::chrono::duration<float, std::chrono::milliseconds::period>(game_loop_end - game_loop_start).count();
-
-    /*furious::__furious_frame(time, 
-                             p_database, 
-                             nullptr);
-
-    furious::__furious_post_frame(time,
-                                  p_database, 
-                                  nullptr);
-                                  */
 
     p_current_app->on_frame_end();
     draw_gui();
@@ -492,6 +506,9 @@ run(TnaGameApp* game_app)
   delete [] m_task_counters;
   delete [] m_post_task_counters;
 
+
+  delete m_main_thread_mutex;
+  delete m_main_thread_cond;
   p_current_app->on_app_finish();
   p_current_app = nullptr;
 

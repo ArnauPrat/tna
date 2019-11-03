@@ -27,7 +27,7 @@ struct game_state_t
  *
  * \return The newly created entity
  */
-TnaEntity 
+entity_t 
 create_entity(game_state_t* game_state);
 
 /**
@@ -36,7 +36,7 @@ create_entity(game_state_t* game_state);
  * \param entity The entity to be removed
  */
 void 
-remove_entity(TnaEntity entity);
+remove_entity(entity_t entity);
 
 /**
  * \brief Creates the camera for the scene.

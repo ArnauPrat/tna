@@ -42,7 +42,7 @@ const bool enable_validation_layers = true;
 #endif
 
 
-VulkanRenderer*                 p_renderer; ///<  This is the VulkanRenderer
+vk_renderer_t*                 p_renderer; ///<  This is the VulkanRenderer
 
 uint32_t               m_num_uniform_buffers;
 VkBuffer*              m_uniform_buffers;
@@ -57,157 +57,159 @@ clean_up_image_views();
 void
 clean_up_swap_chain();
 
-VulkanRenderer::VulkanRenderer() : 
-  p_window(nullptr),
-  m_viewport_width(0),                
-  m_viewport_height(0),                
-  m_vulkan_instance(VK_NULL_HANDLE),   
-  m_window_surface(VK_NULL_HANDLE),   
-  m_report_callback(VK_NULL_HANDLE),   
-  m_physical_device(VK_NULL_HANDLE),
-  m_logical_device(VK_NULL_HANDLE),
-  m_swap_chain(VK_NULL_HANDLE),   
-  m_pipeline_layout(VK_NULL_HANDLE),  
-  m_render_pass(VK_NULL_HANDLE),  
-  m_pipeline(VK_NULL_HANDLE),  
-  m_command_pool(VK_NULL_HANDLE),  
-  m_descriptor_pool(VK_NULL_HANDLE), 
-  m_descriptor_set_layout (VK_NULL_HANDLE), 
-  m_graphics_queue(VK_NULL_HANDLE), 
-  m_present_queue(VK_NULL_HANDLE),
-  m_depth_format(VK_FORMAT_UNDEFINED),
-  m_depth_image(VK_NULL_HANDLE),
-  m_depth_image_view(VK_NULL_HANDLE),
-  m_swap_chain_images(nullptr),
-  m_swap_chain_image_views(nullptr), 
-  m_frame_buffers(nullptr),
-  m_command_buffers(nullptr),
-  m_descriptor_sets(nullptr),
-  m_validation_layers(nullptr),  
-  m_device_extensions(nullptr), 
-  m_num_swap_chain_images(0),  
-  m_num_swap_chain_image_views(0), 
-  m_num_validation_layers(0),    
-  m_num_device_extensions(0),   
-  m_num_frame_buffers(0),   
-  m_num_command_buffers(0),
-  m_num_descriptor_sets(0),
-  m_image_available_semaphore(VK_NULL_HANDLE),
-  m_render_finished_semaphore(VK_NULL_HANDLE)
+vk_renderer_t* 
+vk_renderer_create()
 {
+  vk_renderer_t * vk_renderer = new vk_renderer_t();
+  vk_renderer->p_window = nullptr;
+  vk_renderer->m_viewport_width = 0;                
+  vk_renderer->m_viewport_height = 0;                
+  vk_renderer->m_vulkan_instance = VK_NULL_HANDLE;   
+  vk_renderer->m_window_surface = VK_NULL_HANDLE;   
+  vk_renderer->m_report_callback = VK_NULL_HANDLE;   
+  vk_renderer->m_physical_device = VK_NULL_HANDLE;
+  vk_renderer->m_logical_device = VK_NULL_HANDLE;
+  vk_renderer->m_swap_chain = VK_NULL_HANDLE;   
+  vk_renderer->m_pipeline_layout = VK_NULL_HANDLE;  
+  vk_renderer->m_render_pass = VK_NULL_HANDLE;  
+  vk_renderer->m_pipeline = VK_NULL_HANDLE;  
+  vk_renderer->m_command_pool = VK_NULL_HANDLE;  
+  vk_renderer->m_descriptor_pool = VK_NULL_HANDLE; 
+  vk_renderer->m_descriptor_set_layout  = VK_NULL_HANDLE; 
+  vk_renderer->m_graphics_queue = VK_NULL_HANDLE; 
+  vk_renderer->m_present_queue = VK_NULL_HANDLE;
+  vk_renderer->m_depth_format = VK_FORMAT_UNDEFINED;
+  vk_renderer->m_depth_image = VK_NULL_HANDLE;
+  vk_renderer->m_depth_image_view = VK_NULL_HANDLE;
+  vk_renderer->m_swap_chain_images = nullptr;
+  vk_renderer->m_swap_chain_image_views = nullptr; 
+  vk_renderer->m_frame_buffers = nullptr;
+  vk_renderer->m_command_buffers = nullptr;
+  vk_renderer->m_descriptor_sets = nullptr;
+  vk_renderer->m_validation_layers = nullptr;  
+  vk_renderer->m_device_extensions = nullptr; 
+  vk_renderer->m_num_swap_chain_images = 0;  
+  vk_renderer->m_num_swap_chain_image_views = 0; 
+  vk_renderer->m_num_validation_layers = 0;    
+  vk_renderer->m_num_device_extensions = 0;   
+  vk_renderer->m_num_frame_buffers = 0;   
+  vk_renderer->m_num_command_buffers = 0;
+  vk_renderer->m_num_descriptor_sets = 0;
+  vk_renderer->m_image_available_semaphore = VK_NULL_HANDLE;
+  vk_renderer->m_render_finished_semaphore = VK_NULL_HANDLE;
+  return vk_renderer;
 }
 
-VulkanRenderer::~VulkanRenderer()
+void
+vk_renderer_destroy(vk_renderer_t* vk_renderer)
 {
-
-  if(p_renderer->m_render_finished_semaphore != VK_NULL_HANDLE)
+  if(vk_renderer->m_render_finished_semaphore != VK_NULL_HANDLE)
   {
-    vkDestroySemaphore(p_renderer->m_logical_device, 
-                       p_renderer->m_render_finished_semaphore, 
+    vkDestroySemaphore(vk_renderer->m_logical_device, 
+                       vk_renderer->m_render_finished_semaphore, 
                        nullptr);
-    p_renderer->m_render_finished_semaphore = VK_NULL_HANDLE;
+    vk_renderer->m_render_finished_semaphore = VK_NULL_HANDLE;
   }
 
-  if(p_renderer->m_image_available_semaphore != VK_NULL_HANDLE)
+  if(vk_renderer->m_image_available_semaphore != VK_NULL_HANDLE)
   {
-    vkDestroySemaphore(p_renderer->m_logical_device, 
-                       p_renderer->m_image_available_semaphore, 
+    vkDestroySemaphore(vk_renderer->m_logical_device, 
+                       vk_renderer->m_image_available_semaphore, 
                        nullptr);
-    p_renderer->m_image_available_semaphore = VK_NULL_HANDLE;
+    vk_renderer->m_image_available_semaphore = VK_NULL_HANDLE;
   }
 
   clean_up_graphics_pipeline();
   clean_up_image_views();
   clean_up_swap_chain();
 
-  if(p_renderer->m_descriptor_sets)
+  if(vk_renderer->m_descriptor_sets)
   {
-    delete [] p_renderer->m_descriptor_sets;
-    p_renderer->m_descriptor_sets = nullptr;
-    p_renderer->m_num_descriptor_sets = 0;
+    delete [] vk_renderer->m_descriptor_sets;
+    vk_renderer->m_descriptor_sets = nullptr;
+    vk_renderer->m_num_descriptor_sets = 0;
   }
 
-  if(p_renderer->m_descriptor_pool != VK_NULL_HANDLE)
+  if(vk_renderer->m_descriptor_pool != VK_NULL_HANDLE)
   {
-    vkDestroyDescriptorPool(p_renderer->m_logical_device, 
-                            p_renderer->m_descriptor_pool, 
+    vkDestroyDescriptorPool(vk_renderer->m_logical_device, 
+                            vk_renderer->m_descriptor_pool, 
                             nullptr);
-    p_renderer->m_descriptor_pool = VK_NULL_HANDLE;
+    vk_renderer->m_descriptor_pool = VK_NULL_HANDLE;
   }
 
-  if(p_renderer->m_descriptor_set_layout != VK_NULL_HANDLE)
+  if(vk_renderer->m_descriptor_set_layout != VK_NULL_HANDLE)
   {
-    vkDestroyDescriptorSetLayout(p_renderer->m_logical_device, 
-                                 p_renderer->m_descriptor_set_layout, 
+    vkDestroyDescriptorSetLayout(vk_renderer->m_logical_device, 
+                                 vk_renderer->m_descriptor_set_layout, 
                                  nullptr);
-    p_renderer->m_descriptor_set_layout = VK_NULL_HANDLE;
+    vk_renderer->m_descriptor_set_layout = VK_NULL_HANDLE;
   }
 
-  if(p_renderer->m_command_pool != VK_NULL_HANDLE)
+  if(vk_renderer->m_command_pool != VK_NULL_HANDLE)
   {
-    vkDestroyCommandPool(p_renderer->m_logical_device, 
-                         p_renderer->m_command_pool, 
+    vkDestroyCommandPool(vk_renderer->m_logical_device, 
+                         vk_renderer->m_command_pool, 
                          nullptr);
-    p_renderer->m_command_pool = VK_NULL_HANDLE;
+    vk_renderer->m_command_pool = VK_NULL_HANDLE;
   }
 
-  if(m_command_buffers)
+  if(vk_renderer->m_command_buffers)
   {
-    delete [] m_command_buffers;
-    m_command_buffers = nullptr;;
-    m_num_command_buffers = 0;
+    delete [] vk_renderer->m_command_buffers;
+    vk_renderer->m_command_buffers = nullptr;;
+    vk_renderer->m_num_command_buffers = 0;
   }
 
-  vmaDestroyAllocator(p_renderer->m_vkallocator);
+  vmaDestroyAllocator(vk_renderer->m_vkallocator);
 
-  if(p_renderer->m_logical_device != VK_NULL_HANDLE)
+  if(vk_renderer->m_logical_device != VK_NULL_HANDLE)
   {
-    vkDestroyDevice(p_renderer->m_logical_device, 
+    vkDestroyDevice(vk_renderer->m_logical_device, 
                     nullptr);
-    p_renderer->m_logical_device = VK_NULL_HANDLE;
+    vk_renderer->m_logical_device = VK_NULL_HANDLE;
   }
 
-  if(p_renderer->m_window_surface != VK_NULL_HANDLE)
+  if(vk_renderer->m_window_surface != VK_NULL_HANDLE)
   {
-    vkDestroySurfaceKHR(p_renderer->m_vulkan_instance, 
-                        p_renderer->m_window_surface, 
+    vkDestroySurfaceKHR(vk_renderer->m_vulkan_instance, 
+                        vk_renderer->m_window_surface, 
                         nullptr);
-    p_renderer->m_window_surface = VK_NULL_HANDLE;
+    vk_renderer->m_window_surface = VK_NULL_HANDLE;
   }
 
   if (enable_validation_layers) 
   {
-    auto func = (PFN_vkDestroyDebugReportCallbackEXT) vkGetInstanceProcAddr(p_renderer->m_vulkan_instance, "vkDestroyDebugReportCallbackEXT");
-    func(p_renderer->m_vulkan_instance, p_renderer->m_report_callback, nullptr);
+    auto func = (PFN_vkDestroyDebugReportCallbackEXT) vkGetInstanceProcAddr(vk_renderer->m_vulkan_instance, "vkDestroyDebugReportCallbackEXT");
+    func(vk_renderer->m_vulkan_instance, vk_renderer->m_report_callback, nullptr);
   }
 
-  if(p_renderer->m_vulkan_instance != VK_NULL_HANDLE)
+  if(vk_renderer->m_vulkan_instance != VK_NULL_HANDLE)
   {
-    vkDestroyInstance(p_renderer->m_vulkan_instance, nullptr);
-    p_renderer->m_vulkan_instance = VK_NULL_HANDLE;
+    vkDestroyInstance(vk_renderer->m_vulkan_instance, nullptr);
+    vk_renderer->m_vulkan_instance = VK_NULL_HANDLE;
   }
 
-
-  if(m_validation_layers)
+  if(vk_renderer->m_validation_layers)
   {
-    for(uint32_t i = 0; i < m_num_validation_layers; ++i)
+    for(uint32_t i = 0; i < vk_renderer->m_num_validation_layers; ++i)
     {
-      delete [] m_validation_layers[i];
+      delete [] vk_renderer->m_validation_layers[i];
     }
-    delete [] m_validation_layers;
-    m_validation_layers = nullptr;
-    m_num_validation_layers = 0; 
+    delete [] vk_renderer->m_validation_layers;
+    vk_renderer->m_validation_layers = nullptr;
+    vk_renderer->m_num_validation_layers = 0; 
   }
 
-  if(m_device_extensions)
+  if(vk_renderer->m_device_extensions)
   {
-    for(uint32_t i = 0; i < m_num_device_extensions; ++i)
+    for(uint32_t i = 0; i < vk_renderer->m_num_device_extensions; ++i)
     {
-      delete [] m_device_extensions[i];
+      delete [] vk_renderer->m_device_extensions[i];
     }
-    delete [] m_device_extensions;
-    m_device_extensions = nullptr;
-    m_num_device_extensions = 0;
+    delete [] vk_renderer->m_device_extensions;
+    vk_renderer->m_device_extensions = nullptr;
+    vk_renderer->m_num_device_extensions = 0;
   }
 }
 
@@ -235,8 +237,7 @@ debug_callback(VkDebugReportFlagsEXT flags,
                const char* msg,
                void* userData) 
 {
-  TNA_LOG_WARNING("validation layer: %s", msg);
-  report_error(TNA_ERROR::E_RENDERER_VULKAN_ERROR);
+  TNA_LOG_ERROR(TNA_ERROR::E_RENDERER_VULKAN_ERROR, "validation layer: %s", msg);
   return VK_FALSE;
 }
 
@@ -273,8 +274,8 @@ create_vulkan_instance()
 
     if (!layer_found) 
     {
-      TNA_LOG_ERROR("Validation layer %s not found", layer);
-      report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
+      TNA_LOG_ERROR(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR, 
+                    "Validation layer %s not found", layer);
     }
   }
   delete [] available_layers;
@@ -327,8 +328,8 @@ create_vulkan_instance()
                       nullptr, 
                       &p_renderer->m_vulkan_instance) != VK_SUCCESS) 
   {
-    TNA_LOG_ERROR("failed to create instance!");
-    report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
+    TNA_LOG_ERROR(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR, 
+                  "failed to create instance!");
   }
   delete [] extensions;
   return;
@@ -342,8 +343,8 @@ create_surface(GLFWwindow* window)
                               nullptr, 
                               &p_renderer->m_window_surface) != VK_SUCCESS) 
   {
-    TNA_LOG_ERROR("failed to create window surface!");
-    report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
+    TNA_LOG_ERROR(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR, 
+                  "failed to create window surface!");
   }
   return;
 }
@@ -364,8 +365,8 @@ add_debug_handler()
             nullptr, 
             &p_renderer->m_report_callback) != VK_SUCCESS) 
     {
-      TNA_LOG_ERROR("Failed to create debug callback!");
-      report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
+      TNA_LOG_ERROR(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR, 
+                    "Failed to create debug callback!");
     }
   }
   return;
@@ -444,8 +445,8 @@ create_physical_device()
 
   if (p_renderer->m_physical_device == VK_NULL_HANDLE) 
   {
-    TNA_LOG_ERROR("failed to find a suitable GPU!");
-    report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
+    TNA_LOG_ERROR(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR, 
+                  "failed to find a suitable GPU!");
   }
 
   vkGetPhysicalDeviceProperties(p_renderer->m_physical_device, &p_renderer->m_mem_properties);
@@ -517,8 +518,8 @@ create_logical_device()
                      nullptr, 
                      &p_renderer->m_logical_device) != VK_SUCCESS) 
   {
-    TNA_LOG_ERROR("failed to create logical device!");
-    report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
+    TNA_LOG_ERROR(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR, 
+                  "failed to create logical device!");
   }
 
   delete [] queue_create_infos;
@@ -606,8 +607,8 @@ create_swap_chain()
                            nullptr, 
                            &p_renderer->m_swap_chain) != VK_SUCCESS) 
   {
-    TNA_LOG_ERROR("failed to create swap chain!");
-    report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
+    TNA_LOG_ERROR(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR,
+                  "failed to create swap chain!");
   }
 
   vkGetSwapchainImagesKHR(p_renderer->m_logical_device, 
@@ -617,8 +618,8 @@ create_swap_chain()
 
   if(p_renderer->m_num_swap_chain_images > MAX_FRAME_BUFFERS)
   {
-    TNA_LOG_ERROR("The number of swapchain images exceeds the limit");
-    report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
+    TNA_LOG_ERROR(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR, 
+                  "The number of swapchain images exceeds the limit: %d", p_renderer->m_num_swap_chain_images);
   }
 
   p_renderer->m_swap_chain_images = new VkImage[p_renderer->m_num_swap_chain_images];
@@ -637,8 +638,8 @@ create_swap_chain()
 
   if (p_renderer->m_depth_format == VK_FORMAT_UNDEFINED) 
   {
-    TNA_LOG_ERROR("failed to obtain the depth buffer format!");
-    report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
+    TNA_LOG_ERROR(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR, 
+                  "failed to obtain the depth buffer format!");
   }
 
   create_image(p_renderer->m_vkallocator,
@@ -681,8 +682,8 @@ create_image_views()
                           nullptr, 
                           &p_renderer->m_swap_chain_image_views[i]) != VK_SUCCESS) 
     {
-      TNA_LOG_ERROR("failed to create image views!");
-      report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
+      TNA_LOG_ERROR(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR,
+                    "failed to create image views!");
     }
   }
 
@@ -707,8 +708,8 @@ create_image_views()
                           nullptr, 
                           &p_renderer->m_depth_image_view) != VK_SUCCESS) 
     {
-      TNA_LOG_ERROR("failed to create depth image view!");
-      report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
+      TNA_LOG_ERROR(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR, 
+                    "failed to create depth image view!");
     }
 
 
@@ -731,14 +732,14 @@ create_graphics_pipeline()
   
   if(!vertex_shader) 
   {
-    TNA_LOG_ERROR("Vertex shader not found");
-    report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
+    TNA_LOG_ERROR(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR, 
+                  "Vertex shader not found");
   }
 
   if(!fragment_shader) 
   {
-    TNA_LOG_ERROR("Fragment shader not found");
-    report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
+    TNA_LOG_ERROR(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR, 
+                  "Fragment shader not found");
   }
 
   VkShader* vkvertex_shader = static_cast<VkShader*>(*vertex_shader);
@@ -858,8 +859,8 @@ create_graphics_pipeline()
                              nullptr, 
                              &p_renderer->m_pipeline_layout) != VK_SUCCESS) 
   {
-    TNA_LOG_ERROR("failed to create pipeline layout!");
-    report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
+    TNA_LOG_ERROR(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR, 
+                  "failed to create pipeline layout!");
   }
 
   VkAttachmentDescription color_attachment;
@@ -921,8 +922,8 @@ create_graphics_pipeline()
                          nullptr, 
                          &p_renderer->m_render_pass) != VK_SUCCESS) 
   {
-    TNA_LOG_ERROR("failed to create render pass!");
-    report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
+    TNA_LOG_ERROR(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR, 
+                  "failed to create render pass!");
   }
 
   VkGraphicsPipelineCreateInfo pipeline_info = {};
@@ -951,8 +952,8 @@ create_graphics_pipeline()
                                 nullptr, 
                                 &p_renderer->m_pipeline) != VK_SUCCESS) 
   {
-    TNA_LOG_ERROR("failed to create graphics pipeline!");
-    report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
+    TNA_LOG_ERROR(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR, 
+                  "failed to create graphics pipeline!");
   }
 
   p_renderer->m_num_frame_buffers = p_renderer->m_num_swap_chain_image_views;
@@ -980,8 +981,8 @@ create_graphics_pipeline()
                             nullptr, 
                             &p_renderer->m_frame_buffers[i]) != VK_SUCCESS) 
     {
-      TNA_LOG_ERROR("failed to create framebuffer!");
-      report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
+      TNA_LOG_ERROR(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR, 
+                    "failed to create framebuffer!");
     }
   }
 
@@ -1004,8 +1005,8 @@ create_command_pool()
                           nullptr, 
                           &p_renderer->m_command_pool) != VK_SUCCESS) 
   {
-    TNA_LOG_ERROR("failed to create command pool!");
-    report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
+    TNA_LOG_ERROR(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR, 
+                  "failed to create command pool!");
   }
   return;
 }
@@ -1048,8 +1049,8 @@ create_descriptor_pool()
                              nullptr, 
                              &p_renderer->m_descriptor_pool) != VK_SUCCESS) 
   {
-    TNA_LOG_ERROR("failed to create descriptor pool!");
-    report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
+    TNA_LOG_ERROR(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR, 
+                  "failed to create descriptor pool!");
   }
   return;
 }
@@ -1074,8 +1075,8 @@ create_descriptor_set()
                                   nullptr, 
                                   &p_renderer->m_descriptor_set_layout) != VK_SUCCESS) 
   {
-    TNA_LOG_ERROR("failed to create descriptor set layout!");
-    report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
+    TNA_LOG_ERROR(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR, 
+                  "failed to create descriptor set layout!");
   }
 
   p_renderer->m_num_descriptor_sets = p_renderer->m_num_swap_chain_images;
@@ -1097,8 +1098,8 @@ create_descriptor_set()
                                &allocInfo, 
                                &p_renderer->m_descriptor_sets[0]) != VK_SUCCESS) 
   {
-    TNA_LOG_ERROR("failed to allocate descriptor set!");
-    report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
+    TNA_LOG_ERROR(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR, 
+                  "failed to allocate descriptor set!");
   }
 
   delete [] layouts;
@@ -1174,8 +1175,8 @@ create_command_buffers()
                                &allocInfo, 
                                p_renderer->m_command_buffers) != VK_SUCCESS) 
   {
-    TNA_LOG_ERROR("failed to allocate command buffers!");
-    report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
+    TNA_LOG_ERROR(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR, 
+                  "failed to allocate command buffers!");
   }
   return;
 }
@@ -1195,8 +1196,8 @@ create_semaphores()
                         nullptr, 
                         &p_renderer->m_render_finished_semaphore) != VK_SUCCESS) 
   {
-		TNA_LOG_ERROR("failed to create semaphores!");
-    report_error(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR);
+		TNA_LOG_ERROR(TNA_ERROR::E_RENDERER_INITIALIZATION_ERROR, 
+                  "failed to create semaphores!");
 	}
   return;
 }
@@ -1318,8 +1319,8 @@ build_command_buffer(uint32_t index, rendering_scene_t* scene)
 
   if (vkBeginCommandBuffer(p_renderer->m_command_buffers[index], &begin_info) != VK_SUCCESS) 
   {
-    TNA_LOG_ERROR("failed to begin recording command buffer!");
-    report_error(TNA_ERROR::E_RENDERER_RUNTIME_ERROR);
+    TNA_LOG_ERROR(TNA_ERROR::E_RENDERER_RUNTIME_ERROR, 
+                  "failed to begin recording command buffer!");
   }
 
   vkCmdBindPipeline(p_renderer->m_command_buffers[index], 
@@ -1335,10 +1336,10 @@ build_command_buffer(uint32_t index, rendering_scene_t* scene)
 
 
   VkClearValue clear_values[2];
-  clear_values[0].color = {scene->m_clear_color.x,
+  clear_values[0].color = {{scene->m_clear_color.x,
                            scene->m_clear_color.y,
                            scene->m_clear_color.z, 
-                           1.0f};
+                           1.0f}};
   clear_values[1].depthStencil = {1.0f, 0};
   renderpass_info.clearValueCount = 2;
   renderpass_info.pClearValues = &clear_values[0];
@@ -1403,8 +1404,8 @@ build_command_buffer(uint32_t index, rendering_scene_t* scene)
 
   if (vkEndCommandBuffer(p_renderer->m_command_buffers[index]) != VK_SUCCESS) 
   {
-    TNA_LOG_ERROR("failed to record command buffer!");
-    report_error(TNA_ERROR::E_RENDERER_RUNTIME_ERROR);
+    TNA_LOG_ERROR(TNA_ERROR::E_RENDERER_RUNTIME_ERROR, 
+                  "failed to record command buffer!");
   }
   return;
 }
@@ -1419,7 +1420,7 @@ void
 init_renderer(const config_t* config, 
               GLFWwindow* window) 
 {
-  p_renderer = new VulkanRenderer();
+  p_renderer = vk_renderer_create();
   p_renderer->p_window = window;
   
   // Retrieving vulkan validation layers from engine config
@@ -1495,7 +1496,8 @@ terminate_renderer()
   delete [] m_uniform_buffers;
   delete [] m_uniform_allocations;
 
-  delete p_renderer;
+  vk_renderer_destroy(p_renderer);
+  p_renderer = nullptr;
 
   return;
 }
@@ -1527,8 +1529,8 @@ end_frame(rendering_scene_t* scene)
   } 
   else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) 
   {
-    TNA_LOG_ERROR("failed to acquire swap chain image!");
-    report_error(TNA_ERROR::E_RENDERER_RUNTIME_ERROR);
+    TNA_LOG_ERROR(TNA_ERROR::E_RENDERER_RUNTIME_ERROR, 
+                  "failed to acquire swap chain image!");
   }
 
   build_command_buffer(image_index, 
@@ -1555,8 +1557,8 @@ end_frame(rendering_scene_t* scene)
                     &submit_info, 
                     VK_NULL_HANDLE) != VK_SUCCESS) 
   {
-    TNA_LOG_ERROR("failed to submit draw command buffer!");
-    report_error(TNA_ERROR::E_RENDERER_RUNTIME_ERROR);
+    TNA_LOG_ERROR(TNA_ERROR::E_RENDERER_RUNTIME_ERROR, 
+                  "failed to submit draw command buffer!");
   }
 
 	VkPresentInfoKHR present_info = {};
@@ -1581,8 +1583,8 @@ end_frame(rendering_scene_t* scene)
   } 
   else if (result != VK_SUCCESS) 
   {
-    TNA_LOG_ERROR("failed to present swap chain image!");
-    report_error(TNA_ERROR::E_RENDERER_RUNTIME_ERROR);
+    TNA_LOG_ERROR(TNA_ERROR::E_RENDERER_RUNTIME_ERROR, 
+                  "failed to present swap chain image!");
   }
 
   vkQueueWaitIdle(p_renderer->m_present_queue);

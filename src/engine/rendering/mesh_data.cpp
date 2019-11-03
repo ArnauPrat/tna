@@ -15,6 +15,7 @@ mesh_data_t*
 mesh_data_create(const char* path)
 {
   mesh_data_t* mesh_data = new mesh_data_t();
+  *mesh_data = {0};
   mesh_data->m_aabb.m_min = {FLT_MAX, FLT_MAX, FLT_MAX};
   mesh_data->m_aabb.m_max = {FLT_MIN, FLT_MIN, FLT_MIN};
 
@@ -28,8 +29,8 @@ mesh_data_create(const char* path)
 
   if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err, path)) 
   {
-    TNA_LOG_ERROR("Unable to load mesh %s: %s", path, err.c_str());
-    report_error(TNA_ERROR::E_RENDERER_RESOURCE_ALLOCATION_ERROR);
+    TNA_LOG_ERROR(TNA_ERROR::E_RENDERER_RESOURCE_ALLOCATION_ERROR,
+                  "Unable to load mesh %s: %s", path, err.c_str());
   }
 
   std::map<uint32_t,uint32_t> unique_vertices;

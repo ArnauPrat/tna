@@ -29,27 +29,30 @@ struct fps_camera_t
 
 void
 fps_camera_init(fps_camera_t* camera, 
-            const vector3_t& eye,
-            float pitch,
-            float yaw);
+                const vector3_t& eye,
+                float pitch,
+                float yaw);
 
 void 
 fps_camera_to_view_matrix(const fps_camera_t* camera, 
-               matrix4_t* matrix);
+                          matrix4_t* matrix);
 
 void
 fps_camera_forward(fps_camera_t* camera, 
-        float amount);
+                   float amount);
 
 void
-fps_camera_strafe(fps_camera_t* camera, float amount);
+fps_camera_strafe(fps_camera_t* camera, 
+                  float amount);
 
 void
-fps_camera_yaw(fps_camera_t* camera, float amount);
+fps_camera_yaw(fps_camera_t* camera, 
+               float amount);
 
 void
-fps_camera_pitch(fps_camera_t* camera, float amount);
-  
+fps_camera_pitch(fps_camera_t* camera, 
+                 float amount);
+
 } /* tna */ 
 #endif
 

@@ -1,4 +1,5 @@
 #include "log.h"
+#include "error.h"
 #include <time.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -36,7 +37,7 @@ log_aux(const char* type,
 void
 log_init(const char* filename)
 {
-  m_log.p_log_file = fopen(filename, "r");
+  m_log.p_log_file = fopen(filename, "w");
   log_message("Started execution");
 }
 
@@ -62,11 +63,14 @@ void log_message(const char* message, ...) {
     EXTRACT_VARIADIC(buffer, message)
     log_aux("LOG", buffer);
 }
-void log_error(const char* message, ...) {
+void log_error(TNA_ERROR error, const char* message, ...) {
     assert(m_log.p_log_file != nullptr && "Logfile is not initialized");
+    log_aux("ERROR", error_messages[(uint32_t)error]);
     char buffer[VARIADIC_BUFFER_SIZE]; 
     EXTRACT_VARIADIC(buffer, message)
     log_aux("ERROR", buffer);
+    log_release();
+    abort();
 }
 
 void log_warning(const char* message, ...) {

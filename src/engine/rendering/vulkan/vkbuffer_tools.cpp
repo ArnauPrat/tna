@@ -44,8 +44,8 @@ create_buffer(VmaAllocator allocator,
                      buffer, 
                      buffer_allocation, 
                      NULL) != VK_SUCCESS)  {
-    TNA_LOG_ERROR("Vulkan: failed to allocate memory buffer!");
-    report_error(TNA_ERROR::E_RENDERER_RESOURCE_ALLOCATION_ERROR);
+    TNA_LOG_ERROR(TNA_ERROR::E_RENDERER_RESOURCE_ALLOCATION_ERROR, 
+                  "Vulkan: failed to allocate memory buffer!");
   }
   return; 
 }
@@ -246,8 +246,8 @@ create_image(VmaAllocator allocator,
                        image_allocation, 
                        NULL) != VK_SUCCESS) 
     {
-      TNA_LOG_ERROR("failed to create image!");
-      report_error(TNA_ERROR::E_RENDERER_RESOURCE_ALLOCATION_ERROR);
+      TNA_LOG_ERROR(TNA_ERROR::E_RENDERER_RESOURCE_ALLOCATION_ERROR, 
+                    "failed to create image!");
     }
     return;
 }

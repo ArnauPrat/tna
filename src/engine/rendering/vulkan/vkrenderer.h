@@ -15,15 +15,11 @@ struct GLFWwindow;
 namespace tna 
 {
 
-struct VulkanRenderer;
-extern VulkanRenderer*     p_renderer;
+struct vk_renderer_t;
+extern vk_renderer_t*     p_renderer;
 
-struct VulkanRenderer 
+struct vk_renderer_t 
 {
-
-  VulkanRenderer();
-  ~VulkanRenderer();
-
   GLFWwindow*                    p_window;
 
   uint32_t                      m_viewport_width;   ///< Width of the viewport
@@ -76,6 +72,12 @@ struct VulkanRenderer
 
   VmaAllocator                  m_vkallocator;    ///< The memory allocator used to create Vulkan buffers
 };
+
+vk_renderer_t*
+vk_renderer_create();
+
+void
+vk_renderer_destroy(vk_renderer_t* vk_renderer);
 
 
 } /* tna */ 

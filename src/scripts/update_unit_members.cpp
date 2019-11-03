@@ -16,12 +16,12 @@ BEGIN_FURIOUS_SCRIPT
 
 using namespace tna;
 
-struct UpdateUnitMember 
+struct update_unit_member_t 
 {
   void run(furious::Context* context, 
            uint32_t id, 
            transform_t* transform,
-           UnitMember*   unit_member) 
+           unit_member_t*  unit_member) 
   {
 
     vector3_t direction = {unit_member->m_target.x - transform->m_position.x,
@@ -65,18 +65,18 @@ struct UpdateUnitMember
 };
 
 
-furious::match<transform_t, UnitMember>().foreach<UpdateUnitMember>()
+furious::match<transform_t, unit_member_t>().foreach<update_unit_member_t>()
                                           .set_priority(PRIORITY_UPDATE_UNIT_MEMBER);
 
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 
-struct PrepareUnitMember 
+struct prepare_unit_member_t 
 {
   void run(furious::Context* context, 
            uint32_t id, 
-           UnitMember*  unit_member,
+           unit_member_t*  unit_member,
            const global_transform_matrix_t* global_unit_matrix) 
   {
     vector4_t target_position = global_unit_matrix->m_matrix*vector4_t{unit_member->m_unit_position, 1.0};
@@ -84,8 +84,8 @@ struct PrepareUnitMember
   }
 };
 
-furious::match<UnitMember>().expand<global_transform_matrix_t>(TNA_GAME_REF_BELONGS_TO_UNIT)
-                                          .foreach<PrepareUnitMember>()
+furious::match<unit_member_t>().expand<global_transform_matrix_t>(TNA_GAME_REF_BELONGS_TO_UNIT)
+                                          .foreach<prepare_unit_member_t>()
                                           .set_post_frame();
 
 END_FURIOUS_SCRIPT

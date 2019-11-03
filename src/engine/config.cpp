@@ -38,8 +38,8 @@ config_init(config_t* config, const char* file_name)
   FILE* fd = fopen(file_name, "r");
   if(fd == NULL)
   {
-    TNA_LOG_ERROR("Configuration file %s does not exist", file_name);
-    report_error(TNA_ERROR::E_SUCCESS);
+    TNA_LOG_ERROR(TNA_ERROR::E_SUCCESS, 
+                  "Configuration file %s does not exist", file_name);
   }
 
   size_t buffer_size = 512;
@@ -58,8 +58,8 @@ config_init(config_t* config, const char* file_name)
     char* tok = strtok(buffer," \t" );
     if(tok == NULL)
     {
-      TNA_LOG_ERROR("Ill-formed configuration file entry at line %d", line_count);
-      report_error(TNA_ERROR::E_IO_UNEXPECTED_INPUT_ERROR);
+      TNA_LOG_ERROR(TNA_ERROR::E_IO_UNEXPECTED_INPUT_ERROR, 
+                    "Ill-formed configuration file entry at line %d", line_count);
     }
 
     size_t len = strlen(tok);
@@ -74,8 +74,8 @@ config_init(config_t* config, const char* file_name)
     tok = strtok(NULL," \t");
     if(tok == NULL)
     {
-      TNA_LOG_ERROR("Ill-formed configuration file entry at line %d", line_count);
-      report_error(TNA_ERROR::E_IO_UNEXPECTED_INPUT_ERROR);
+      TNA_LOG_ERROR(TNA_ERROR::E_IO_UNEXPECTED_INPUT_ERROR, 
+                    "Ill-formed configuration file entry at line %d", line_count);
     }
 
     len = strlen(tok);
@@ -114,7 +114,7 @@ config_init(config_t* config, const char* file_name)
       directory_registry_insert(value); 
     }
 
-    TNA_LOG_ERROR("Parsed option %s with value %s", option, value);
+    TNA_LOG_INFO("Parsed option %s with value %s", option, value);
     line_count++;
   }
   fclose(fd);

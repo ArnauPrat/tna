@@ -24,7 +24,7 @@ create_terrain(game_state_t* state)
   {
     for(uint32_t j = 0; j < height; ++j)
     {
-      TnaEntity terrain = create_entity(state);
+      entity_t terrain = create_entity(state);
 
       transform_t* transform = FURIOUS_GET_COMPONENT(terrain, transform_t);
       transform->m_scale.x = TILE_HALF_EDGE;
@@ -62,7 +62,7 @@ void
 create_cars(game_state_t* state)
 {
 
-  TnaEntity entity1 = create_entity(state);
+  entity_t entity1 = create_entity(state);
   render_mesh_data_t* mesh_data = FURIOUS_ADD_COMPONENT(entity1, 
                                                         render_mesh_data_t);
   render_mesh_data_init(mesh_data, "models/cube.obj");
@@ -87,7 +87,7 @@ create_cars(game_state_t* state)
   double factor = 3.1416f / 180.0f;
   for(uint32_t i = 0; i < 20000; ++i)
   {
-    TnaEntity entity2 = create_entity(state);
+    entity_t entity2 = create_entity(state);
     render_mesh_data_t* mesh_data = FURIOUS_ADD_COMPONENT(entity2, 
                                                           render_mesh_data_t);
 
@@ -95,7 +95,7 @@ create_cars(game_state_t* state)
 
 
     float speed_factor = rand() / (float)INT_MAX;
-    FURIOUS_ADD_COMPONENT(entity2, RotationSpeed, radians(speed_factor*360));
+    FURIOUS_ADD_COMPONENT(entity2, rotation_speed_t, radians(speed_factor*360));
     int seed = rand() % 360;
     float dist = (rand() / (float)INT_MAX)*250.0 + 5.0f;
     float posx = sin(seed*factor)*dist;

@@ -63,8 +63,8 @@ private:
   double m_mouse_delta_pos_x;
   double m_mouse_delta_pos_y;
   
-  TnaEntity              m_camera;
-  DynArray<TnaEntity>    m_units;
+  entity_t              m_camera;
+  DynArray<entity_t>    m_units;
 };
 
 }

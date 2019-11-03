@@ -33,14 +33,15 @@ static size_t m_stack_size = 0;
  */
 struct execution_context_t
 {
-  char* p_stack = nullptr;
-  boost_context::fcontext_t m_context = nullptr;
+  char* p_stack;
+  boost_context::fcontext_t m_context;
 };
 
 
 void
 execution_context_init(execution_context_t* exec_context)
 {
+  *exec_context = {0};
   assert(m_stack_size != 0 && "STACK SIZE must be greater than zero");
   void *ptr;
 	int result = posix_memalign(&ptr, getpagesize(), m_stack_size + 2*getpagesize());
@@ -85,24 +86,37 @@ struct task_context_t {
   task_t                m_task;
 
   /**
-   * @brief Synchronization counter used to synchronize this task
+   * @brief Synchronization counter used to synchronize this task (optional)
    */
-  atomic_counter_t*     p_syn_counter = nullptr;
+  atomic_counter_t*     p_syn_counter;
+
+
+  /**
+   * \brief Yield function used to check if this task is ready for running after
+   * a yield (optional)
+   */
+  yield_func_t          p_yield_func;
+
+
+  /**
+   * \brief Data passed to yield function
+   */
+  void*                 p_yield_data;
 
   /**
    * @bried The execution context of this task
    */
-  execution_context_t*  p_context     = nullptr;
+  execution_context_t*  p_context;
 
   /**
    * @brief Whether the task is finished or not
    */
-  bool                  m_finished    = false;
+  bool                  m_finished;
 
   /**
    * @brief A pointer to the parent of the task in the task dependency graph
    */
-  task_context_t*      p_parent       = nullptr;
+  task_context_t*      p_parent;
 
   /**
    * \brief Task name
@@ -116,18 +130,6 @@ struct task_context_t {
 
 
 };  
-
-void
-task_context_reset(task_context_t* task_context)
-{
-  task_context->m_task.p_fp   = nullptr;
-  task_context->m_task.p_args = nullptr;
-  task_context->p_syn_counter = nullptr;
-  task_context->p_context     = nullptr;
-  task_context->m_finished    = false;
-  task_context->p_parent      = nullptr;
-  task_context->m_info[0]     = '\0'; 
-}
 
 /**
  * \brief Queue with available task contexts
@@ -429,20 +431,35 @@ thread_function(int threadId)
     {
       start_task(task_context);
     } 
-    else if ( (task_context = task_pool_get_next(&m_running_task_pool, m_current_thread_id)) != nullptr)
-    {
-      resume_task(task_context);
-    } 
     else 
     {
-      // Wait until notified
-      std::unique_lock<std::mutex> lock(m_condvar_mutexes[m_current_thread_id]);
-      m_ready[m_current_thread_id] = false;
-      m_condvars[m_current_thread_id].wait_for(lock,
-                                             std::chrono::microseconds(100), 
-                                             [] { return m_ready[m_current_thread_id]; });
-                                             
-                                             
+      task_context = task_pool_get_next(&m_running_task_pool, m_current_thread_id);
+      bool can_run = task_context && 
+                    (task_context->p_yield_func == nullptr || task_context->p_yield_func(task_context->p_yield_data));
+      if (can_run)
+      {
+        resume_task(task_context);
+      } 
+      else 
+      {
+        if(task_context != nullptr)
+        {
+          task_pool_add_task(&m_running_task_pool, m_current_thread_id, task_context);
+          task_context = nullptr;
+        }
+        // Wait until notified
+        std::unique_lock<std::mutex> lock(m_condvar_mutexes[m_current_thread_id]);
+        m_ready[m_current_thread_id] = false;
+        m_condvars[m_current_thread_id].wait_for(lock,
+                                                 std::chrono::microseconds(100), 
+                                                 [] { 
+                                                 return  task_pool_count(&m_to_start_task_pool, m_current_thread_id) > 0 ||
+                                                 task_pool_count(&m_running_task_pool, m_current_thread_id) > 0;
+
+                                                 });
+
+
+      }
     }
   }
 }
@@ -614,11 +631,12 @@ tasking_execute_task_async(uint32_t queueId,
   if(task_context == nullptr)
   {
     task_context = new task_context_t();
+    *task_context = {{0}};
   }
   else
   { 
     // we reset it in case it is a reused context
-    task_context_reset(task_context);
+    *task_context = {{0}};
   }
 
   task_context->m_task = task;
@@ -687,13 +705,37 @@ tasking_get_current_thread_id()
   return m_current_thread_id;
 }
 
-
 void 
 tasking_yield() 
+{
+  tasking_yield(nullptr, nullptr);
+}
+
+
+
+bool
+counter_yield_func(void* counter_ptr)
+{
+  atomic_counter_t* sync_counter = (atomic_counter_t*)counter_ptr;
+  int32_t value = atomic_counter_get(sync_counter);
+  return value == 0;
+}
+
+void
+tasking_yield(atomic_counter_t* sync_counter)
+{
+  tasking_yield(counter_yield_func, sync_counter);
+}
+
+void 
+tasking_yield(yield_func_t yield_func, void* yield_data) 
 {
   assert(m_initialized && "ThreadPool is not initialized");
   assert(m_num_threads > 0 && "Number of threads in the threadpool must be > 0");
   assert(m_current_thread_id != INVALID_THREAD_ID);
+
+  p_current_running_task->p_yield_func = yield_func;
+  p_current_running_task->p_yield_data = yield_data;
 
   insert_timing_event(tasking_get_current_thread_id(), 
                       task_timing_event_type_t::E_YIELD, 

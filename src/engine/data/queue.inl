@@ -119,5 +119,12 @@ queue_clear(queue_t<T>* queue)
   queue->m_num_elements = 0;
   queue->m_end = 0;
 }
+
+template <typename T>
+uint32_t
+queue_count(queue_t<T>* queue)
+{
+  return queue->m_num_elements;
+}
   
 } /*  tna */ 

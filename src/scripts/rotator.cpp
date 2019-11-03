@@ -14,16 +14,12 @@ BEGIN_FURIOUS_SCRIPT
 
 using namespace tna;
 
-struct RotatorAroundParent
+struct rotator_around_parent_t
 {
-  RotatorAroundParent()  
-  {
-  }
-  
   void run(furious::Context* context, 
            uint32_t id, 
            transform_t* transform,
-           const RotationSpeed* rspeed) 
+           const rotation_speed_t* rspeed) 
   {
     float angle = context->m_dt*rspeed->m_speed;
     transform->m_global_rotation.y += angle;
@@ -32,8 +28,8 @@ struct RotatorAroundParent
   float m_speed;
 };
 
-furious::match<transform_t, RotationSpeed>().expand<>(TNA_REF_PARENT)
-                                             .foreach<RotatorAroundParent>()
+furious::match<transform_t, rotation_speed_t>().expand<>(TNA_REF_PARENT)
+                                             .foreach<rotator_around_parent_t>()
                                              .set_priority(PRIORITY_ROTATOR);
 
 END_FURIOUS_SCRIPT

@@ -27,9 +27,7 @@ namespace tna
     E_NUM_ERRORS
   };
 
-
-void
-report_error(TNA_ERROR error_code);
+extern const char* error_messages[(uint32_t)(TNA_ERROR::E_NUM_ERRORS)];
 
 }
 #endif /* ifndef _TNA_ERROR_H_ */

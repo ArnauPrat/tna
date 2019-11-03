@@ -9,7 +9,7 @@
 namespace tna 
 {
 
-using TnaEntity = furious::Entity;
+using entity_t = furious::Entity;
 
 }
 

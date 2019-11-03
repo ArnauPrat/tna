@@ -13,8 +13,8 @@ read_file(const std::string& filename)
 
   if (!file.is_open()) 
   {
-    TNA_LOG_ERROR("failed to open file %s",filename.c_str());
-    report_error(TNA_ERROR::E_IO_FILE_NOT_FOUND);
+    TNA_LOG_ERROR(TNA_ERROR::E_IO_FILE_NOT_FOUND, 
+                  "failed to open file %s",filename.c_str());
   }
 
   size_t fileSize = (size_t) file.tellg();

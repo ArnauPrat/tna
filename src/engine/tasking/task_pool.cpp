@@ -64,6 +64,17 @@ task_pool_get_next(task_pool_t* task_pool,
   return task;
 }
 
+uint32_t 
+task_pool_count(task_pool_t* task_pool,
+                   uint32_t queueId) 
+{
+  assert(queueId < task_pool->m_num_queues && queueId >= 0 && "Invalid thread queue id");
+  mutex_lock(&task_pool->m_mutexes[queueId]);
+  uint32_t count = queue_count(&task_pool->m_queues[queueId]);
+  mutex_unlock(&task_pool->m_mutexes[queueId]);
+  return count;
+}
+
 void 
 task_pool_add_task(task_pool_t* task_pool,
                    uint32_t queueId, 

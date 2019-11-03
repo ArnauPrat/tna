@@ -20,11 +20,4 @@ const char* error_messages[(uint32_t)(TNA_ERROR::E_NUM_ERRORS)] =
   "RENDERER:Gui Error",
 };                                                                              
 
-void
-report_error(TNA_ERROR error_code)
-{
-  TNA_LOG_ERROR("%s", error_messages[(uint32_t)error_code]);
-  log_release();
-  abort();
-}
 }

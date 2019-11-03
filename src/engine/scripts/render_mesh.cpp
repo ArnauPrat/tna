@@ -15,9 +15,13 @@ BEGIN_FURIOUS_SCRIPT
 
 using namespace tna;
 
-struct TnaRenderMesh 
+struct render_mesh_t 
 {
-  vector3_t colors[4] = {TNA_COLOR_RED, TNA_COLOR_BLUE, TNA_COLOR_GREEN, TNA_COLOR_BLACK};
+  vector3_t colors[4] = {TNA_COLOR_RED, 
+                         TNA_COLOR_BLUE, 
+                         TNA_COLOR_GREEN, 
+                         TNA_COLOR_BLACK};
+
   void run(furious::Context* context, 
            uint32_t id, 
            const render_mesh_data_t* mesh, 
@@ -46,7 +50,7 @@ struct TnaRenderMesh
   }
 };
 
-furious::match<render_mesh_data_t,global_transform_matrix_t,furious::Global<projview_matrix_t>>().foreach<TnaRenderMesh>();
+furious::match<render_mesh_data_t,global_transform_matrix_t,furious::Global<projview_matrix_t>>().foreach<render_mesh_t>();
 
 END_FURIOUS_SCRIPT
 

@@ -10,11 +10,9 @@
 namespace tna
 {
 
-struct RotationSpeed 
+struct rotation_speed_t 
 {
-  FURIOUS_COMPONENT(RotationSpeed);
-
-  RotationSpeed(float speed) : m_speed{speed} {}
+  FURIOUS_COMPONENT(rotation_speed_t);
 
   float m_speed;
 }; /* tna */ 
