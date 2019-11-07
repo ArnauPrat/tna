@@ -113,6 +113,12 @@ set(TNA_ENGINE_GUI
   engine/gui/widgets/tasking_widget.cpp
   )
 
+set(TNA_ENGINE_TRACE
+  engine/trace/trace.h
+  engine/trace/trace.cpp
+  )
+
+
 set(TNA_ENGINE_TASKING
   engine/tasking/barrier.h
   engine/tasking/barrier.cpp
@@ -128,6 +134,7 @@ set(TNA_ENGINE_TASKING
   )
 
 set(TNA_ENGINE_SOURCE_FILES 
+  ${TNA_ENGINE_TRACE}
   ${TNA_ENGINE_TASKING}
   ${TNA_ENGINE_COMPONENTS}
   ${VK_RENDERER_SOURCE_FILES}

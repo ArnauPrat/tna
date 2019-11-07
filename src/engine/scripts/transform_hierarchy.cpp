@@ -74,7 +74,6 @@ furious::match<global_transform_matrix_t, local_transform_matrix_t>().expand<glo
 
 struct reset_transform_t
 {
-
   void run(furious::Context* context, 
            uint32_t id, 
            transform_t*  transform) 

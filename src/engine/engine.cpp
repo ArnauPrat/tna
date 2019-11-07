@@ -6,6 +6,7 @@
 #include "rendering/rendering.h"
 #include "resources/resources.h"
 #include "gui/imgui.h"
+#include "trace/trace.h"
 #include "tasking/tasking.h"
 #include "tasking/atomic_counter.h"
 #include "tasking/barrier.h"
@@ -42,7 +43,7 @@ mutex_t             m_task_params_mutex;
 task_params_queue_t m_task_params_queue; 
 atomic_counter_t*   m_task_counters = nullptr;
 atomic_counter_t*   m_post_task_counters = nullptr;
-uint32_t            m_num_threads = 8;
+uint32_t            m_num_threads = 4;
 float               m_last_game_loop_time = 0.0f;
 
 std::condition_variable*     m_main_thread_cond = nullptr;
@@ -118,6 +119,7 @@ initialize()
   // Initializing tasking's system thread pool
   mutex_init(&m_task_params_mutex);
   queue_init(&m_task_params_queue, 128);
+  trace_init(m_num_threads+1);
   tasking_start_thread_pool(m_num_threads);
 
   // Reading engine's config
@@ -184,6 +186,7 @@ terminate()
   resources_release();
   config_release(&m_config);
   tasking_stop_thread_pool();
+  trace_release();
   task_params_t* next = nullptr;
   while(queue_pop(&m_task_params_queue, &next))
   {
@@ -468,7 +471,10 @@ run(TnaGameApp* game_app)
 
   while (!glfwWindowShouldClose(p_window)) 
   {
-    tasking_record_new_frame();
+    trace_record(m_num_threads, 
+                 trace_event_type_t::E_NEW_FRAME, 
+                 nullptr,
+                 nullptr);
     
     // Keep running
     auto current_time = std::chrono::high_resolution_clock::now();
@@ -487,12 +493,23 @@ run(TnaGameApp* game_app)
     std::unique_lock<std::mutex> lock(*m_main_thread_mutex);
     m_main_thread_cond->wait(lock);
 
+
     auto game_loop_end = std::chrono::high_resolution_clock::now();
     m_last_game_loop_time = std::chrono::duration<float, std::chrono::milliseconds::period>(game_loop_end - game_loop_start).count();
 
     p_current_app->on_frame_end();
+
+    trace_record(m_num_threads, 
+                 trace_event_type_t::E_TASK_START,
+                 "Rendering", 
+                 "");
     draw_gui();
     end_frame(p_rendering_scene);
+
+    trace_record(m_num_threads, 
+                 trace_event_type_t::E_TASK_STOP,
+                 "Rendering", 
+                 "");
   }
 
   for (uint32_t i = 0; i < task_graph->m_num_tasks; ++i) 

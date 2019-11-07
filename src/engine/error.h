@@ -7,9 +7,13 @@
 #define _TNA_ERROR_H_ value
 
 #include "types.h"
+#include <assert.h>
 
 namespace tna
 {
+
+#define TNA_ASSERT(cond) assert(cond);
+#define TNA_PERMA_ASSERT(cond) if(!(cond)) {abort();}
 
   enum class TNA_ERROR
   {
