@@ -59,10 +59,10 @@ tasking_widget_render()
       trace_record_enable();
     }
 
-    //if(ImGui::Button("Clear"))
-    //{
-    //  trace_flush();
-    //}
+    if(ImGui::Button("Clear"))
+    {
+      trace_flush();
+    }
   }
   else
   {

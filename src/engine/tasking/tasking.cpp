@@ -15,6 +15,7 @@
 #include <assert.h>
 #include <unistd.h>
 #include <sys/mman.h>
+#include <sched.h>
 
 
 
@@ -198,12 +199,6 @@ static std::mutex*                  m_condvar_mutexes = nullptr;
  * ready
  */
 static std::condition_variable*     m_condvars = nullptr;
-/**
- * @brief Boolean flag used for condition variables for notifying sleepting
- * threads that more work is ready
- */
-static bool*                        m_ready = nullptr;
-
 
 /**
  * @brief Pointer to the thread local currently running task 
@@ -395,12 +390,11 @@ thread_function(int threadId)
         }
         // Wait until notified
         std::unique_lock<std::mutex> lock(m_condvar_mutexes[m_current_thread_id]);
-        m_ready[m_current_thread_id] = false;
         m_condvars[m_current_thread_id].wait_for(lock,
                                                  std::chrono::microseconds(100), 
                                                  [] { 
                                                  return  task_pool_count(&m_to_start_task_pool, m_current_thread_id) > 0 ||
-                                                 task_pool_count(&m_running_task_pool, m_current_thread_id) > 0;
+                                                          task_pool_count(&m_running_task_pool, m_current_thread_id) > 0;
 
                                                  });
 
@@ -446,7 +440,6 @@ tasking_start_thread_pool(uint32_t numThreads)
     p_threads             = new std::thread*[m_num_threads];
     m_condvar_mutexes     = new std::mutex[m_num_threads];
     m_condvars            = new std::condition_variable[m_num_threads];
-    m_ready               = new bool[m_num_threads];
     p_execution_context_queue   = new execution_context_queue_t();
     queue_init(p_execution_context_queue, 4096);
     mutex_init(&m_execution_context_queue_mutex);
@@ -458,15 +451,30 @@ tasking_start_thread_pool(uint32_t numThreads)
 
     for(uint32_t i = 0; i < m_num_threads; ++i) {
       m_is_running[i].store(true);
-      m_ready[i] = false;
       p_threads[i] = new std::thread(thread_function, i);
       cpu_set_t cpuset;
       CPU_ZERO(&cpuset);
       CPU_SET(i, &cpuset);
-      pthread_setaffinity_np(p_threads[i]->native_handle(),
+      uint32_t res = pthread_setaffinity_np(p_threads[i]->native_handle(),
                              sizeof(cpu_set_t), &cpuset);
+      if(res != 0)
+      {
+        TNA_LOG_WARNING("Thread affinity for thread %d could not be set", i);
+      }
     }
 
+    uint32_t numCPU = sysconf(_SC_NPROCESSORS_ONLN);
+    if(m_num_threads < numCPU)
+    {
+      cpu_set_t cpuset;
+      CPU_ZERO(&cpuset);
+      CPU_SET(m_num_threads, &cpuset);
+      uint32_t res = sched_setaffinity(0, sizeof(cpuset), &cpuset);
+      if(res != 0)
+      {
+        TNA_LOG_WARNING("Thread affinity for main thread could not be set");
+      }
+    }
     m_initialized = true;
 
   }
@@ -487,10 +495,6 @@ tasking_stop_thread_pool()
 
     // Notify threads to continue
     for(uint32_t i = 0; i < m_num_threads; ++i) {
-      {
-        std::lock_guard<std::mutex> guard(m_condvar_mutexes[i]);
-        m_ready[i] = true;
-      }
       m_condvars[i].notify_all();
     }
 
@@ -501,7 +505,6 @@ tasking_stop_thread_pool()
     }
 
 
-    delete [] m_ready;
     delete [] m_condvars;
     delete [] m_condvar_mutexes;
     delete [] p_threads;
@@ -603,10 +606,6 @@ tasking_execute_task_async(uint32_t queueId,
                      queueId, 
                      task_context);
 
-  {
-    std::lock_guard<std::mutex> guard(m_condvar_mutexes[queueId]);
-    m_ready[queueId] = true;
-  }
   m_condvars[queueId].notify_all();
 } 
 

@@ -33,21 +33,21 @@ namespace tna
 struct task_params_t;
 using task_params_queue_t = queue_t<task_params_t*>;
 
-bool                m_show_gui = true;
-bool                m_edit_mode = false;
-GLFWwindow*         p_window  = nullptr;
-TnaGameApp*         p_current_app = nullptr;
-config_t            m_config;
-furious::Database*  p_database = nullptr;;
-mutex_t             m_task_params_mutex;
-task_params_queue_t m_task_params_queue; 
-atomic_counter_t*   m_task_counters = nullptr;
-atomic_counter_t*   m_post_task_counters = nullptr;
-uint32_t            m_num_threads = 4;
-float               m_last_game_loop_time = 0.0f;
+static bool                m_show_gui = true;
+static bool                m_edit_mode = false;
+static GLFWwindow*         p_window  = nullptr;
+static TnaGameApp*         p_current_app = nullptr;
+static config_t            m_config;
+static furious::Database*  p_database = nullptr;;
+static mutex_t             m_task_params_mutex;
+static task_params_queue_t m_task_params_queue; 
+static atomic_counter_t*   m_task_counters = nullptr;
+static atomic_counter_t*   m_post_task_counters = nullptr;
+static uint32_t            m_num_threads = 4;
+static float               m_last_game_loop_time = 0.0f;
 
-std::condition_variable*     m_main_thread_cond = nullptr;
-std::mutex*                  m_main_thread_mutex = nullptr;
+static std::condition_variable*     m_main_thread_cond = nullptr;
+static std::mutex*                  m_main_thread_mutex = nullptr;
 
 /**
  * \brief Structure to pass parameters to takss
@@ -418,7 +418,7 @@ void update_game_logic(void* ptr)
   {
     atomic_counter_join(&m_post_task_counters[i]);
   }
-  m_main_thread_cond->notify_all();
+  m_main_thread_cond->notify_one();
 }
 
 void
@@ -489,7 +489,11 @@ run(TnaGameApp* game_app)
     task_t task;
     task.p_args = &time;
     task.p_fp = update_game_logic;
-    tasking_execute_task_async(0, task, nullptr, "update_game_logic", "update_game_logic");
+    tasking_execute_task_async(0, 
+                               task, 
+                               nullptr,
+                               "update_game_logic", 
+                               "update_game_logic");
     std::unique_lock<std::mutex> lock(*m_main_thread_mutex);
     m_main_thread_cond->wait(lock);
 
