@@ -38,7 +38,7 @@ config_init(config_t* config, const char* file_name)
   FILE* fd = fopen(file_name, "r");
   if(fd == NULL)
   {
-    TNA_LOG_ERROR(TNA_ERROR::E_SUCCESS, 
+    TNA_LOG_ERROR(TNA_ERROR::E_IO_FILE_NOT_FOUND, 
                   "Configuration file %s does not exist", file_name);
   }
 

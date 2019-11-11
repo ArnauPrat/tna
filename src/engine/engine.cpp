@@ -20,7 +20,6 @@
 #include "components/render_mesh_data.h"
 
 #include <chrono>
-#include <fstream>
 #include <condition_variable>
 #include <mutex>
 #include <glm/glm.hpp>
@@ -99,13 +98,6 @@ mouse_button_callback(GLFWwindow* window,
                                  mods);
 }
 
-static bool 
-file_exists(const std::string& filename) 
-{
-  std::ifstream file(filename);
-  return file.good();
-}
-
 void
 initialize() 
 {
@@ -117,10 +109,7 @@ initialize()
   directory_registry_insert("./");
 
   // Reading engine's config
-  if(file_exists("./config.ini")) 
-  {
-    config_init(&m_config, "./config.ini");
-  } 
+  config_init(&m_config, "./config.ini");
 
   // Initializing tasking's system thread pool
   mutex_init(&m_task_params_mutex);
