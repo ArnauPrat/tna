@@ -74,18 +74,19 @@ void Game::on_app_start()
   create_cars(&m_state);
   //create_player(&m_state);
 
-  /*for(uint32_t i = 0; i < 20; ++i)
+  for(uint32_t i = 0; i < 40; ++i)
   {
-    for(uint32_t j = 0; j < 20; ++j)
+    for(uint32_t j = 0; j < 40; ++j)
     {
-      TnaEntity unit = create_unit(20,
+      entity_t unit = create_unit(20,
                                    "models/cube.obj",
                                    {i*30.0f, 0.0f, j*30.0f},
                                    &m_state);
       m_units.append(unit);
     }
   }
-  */
+  
+  
 }
 
 void Game::on_app_finish() 

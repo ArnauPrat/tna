@@ -389,14 +389,11 @@ thread_function(int threadId)
           task_context = nullptr;
         }
         // Wait until notified
-        std::unique_lock<std::mutex> lock(m_condvar_mutexes[m_current_thread_id]);
-        m_condvars[m_current_thread_id].wait_for(lock,
-                                                 std::chrono::microseconds(100), 
-                                                 [] { 
-                                                 return  task_pool_count(&m_to_start_task_pool, m_current_thread_id) > 0 ||
-                                                          task_pool_count(&m_running_task_pool, m_current_thread_id) > 0;
-
-                                                 });
+        {
+          std::unique_lock<std::mutex> lock(m_condvar_mutexes[m_current_thread_id]);
+          m_condvars[m_current_thread_id].wait_for(lock,
+                                                   std::chrono::microseconds(100));
+        }
 
 
       }
@@ -494,7 +491,9 @@ tasking_stop_thread_pool()
     }
 
     // Notify threads to continue
-    for(uint32_t i = 0; i < m_num_threads; ++i) {
+    for(uint32_t i = 0; i < m_num_threads; ++i) 
+    {
+      std::unique_lock<std::mutex> lock(m_condvar_mutexes[i]);
       m_condvars[i].notify_all();
     }
 
@@ -606,6 +605,7 @@ tasking_execute_task_async(uint32_t queueId,
                      queueId, 
                      task_context);
 
+  std::unique_lock<std::mutex> lock(m_condvar_mutexes[queueId]);
   m_condvars[queueId].notify_all();
 } 
 

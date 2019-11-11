@@ -45,6 +45,7 @@ static atomic_counter_t*   m_task_counters = nullptr;
 static atomic_counter_t*   m_post_task_counters = nullptr;
 static uint32_t            m_num_threads = 4;
 static float               m_last_game_loop_time = 0.0f;
+static bool                m_ready = false;
 
 static std::condition_variable*     m_main_thread_cond = nullptr;
 static std::mutex*                  m_main_thread_mutex = nullptr;
@@ -403,6 +404,7 @@ run_furious_task_graph(const furious::task_graph_t* task_graph,
 
 }
 
+
 void update_game_logic(void* ptr)
 {
   furious::task_graph_t* task_graph = furious::__furious_task_graph();
@@ -418,7 +420,12 @@ void update_game_logic(void* ptr)
   {
     atomic_counter_join(&m_post_task_counters[i]);
   }
-  m_main_thread_cond->notify_one();
+
+  {
+    std::unique_lock<std::mutex> lock(*m_main_thread_mutex);
+    m_ready = true;
+    m_main_thread_cond->notify_one();
+  }
 }
 
 void
@@ -486,17 +493,28 @@ run(TnaGameApp* game_app)
     p_current_app->on_frame_start(time);
     auto game_loop_start = std::chrono::high_resolution_clock::now();
 
-    task_t task;
-    task.p_args = &time;
-    task.p_fp = update_game_logic;
-    tasking_execute_task_async(0, 
-                               task, 
-                               nullptr,
-                               "update_game_logic", 
-                               "update_game_logic");
-    std::unique_lock<std::mutex> lock(*m_main_thread_mutex);
-    m_main_thread_cond->wait(lock);
+    {
+      std::unique_lock<std::mutex> lock(*m_main_thread_mutex);
+      m_ready = false;
+      task_t task;
+      task.p_args = &time;
+      task.p_fp = update_game_logic;
+      //atomic_counter_t sync_counter;
+      //atomic_counter_init(&sync_counter);
+      tasking_execute_task_async(0, 
+                                 task, 
+                                 nullptr,
+                                 "update_game_logic", 
+                                 "update_game_logic");
+      //atomic_counter_join(&sync_counter);
+      //atomic_counter_release(&sync_counter);
 
+      m_main_thread_cond->wait(lock, 
+                               [&] () {
+                               return m_ready;
+                               }
+                              );
+    }
 
     auto game_loop_end = std::chrono::high_resolution_clock::now();
     m_last_game_loop_time = std::chrono::duration<float, std::chrono::milliseconds::period>(game_loop_end - game_loop_start).count();
