@@ -55,13 +55,13 @@ tasking_widget_render()
     if(ImGui::Button("Start Recording"))
     {
       m_button_start = false;
-      trace_flush();
-      trace_record_enable();
+      TRACE_FLUSH();
+      TRACE_ENABLE();
     }
 
     if(ImGui::Button("Clear"))
     {
-      trace_flush();
+      TRACE_FLUSH();
     }
   }
   else
@@ -69,7 +69,7 @@ tasking_widget_render()
     if(ImGui::Button("Stop Recording"))
     {
       m_button_start = true;
-      trace_record_disable();
+      TRACE_DISABLE();
       PX_PER_MS = 100;
       m_display_info[0] = '\0';
       m_display_exec_time_ms = 0;

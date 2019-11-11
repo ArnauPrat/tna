@@ -222,12 +222,10 @@ insert_timing_event(uint32_t queue_id,
                     trace_event_type_t event_type, 
                     task_context_t* task_context)
 {
-#ifdef _TNA_DEV
-  trace_record(queue_id, 
+  TRACE_RECORD(queue_id, 
                event_type,
                task_context->m_name, 
                task_context->m_info);
-#endif
 }
 
 /**

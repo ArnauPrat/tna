@@ -8,8 +8,28 @@
 #define _TNA_TRACE_MAX_INFO_STRING_LENGTH 1024
 #define _TNA_TRACE_MAX_NAME_STRING_LENGTH 128
 
+#ifdef _TNA_DEV
+  #define TRACE_RECORD(queue_id, event_type, name, info)\
+                        trace_record(queue_id, event_type, name, info);
+
+  #define TRACE_FLUSH()\
+                      trace_flush();
+
+  #define TRACE_ENABLE()\
+                      trace_record_enable();
+
+  #define TRACE_DISABLE()\
+                      trace_record_disable();
+#elif
+  #define TRACE_RECORD(queue_id, event_type, name, info)
+  #define TRACE_FLUSH()
+  #define TRACE_ENABLE()
+  #define TRACE_DISABLE()
+#endif
+
 namespace  tna
 {
+
 
 enum class trace_event_type_t
 {

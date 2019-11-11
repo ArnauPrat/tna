@@ -43,7 +43,6 @@ static mutex_t             m_task_params_mutex;
 static task_params_queue_t m_task_params_queue; 
 static atomic_counter_t*   m_task_counters = nullptr;
 static atomic_counter_t*   m_post_task_counters = nullptr;
-static uint32_t            m_num_threads = 4;
 static float               m_last_game_loop_time = 0.0f;
 static bool                m_ready = false;
 
@@ -117,17 +116,17 @@ initialize()
   directory_registry_init();
   directory_registry_insert("./");
 
-  // Initializing tasking's system thread pool
-  mutex_init(&m_task_params_mutex);
-  queue_init(&m_task_params_queue, 128);
-  trace_init(m_num_threads+1);
-  tasking_start_thread_pool(m_num_threads);
-
   // Reading engine's config
   if(file_exists("./config.ini")) 
   {
     config_init(&m_config, "./config.ini");
   } 
+
+  // Initializing tasking's system thread pool
+  mutex_init(&m_task_params_mutex);
+  queue_init(&m_task_params_queue, 128);
+  trace_init(m_config.m_num_worker_threads+1);
+  tasking_start_thread_pool(m_config.m_num_worker_threads);
 
   resources_init();
 
@@ -242,7 +241,6 @@ draw_gui()
   ImGui::NewFrame();
   if(m_show_gui)
   {
-
     //bool aux = true; ImGui::ShowDemoWindow(&aux);
 
     ImGui::Begin("TNA");                         
@@ -271,10 +269,10 @@ run_task(const furious::task_t* furious_task,
          atomic_counter_t* sync_counter)
 {
 
-  task_params_t* tmp_task_params[m_num_threads];
+  task_params_t* tmp_task_params[m_config.m_num_worker_threads];
   barrier_t barrier;
   barrier_init(&barrier);
-  for(uint32_t i = 0; i < m_num_threads; ++i)
+  for(uint32_t i = 0; i < m_config.m_num_worker_threads; ++i)
   {
     task_params_t* params = nullptr;
     queue_pop(&m_task_params_queue, &params);
@@ -297,7 +295,7 @@ run_task(const furious::task_t* furious_task,
                      params->p_user_data,
                      16,
                      params->m_queue_id,
-                     m_num_threads,
+                     m_config.m_num_worker_threads,
                      params->p_barrier); 
     };
     task.p_args=params;
@@ -315,7 +313,7 @@ run_task(const furious::task_t* furious_task,
              furious_task->m_id, 
              16, 
              i, 
-             m_num_threads, 
+             m_config.m_num_worker_threads, 
              furious_task->p_info);
 
     tasking_execute_task_async(i, task, sync_counter, name, info);
@@ -323,7 +321,7 @@ run_task(const furious::task_t* furious_task,
   tasking_yield(sync_counter);
   //atomic_counter_join(sync_counter);
   barrier_release(&barrier);
-  for(uint32_t i = 0; i < m_num_threads; ++i)
+  for(uint32_t i = 0; i < m_config.m_num_worker_threads; ++i)
   {
     queue_push(&m_task_params_queue, tmp_task_params[i]);
   }
@@ -478,7 +476,7 @@ run(TnaGameApp* game_app)
 
   while (!glfwWindowShouldClose(p_window)) 
   {
-    trace_record(m_num_threads, 
+    TRACE_RECORD(m_config.m_num_worker_threads, 
                  trace_event_type_t::E_NEW_FRAME, 
                  nullptr,
                  nullptr);
@@ -521,14 +519,14 @@ run(TnaGameApp* game_app)
 
     p_current_app->on_frame_end();
 
-    trace_record(m_num_threads, 
+    TRACE_RECORD(m_config.m_num_worker_threads, 
                  trace_event_type_t::E_TASK_START,
                  "Rendering", 
                  "");
     draw_gui();
     end_frame(p_rendering_scene);
 
-    trace_record(m_num_threads, 
+    TRACE_RECORD(m_config.m_num_worker_threads, 
                  trace_event_type_t::E_TASK_STOP,
                  "Rendering", 
                  "");

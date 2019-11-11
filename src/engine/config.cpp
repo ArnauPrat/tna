@@ -114,6 +114,11 @@ config_init(config_t* config, const char* file_name)
       directory_registry_insert(value); 
     }
 
+    if (strcmp(option,"NumWorkerThreads") == 0)
+    {
+      config->m_num_worker_threads = atoi(value);
+    }
+
     TNA_LOG_INFO("Parsed option %s with value %s", option, value);
     line_count++;
   }

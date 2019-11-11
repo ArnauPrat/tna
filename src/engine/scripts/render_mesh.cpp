@@ -17,10 +17,10 @@ using namespace tna;
 
 struct render_mesh_t 
 {
-  vector3_t colors[4] = {TNA_COLOR_RED, 
-                         TNA_COLOR_BLUE, 
-                         TNA_COLOR_GREEN, 
-                         TNA_COLOR_BLACK};
+  //vector3_t colors[4] = {TNA_COLOR_RED, 
+  //                       TNA_COLOR_BLUE, 
+  //                       TNA_COLOR_GREEN, 
+  //                       TNA_COLOR_BLACK};
 
   void run(furious::Context* context, 
            uint32_t id, 
@@ -36,16 +36,16 @@ struct render_mesh_t
                                          mesh->m_handler, 
                                          proj_matrix->m_matrix);
 
-    material_desc_t material;
-    rendering_scene_get_material(p_rendering_scene,
-                                 mesh->m_handler, 
-                                 &material);
+    //material_desc_t material;
+    //rendering_scene_get_material(p_rendering_scene,
+    //                             mesh->m_handler, 
+    //                             &material);
 
-    material.m_color = colors[context->m_thread_id % 4];
+    //material.m_color = colors[context->m_thread_id % 4];
 
-    rendering_scene_set_material(p_rendering_scene,
-                                 mesh->m_handler, 
-                                 material);
+    //rendering_scene_set_material(p_rendering_scene,
+    //                             mesh->m_handler, 
+    //                             material);
 
   }
 };

@@ -16,9 +16,10 @@ struct config_t
 {
 
 
-  uint32_t        m_viewport_width  = 1440;
-  uint32_t        m_viewport_height = 900;
-  bool            m_fullscreen      = false;
+  uint32_t        m_viewport_width        = 1440;
+  uint32_t        m_viewport_height       = 900;
+  bool            m_fullscreen            = false;
+  uint32_t        m_num_worker_threads    = 1;
 
   uint32_t        m_num_vk_vlayers  = 0;
   char*           m_vk_vlayers[_TNA_MAX_VK_VALIDATION_LAYERS];
